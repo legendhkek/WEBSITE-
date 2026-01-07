@@ -222,6 +222,32 @@ body {
     overflow: hidden;
 }
 
+/* Advanced Tools Menu */
+.tools-menu {
+    min-width: 350px;
+    max-width: 400px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.tools-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tools-menu::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 3px;
+}
+
+.tools-menu::-webkit-scrollbar-thumb {
+    background: var(--gray-400);
+    border-radius: 3px;
+}
+
+.tools-menu::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-500);
+}
+
 .dropdown-menu.show {
     opacity: 1;
     visibility: visible;
@@ -294,6 +320,32 @@ body {
     height: 1px;
     background: var(--gray-200);
     margin: 0.5rem 0;
+}
+
+/* Dropdown Section Headers */
+.dropdown-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem 0.5rem 1rem;
+    margin-top: 0.25rem;
+}
+
+.dropdown-section-header:first-child {
+    margin-top: 0;
+}
+
+.section-icon {
+    font-size: 1.125rem;
+    opacity: 0.9;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray-600);
 }
 
 .logout-item {

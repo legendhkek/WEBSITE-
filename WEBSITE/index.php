@@ -148,9 +148,9 @@
                     <span class="nav-btn-icon">▶️</span>
                     <span class="nav-btn-text">Watch Now</span>
                 </a>
-                <a href="torrent.php" class="nav-btn" title="Torrent Download Center">
-                    <span class="nav-btn-icon">🧲</span>
-                    <span class="nav-btn-text">Torrents</span>
+                <a href="torrent.php" class="nav-btn" title="Tools - Torrent Center, Media Tools, AI Tools, Utilities">
+                    <span class="nav-btn-icon">🛠️</span>
+                    <span class="nav-btn-text">Tools</span>
                 </a>
                 <button class="nav-btn" onclick="toggleShortcutsModal()" title="Keyboard Shortcuts (?)">
                     <span class="nav-btn-icon">⌨️</span>

@@ -71,39 +71,131 @@
                 </a>
                 <div class="nav-dropdown">
                     <button class="nav-link dropdown-trigger">
-                        <span class="nav-icon">🧲</span>
-                        Torrents
+                        <span class="nav-icon">🛠️</span>
+                        Tools
                         <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </button>
-                    <div class="dropdown-menu">
+                    <div class="dropdown-menu tools-menu">
+                        <!-- Torrent Tools Section -->
+                        <div class="dropdown-section-header">
+                            <span class="section-icon">🧲</span>
+                            <span class="section-title">Torrent Tools</span>
+                        </div>
                         <a href="torrent.php" class="dropdown-item">
                             <span class="dropdown-icon">⬇️</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Download Center</div>
-                                <div class="dropdown-item-desc">Magnet links, .torrent files, info hash</div>
+                                <div class="dropdown-item-desc">All-in-one torrent management hub</div>
                             </div>
                         </a>
                         <a href="torrent.php#magnet" class="dropdown-item">
                             <span class="dropdown-icon">🧲</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Magnet Links</div>
-                                <div class="dropdown-item-desc">Paste and process magnet links</div>
+                                <div class="dropdown-item-desc">Paste and process magnet URIs instantly</div>
                             </div>
                         </a>
                         <a href="torrent.php#file" class="dropdown-item">
                             <span class="dropdown-icon">📁</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Upload Torrent File</div>
-                                <div class="dropdown-item-desc">Drag & drop .torrent files</div>
+                                <div class="dropdown-item-desc">Drag & drop .torrent files for parsing</div>
                             </div>
                         </a>
                         <a href="torrent.php#hash" class="dropdown-item">
                             <span class="dropdown-icon">🔑</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Info Hash</div>
-                                <div class="dropdown-item-desc">Generate magnet from hash</div>
+                                <div class="dropdown-item-desc">Generate magnet link from hash</div>
+                            </div>
+                        </a>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <!-- Media Tools Section -->
+                        <div class="dropdown-section-header">
+                            <span class="section-icon">🎬</span>
+                            <span class="section-title">Media Tools</span>
+                        </div>
+                        <a href="watch.php" class="dropdown-item">
+                            <span class="dropdown-icon">▶️</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Stream Player</div>
+                                <div class="dropdown-item-desc">WebTorrent-powered instant streaming</div>
+                            </div>
+                        </a>
+                        <a href="#subtitle-generator" class="dropdown-item">
+                            <span class="dropdown-icon">💬</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Subtitle Generator</div>
+                                <div class="dropdown-item-desc">Auto-generate and sync subtitles</div>
+                            </div>
+                        </a>
+                        <a href="#video-converter" class="dropdown-item">
+                            <span class="dropdown-icon">🔄</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Video Converter</div>
+                                <div class="dropdown-item-desc">Convert between formats online</div>
+                            </div>
+                        </a>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <!-- AI Tools Section -->
+                        <div class="dropdown-section-header">
+                            <span class="section-icon">🤖</span>
+                            <span class="section-title">AI Tools</span>
+                        </div>
+                        <a href="/#voice-search" class="dropdown-item">
+                            <span class="dropdown-icon">🎤</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Voice Search</div>
+                                <div class="dropdown-item-desc">Hands-free content discovery</div>
+                            </div>
+                        </a>
+                        <a href="/#ai-suggestions" class="dropdown-item">
+                            <span class="dropdown-icon">💡</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Smart Suggestions</div>
+                                <div class="dropdown-item-desc">AI-powered search improvements</div>
+                            </div>
+                        </a>
+                        <a href="/#content-analysis" class="dropdown-item">
+                            <span class="dropdown-icon">🔍</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Content Analysis</div>
+                                <div class="dropdown-item-desc">Extract metadata with AI</div>
+                            </div>
+                        </a>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <!-- Utility Tools Section -->
+                        <div class="dropdown-section-header">
+                            <span class="section-icon">⚙️</span>
+                            <span class="section-title">Utility Tools</span>
+                        </div>
+                        <a href="#download-manager" class="dropdown-item">
+                            <span class="dropdown-icon">📥</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Download Manager</div>
+                                <div class="dropdown-item-desc">Track and manage all downloads</div>
+                            </div>
+                        </a>
+                        <a href="#bandwidth-monitor" class="dropdown-item">
+                            <span class="dropdown-icon">📊</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Bandwidth Monitor</div>
+                                <div class="dropdown-item-desc">Real-time network usage stats</div>
+                            </div>
+                        </a>
+                        <a href="#link-shortener" class="dropdown-item">
+                            <span class="dropdown-icon">🔗</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Link Shortener</div>
+                                <div class="dropdown-item-desc">Create shareable short links</div>
                             </div>
                         </a>
                     </div>
