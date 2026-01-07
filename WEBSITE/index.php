@@ -143,12 +143,17 @@
                     <span class="nav-btn-icon">▶️</span>
                     <span class="nav-btn-text">Watch Now</span>
                 </a>
+                <a href="torrent.php" class="nav-btn" title="Torrent Download Center">
+                    <span class="nav-btn-icon">🧲</span>
+                    <span class="nav-btn-text">Torrents</span>
+                </a>
                 <button class="nav-btn" onclick="toggleShortcutsModal()" title="Keyboard Shortcuts (?)">
                     <span class="nav-btn-icon">⌨️</span>
                 </button>
                 <button class="nav-btn" onclick="exportResults()" title="Export Results">
                     <span class="nav-btn-icon">📥</span>
                 </button>
+                <div id="userNav"></div>
             </nav>
         </div>
     </header>

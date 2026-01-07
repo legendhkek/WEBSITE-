@@ -1,0 +1,503 @@
+/* ============================================ */
+/* LEGEND HOUSE - TORRENT PAGE v1.0 */
+/* Advanced Black & White Torrent Interface */
+/* ============================================ */
+
+.torrent-section {
+    padding: 140px 0 100px;
+    min-height: 100vh;
+    background: linear-gradient(180deg, rgba(10, 10, 12, 0.95) 0%, rgba(15, 15, 26, 0.98) 100%);
+}
+
+.torrent-hero {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.torrent-title {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -2px;
+}
+
+.torrent-subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ============================================ */
+/* TORRENT CARD */
+/* ============================================ */
+.torrent-card {
+    max-width: 800px;
+    margin: 0 auto 40px;
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(15, 15, 30, 0.98) 100%);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================ */
+/* TABS */
+/* ============================================ */
+.torrent-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-glass);
+}
+
+.tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+}
+
+.tab-btn svg {
+    opacity: 0.8;
+}
+
+.tab-btn.active svg {
+    opacity: 1;
+}
+
+/* ============================================ */
+/* TAB CONTENT */
+/* ============================================ */
+.tab-content {
+    display: none;
+    animation: fadeInUp 0.4s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================ */
+/* INPUT ELEMENTS */
+/* ============================================ */
+.input-group {
+    margin-bottom: 24px;
+}
+
+.input-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+}
+
+.input-hint {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+.torrent-input,
+.torrent-textarea {
+    width: 100%;
+    padding: 14px 18px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--border-glass);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    transition: var(--transition);
+    outline: none;
+    resize: vertical;
+}
+
+.torrent-input::placeholder,
+.torrent-textarea::placeholder {
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+}
+
+.torrent-input:focus,
+.torrent-textarea:focus {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+}
+
+/* ============================================ */
+/* FILE DROP ZONE */
+/* ============================================ */
+.file-drop-zone {
+    position: relative;
+    padding: 48px 32px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px dashed var(--border-glass);
+    border-radius: 16px;
+    text-align: center;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.file-drop-zone:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--primary);
+}
+
+.file-drop-zone.drag-over {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--primary);
+    border-style: solid;
+}
+
+.drop-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.drop-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.drop-hint {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+}
+
+.btn-browse {
+    padding: 10px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-browse:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #000;
+}
+
+/* ============================================ */
+/* FILE INFO */
+/* ============================================ */
+.file-info {
+    padding: 20px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 12px;
+    margin-top: 20px;
+}
+
+.file-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.file-info-row:last-child {
+    border-bottom: none;
+}
+
+.file-info-label {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.file-info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ============================================ */
+/* DOWNLOAD BUTTON */
+/* ============================================ */
+.btn-download-torrent {
+    width: 100%;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: var(--transition);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+}
+
+.btn-download-torrent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(245, 158, 11, 0.5);
+}
+
+.btn-download-torrent:active {
+    transform: translateY(0);
+}
+
+.btn-download-torrent:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================ */
+/* DOWNLOAD RESULT */
+/* ============================================ */
+.download-result {
+    max-width: 800px;
+    margin: 0 auto 40px;
+    padding: 32px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 20px;
+    animation: resultSlideIn 0.5s ease;
+}
+
+@keyframes resultSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.result-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 185, 129, 0.2);
+    border-radius: 12px;
+    font-size: 28px;
+}
+
+.result-title {
+    flex: 1;
+}
+
+.result-title h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.result-title p {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.result-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.info-item {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.info-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.info-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    word-break: break-all;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.result-btn {
+    flex: 1;
+    min-width: 150px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.result-btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    color: #fff;
+}
+
+.result-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.result-btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+}
+
+.result-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+}
+
+/* ============================================ */
+/* FEATURES GRID */
+/* ============================================ */
+.features-grid-torrent {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.feature-card-torrent {
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.feature-card-torrent:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--primary);
+    transform: translateY(-4px);
+}
+
+.feature-icon-torrent {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.feature-card-torrent h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.feature-card-torrent p {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ============================================ */
+/* RESPONSIVE */
+/* ============================================ */
+@media (max-width: 768px) {
+    .torrent-section {
+        padding: 120px 0 60px;
+    }
+    
+    .torrent-card {
+        padding: 24px 20px;
+    }
+    
+    .torrent-tabs {
+        flex-direction: column;
+    }
+    
+    .tab-btn {
+        width: 100%;
+    }
+    
+    .result-actions {
+        flex-direction: column;
+    }
+    
+    .result-btn {
+        width: 100%;
+    }
+    
+    .features-grid-torrent {
+        grid-template-columns: 1fr;
+    }
+}

@@ -81,12 +81,85 @@ document.addEventListener('DOMContentLoaded', () => {
     initKeyboardShortcuts();
     initEventListeners();
     loadRecentSearches();
+    checkAuthStatus();
     
     // Focus search on load
     setTimeout(() => {
         document.getElementById('searchInput')?.focus();
     }, 500);
 });
+
+// Check authentication status
+async function checkAuthStatus() {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'check');
+        
+        const response = await fetch('auth.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.loggedIn && data.user) {
+            updateUserNavigation(data.user);
+        } else {
+            updateUserNavigation(null);
+        }
+    } catch (error) {
+        // If auth.php doesn't exist or fails, just show login/signup
+        updateUserNavigation(null);
+    }
+}
+
+// Update user navigation
+function updateUserNavigation(user) {
+    const userNav = document.getElementById('userNav');
+    if (!userNav) return;
+    
+    if (user) {
+        userNav.innerHTML = `
+            <span class="nav-btn" style="pointer-events: none;">
+                <span class="nav-btn-icon">👤</span>
+                <span class="nav-btn-text">${escapeHtml(user.username)}</span>
+            </span>
+            <button class="nav-btn" onclick="logoutUser()">
+                <span class="nav-btn-icon">🚪</span>
+                <span class="nav-btn-text">Logout</span>
+            </button>
+        `;
+    } else {
+        userNav.innerHTML = `
+            <a href="login.php" class="nav-btn">
+                <span class="nav-btn-icon">🔑</span>
+                <span class="nav-btn-text">Login</span>
+            </a>
+            <a href="signup.php" class="nav-btn" style="background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                <span class="nav-btn-icon">✨</span>
+                <span class="nav-btn-text">Sign Up</span>
+            </a>
+        `;
+    }
+}
+
+// Logout user
+async function logoutUser() {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'logout');
+        
+        await fetch('auth.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        window.location.reload();
+    } catch (error) {
+        console.error('Logout failed:', error);
+        showToast('Logout failed', 'error');
+    }
+}
 
 function initLoader() {
     const loader = document.getElementById('pageLoader');
