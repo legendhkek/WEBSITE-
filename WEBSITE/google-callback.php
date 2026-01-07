@@ -50,8 +50,8 @@ if (!$googleUser || !isset($googleUser['id'])) {
 $result = loginOrRegisterGoogleUser($googleUser);
 
 if ($result['success']) {
-    // Redirect to homepage
-    header('Location: index.php?login=success&provider=google');
+    // Redirect to dashboard
+    header('Location: dashboard.php?login=success&provider=google');
 } else {
     header('Location: login.php?error=' . urlencode('Failed to authenticate with Google'));
 }

@@ -165,7 +165,7 @@
                 if (data.success) {
                     showToast('Login successful! Redirecting...', 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.php';
+                        window.location.href = 'dashboard.php';
                     }, 1000);
                 } else {
                     showError(data.error || 'Login failed');
