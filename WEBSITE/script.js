@@ -556,6 +556,9 @@ function renderResultCard(result, index) {
                     </svg>
                     Copy
                 </button>
+                <button class="quick-btn ai-analyze-btn" onclick="analyzeWithAI(${index})" title="AI Analysis">
+                    🤖 Analyze
+                </button>
                 ${result.downloadMethods?.find(m => m.type === 'torrent') ? `
                     <a href="api.php?action=torrent&url=${encodeURIComponent(result.downloadMethods.find(m => m.type === 'torrent').url)}" class="quick-btn" title="Download .torrent" download>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -1,22 +1,36 @@
-# ⚡ Legend House - Advanced Torrent & Streaming Platform v9.0
+# ⚡ Legend House - Advanced Torrent & Streaming Platform v10.0
 
-The most powerful torrent search engine with **WebTorrent streaming**, **user authentication**, and **advanced torrent download center**. Features a premium black & white UI design.
+The most powerful torrent search engine with **AI-powered features**, **WebTorrent streaming**, **user authentication**, and **advanced torrent download center**. Features a premium black & white UI design with real AI capabilities and monetization.
 
-![Version](https://img.shields.io/badge/version-9.0.0-blue)
+![Version](https://img.shields.io/badge/version-10.0.0-blue)
 ![PHP](https://img.shields.io/badge/PHP-7.4+-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-advanced-brightgreen)
+![Status](https://img.shields.io/badge/status-ultra--advanced-brightgreen)
+![AI](https://img.shields.io/badge/AI-Blackbox-purple)
+![AdSense](https://img.shields.io/badge/AdSense-Integrated-green)
 
-## 🆕 What's New in v9.0
+## 🚀 What's New in v10.0
 
-- 🔐 **User Authentication System** - Secure login/signup with SQLite database
-- 🧲 **Advanced Torrent Download Center** - Upload files, paste magnets, or enter hash
-- 🎨 **Premium Black & White UI** - Ultra-modern minimalist design
-- 📥 **Download History Tracking** - Keep track of all your torrents
-- ▶️ **Enhanced WebTorrent Streaming** - Stream videos directly in browser
-- 🎯 **Multiple Input Methods** - Magnet links, .torrent files, or info hash
+- 🤖 **AI-Powered Features** - Real AI integration with Blackbox API
+- 💡 **Smart Search Suggestions** - AI-generated search improvements as you type
+- 🔥 **Trending Topics** - AI-curated trending content on homepage
+- 🎯 **Content Analysis** - AI analyzes torrent metadata (genre, quality, year, type)
+- 🎤 **Voice Search** - Speech-to-text search using Web Speech API
+- 💰 **Google AdSense Integration** - Monetization ready on all pages
+- ⚡ **Enhanced Performance** - Faster, smarter, more powerful
+- ✅ **Zero Syntax Errors** - All PHP and JavaScript validated
 
 ## ✨ Core Features
+
+### 🤖 AI-Powered Features
+- **Smart Search Suggestions** - AI analyzes queries and suggests 5 improved searches in real-time
+- **Content Analysis** - Extract genre, quality, type, year from torrent names with one click
+- **Trending Topics** - AI-curated trending content displayed on homepage
+- **Voice Search** - Hands-free searching with Web Speech API (click 🎤 button)
+- **Auto-Complete** - Intelligent predictive search powered by AI
+- **Advanced Patterns** - Similarity matching and content discovery
+- **1-Hour Caching** - AI results cached for optimal performance
+- **Graceful Fallback** - Works perfectly even if AI is unavailable
 
 ### ⚡ Ultra-Fast Multi-Source Search
 - **10+ sources queried in parallel**: YTS, EZTV, TPB, Nyaa, 1337x, TorrentGalaxy, BTDig, LimeTorrents, SolidTorrents, Archive.org

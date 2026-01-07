@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Legend House - Stream & Download Movies, TV Shows, Games</title>
     <meta name="description" content="Legend House - The ultimate destination to stream and download movies, TV shows, games, software, and more. Watch instantly or download via magnet links.">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
+         crossorigin="anonymous"></script>
+    
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -337,5 +342,6 @@
     <!-- WebTorrent Script -->
     <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
     <script src="script.js"></script>
+    <script src="advanced-features.js"></script>
 </body>
 </html>

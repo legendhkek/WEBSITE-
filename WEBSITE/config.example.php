@@ -20,6 +20,14 @@ define('GOOGLE_REDIRECT_URI', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ===
 define('SESSION_LIFETIME', 86400 * 7); // 7 days in seconds
 
 // Cache Configuration
-define('CACHE_DIR', sys_get_temp_dir() . '/legendhouse_v9/');
+define('CACHE_DIR', sys_get_temp_dir() . '/legendhouse_v10/');
 define('CACHE_TTL', 1800); // 30 minutes
 define('SEARCH_CACHE_TTL', 600); // 10 minutes
+
+// Blackbox API Configuration (for advanced AI features)
+// Get your API key from: https://www.blackbox.ai/
+define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'YOUR_BLACKBOX_API_KEY_HERE');
+define('BLACKBOX_API_ENDPOINT', 'https://api.blackbox.ai/v1/chat/completions');
+
+// Google AdSense Configuration
+define('GOOGLE_ADSENSE_CLIENT', 'ca-pub-1940810089559549');

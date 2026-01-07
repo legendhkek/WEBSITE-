@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Torrent Download - Legend House</title>
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
+         crossorigin="anonymous"></script>
+    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="torrent-style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
