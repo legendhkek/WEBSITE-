@@ -11,10 +11,15 @@ require_once 'auth.php';
 if (!isset($_GET['code'])) {
     // Check for errors
     if (isset($_GET['error'])) {
-        $error = htmlspecialchars($_GET['error']);
-        $errorDescription = isset($_GET['error_description']) ? htmlspecialchars($_GET['error_description']) : 'Unknown error';
+        // Log detailed error server-side
+        error_log('Google OAuth Error: ' . $_GET['error']);
+        if (isset($_GET['error_description'])) {
+            error_log('Error Description: ' . $_GET['error_description']);
+        }
         
-        header('Location: login.php?error=' . urlencode($errorDescription));
+        // Show generic user-friendly message
+        $errorMessage = 'Google authentication failed. Please try again.';
+        header('Location: login.php?error=' . urlencode($errorMessage));
         exit;
     }
     
