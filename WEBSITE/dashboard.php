@@ -110,7 +110,19 @@
                 </div>
                 <div class="user-menu">
                     <button class="user-menu-trigger">
-                        <?php if ($user['profile_picture']): ?>
+                        <?php 
+                        // Validate profile picture URL is from trusted domain
+                        $showProfilePic = false;
+                        if ($user['profile_picture']) {
+                            $picUrl = $user['profile_picture'];
+                            if (filter_var($picUrl, FILTER_VALIDATE_URL) && 
+                                (strpos($picUrl, 'https://lh3.googleusercontent.com') === 0 || 
+                                 strpos($picUrl, 'https://googleusercontent.com') !== false)) {
+                                $showProfilePic = true;
+                            }
+                        }
+                        ?>
+                        <?php if ($showProfilePic): ?>
                             <img src="<?php echo htmlspecialchars($user['profile_picture']); ?>" alt="Profile" class="user-avatar">
                         <?php else: ?>
                             <div class="user-avatar-placeholder">
@@ -292,7 +304,10 @@
                                 <span class="download-date"><?php echo date('M d, Y', strtotime($download['downloaded_at'])); ?></span>
                             </div>
                         </div>
-                        <?php if ($download['magnet_url']): ?>
+                        <?php 
+                        // Validate magnet URL
+                        if ($download['magnet_url'] && strpos($download['magnet_url'], 'magnet:?') === 0): 
+                        ?>
                         <a href="<?php echo htmlspecialchars($download['magnet_url']); ?>" class="download-action" title="Open magnet link">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
