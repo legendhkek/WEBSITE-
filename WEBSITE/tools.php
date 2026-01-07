@@ -56,6 +56,22 @@
             color: var(--black);
         }
         
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--black) 0%, var(--gray-600) 100%);
+            transition: width 0.3s ease;
+            width: 0;
+        }
+        
         .tools-stat-label {
             font-size: 0.875rem;
             color: var(--gray-500);
@@ -324,12 +340,12 @@
         
         <div class="tools-stats">
             <div class="tools-stat">
-                <div class="tools-stat-value">16+</div>
+                <div class="tools-stat-value">19+</div>
                 <div class="tools-stat-label">Total Tools</div>
             </div>
             <div class="tools-stat">
-                <div class="tools-stat-value">4</div>
-                <div class="tools-stat-label">Categories</div>
+                <div class="tools-stat-value">10</div>
+                <div class="tools-stat-label">Active Now</div>
             </div>
             <div class="tools-stat">
                 <div class="tools-stat-value">100%</div>
@@ -586,10 +602,70 @@
                 <div>
                     <h2 class="tools-section-title">Utility Tools</h2>
                 </div>
-                <span class="tools-section-desc">3 tools (planned)</span>
+                <span class="tools-section-desc">5 tools (3 active)</span>
             </div>
             
             <div class="tools-grid">
+                <a href="shortener.php" class="tool-card">
+                    <div class="tool-card-header">
+                        <span class="tool-card-icon">🔗</span>
+                        <h3 class="tool-card-title">Link Shortener</h3>
+                    </div>
+                    <p class="tool-card-desc">
+                        Create short, shareable links with advanced analytics. Track clicks, generate QR codes, 
+                        set expiration dates, and protect links with passwords.
+                    </p>
+                    <div class="tool-card-features">
+                        <span class="tool-feature-tag">Analytics</span>
+                        <span class="tool-feature-tag">QR Codes</span>
+                        <span class="tool-feature-tag">Password Protected</span>
+                    </div>
+                    <span class="tool-card-status active">
+                        <span class="status-dot"></span>
+                        Active
+                    </span>
+                </a>
+                
+                <a href="proxy-scraper.php" class="tool-card">
+                    <div class="tool-card-header">
+                        <span class="tool-card-icon">🔍</span>
+                        <h3 class="tool-card-title">Proxy Scraper</h3>
+                    </div>
+                    <p class="tool-card-desc">
+                        Scrape and validate proxies from 10+ sources. Auto-checks working status, 
+                        speed, anonymity level, and country. Export as TXT, CSV, or JSON.
+                    </p>
+                    <div class="tool-card-features">
+                        <span class="tool-feature-tag">Multi-Source</span>
+                        <span class="tool-feature-tag">Auto-Validate</span>
+                        <span class="tool-feature-tag">Export</span>
+                    </div>
+                    <span class="tool-card-status active">
+                        <span class="status-dot"></span>
+                        Active
+                    </span>
+                </a>
+                
+                <a href="rotating-proxy.php" class="tool-card">
+                    <div class="tool-card-header">
+                        <span class="tool-card-icon">🔄</span>
+                        <h3 class="tool-card-title">Rotating Proxy Maker</h3>
+                    </div>
+                    <p class="tool-card-desc">
+                        Upload 200+ proxies and create a residential rotating proxy pool. 
+                        Auto-rotation, health monitoring, API access, and multiple rotation strategies.
+                    </p>
+                    <div class="tool-card-features">
+                        <span class="tool-feature-tag">Rotating Pool</span>
+                        <span class="tool-feature-tag">API Access</span>
+                        <span class="tool-feature-tag">Health Monitor</span>
+                    </div>
+                    <span class="tool-card-status active">
+                        <span class="status-dot"></span>
+                        Active
+                    </span>
+                </a>
+            
                 <div class="tool-card" style="opacity: 0.7; cursor: not-allowed;">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">📥</span>
@@ -623,26 +699,6 @@
                         <span class="tool-feature-tag">Real-Time</span>
                         <span class="tool-feature-tag">Statistics</span>
                         <span class="tool-feature-tag">Graphs</span>
-                    </div>
-                    <span class="tool-card-status coming-soon">
-                        <span class="status-dot"></span>
-                        Coming Soon
-                    </span>
-                </div>
-                
-                <div class="tool-card" style="opacity: 0.7; cursor: not-allowed;">
-                    <div class="tool-card-header">
-                        <span class="tool-card-icon">🔗</span>
-                        <h3 class="tool-card-title">Link Shortener</h3>
-                    </div>
-                    <p class="tool-card-desc">
-                        Create short, shareable links for your torrents and content. Custom aliases, 
-                        expiration dates, and click tracking included.
-                    </p>
-                    <div class="tool-card-features">
-                        <span class="tool-feature-tag">Short URLs</span>
-                        <span class="tool-feature-tag">Custom</span>
-                        <span class="tool-feature-tag">Analytics</span>
                     </div>
                     <span class="tool-card-status coming-soon">
                         <span class="status-dot"></span>
