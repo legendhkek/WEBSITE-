@@ -27,10 +27,12 @@ The most powerful torrent search engine with **WebTorrent streaming**, **user au
 
 ### 🔐 NEW: User Authentication
 - **Secure Login/Signup Pages** - Premium black & white UI
+- **Google OAuth 2.0 Sign-In** - One-click authentication with Google account
 - **BCrypt Password Hashing** - Industry-standard security (cost: 12)
 - **Session Management** - 7-day persistent sessions
 - **SQLite Database** - Lightweight, no external dependencies
 - **Download History** - Track all your torrent downloads
+- **Profile Pictures** - Automatically imported from Google account
 
 ### 🧲 NEW: Advanced Torrent Download Center
 **Three Input Methods:**
@@ -177,12 +179,26 @@ Proxy download for .torrent files.
 
 ## 💡 Usage Examples
 
-### 1. Create an Account
+### 1. Sign In with Google (NEW!)
+1. Go to **Login** page (`/login.php`)
+2. Click **"Sign in with Google"** button
+3. Authorize Legend House to access your Google account
+4. Automatically redirected to homepage - you're logged in!
+
+**Benefits:**
+- ✅ No password to remember
+- ✅ Instant account creation
+- ✅ Profile picture automatically imported
+- ✅ Secure OAuth 2.0 authentication
+
+### 2. Create an Account (Traditional)
 1. Go to **Sign Up** page (`/signup.php`)
 2. Enter username (3-20 chars, alphanumeric + underscore)
 3. Enter valid email address
 4. Create password (minimum 6 characters)
 5. Agree to terms and click "Create Account"
+   
+   OR click **"Sign up with Google"** for instant registration!
 
 ### 2. Search for Torrents
 1. Go to homepage (`/index.php`)
@@ -208,12 +224,14 @@ Proxy download for .torrent files.
 
 ## 🔒 Security Features
 
+- **Google OAuth 2.0**: Secure authentication with Google's infrastructure
 - **Password Hashing**: BCrypt with cost factor 12
 - **SQL Injection Prevention**: Prepared statements with parameterized queries
 - **XSS Protection**: HTML escaping for all user inputs
 - **Session Security**: Secure token generation with random_bytes()
 - **Input Validation**: Server-side validation for all forms
 - **CSRF Protection**: Form validation and origin checking
+- **Account Linking**: Automatic linking of Google accounts to existing emails
 
 ## 📊 Database Schema
 
@@ -224,6 +242,9 @@ CREATE TABLE users (
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
+    google_id TEXT UNIQUE,              -- NEW: Google user ID
+    profile_picture TEXT,               -- NEW: Profile picture URL
+    auth_provider TEXT DEFAULT 'local', -- NEW: 'local' or 'google'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login DATETIME,
     is_active INTEGER DEFAULT 1

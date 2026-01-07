@@ -1,0 +1,29 @@
+# Database files
+users.db
+users.db-journal
+
+# Cache and temporary files
+/tmp/
+*.tmp
+*.cache
+
+# Node modules (if using npm)
+node_modules/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Environment and config files (keep example files)
+# config.php is now tracked with default values
+# Use environment variables in production

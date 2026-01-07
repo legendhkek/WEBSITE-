@@ -7,8 +7,8 @@
 
 session_start();
 
-// Database configuration - using SQLite for portability
-define('DB_FILE', __DIR__ . '/users.db');
+// Load configuration
+require_once __DIR__ . '/config.php';
 
 // Initialize database
 function initDatabase() {
@@ -34,6 +34,11 @@ function initDatabase() {
         expires_at DATETIME NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id)
     )');
+    
+    // Add google_id column if not exists
+    $db->exec('ALTER TABLE users ADD COLUMN google_id TEXT UNIQUE');
+    $db->exec('ALTER TABLE users ADD COLUMN profile_picture TEXT');
+    $db->exec('ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT "local"');
     
     // Create download history table
     $db->exec('CREATE TABLE IF NOT EXISTS download_history (
@@ -223,13 +228,180 @@ function getCurrentUser() {
     }
     
     $db = getDB();
-    $stmt = $db->prepare('SELECT id, username, email, created_at, last_login FROM users WHERE id = :id');
+    $stmt = $db->prepare('SELECT id, username, email, created_at, last_login, google_id, profile_picture, auth_provider FROM users WHERE id = :id');
     $stmt->bindValue(':id', $_SESSION['user_id'], SQLITE3_INTEGER);
     $result = $stmt->execute();
     $user = $result->fetchArray(SQLITE3_ASSOC);
     $db->close();
     
     return $user;
+}
+
+// Google OAuth functions
+function getGoogleAuthUrl() {
+    $params = [
+        'client_id' => GOOGLE_CLIENT_ID,
+        'redirect_uri' => GOOGLE_REDIRECT_URI,
+        'response_type' => 'code',
+        'scope' => 'openid email profile',
+        'access_type' => 'offline',
+        'prompt' => 'consent'
+    ];
+    
+    return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
+}
+
+function getGoogleAccessToken($code) {
+    $data = [
+        'code' => $code,
+        'client_id' => GOOGLE_CLIENT_ID,
+        'client_secret' => GOOGLE_CLIENT_SECRET,
+        'redirect_uri' => GOOGLE_REDIRECT_URI,
+        'grant_type' => 'authorization_code'
+    ];
+    
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        return null;
+    }
+    
+    return json_decode($response, true);
+}
+
+function getGoogleUserInfo($accessToken) {
+    $ch = curl_init('https://www.googleapis.com/oauth2/v2/userinfo');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $accessToken]);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode !== 200) {
+        return null;
+    }
+    
+    return json_decode($response, true);
+}
+
+function loginOrRegisterGoogleUser($googleUser) {
+    $db = getDB();
+    
+    // Check if user exists with this Google ID
+    $stmt = $db->prepare('SELECT id, username, email FROM users WHERE google_id = :google_id');
+    $stmt->bindValue(':google_id', $googleUser['id'], SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $user = $result->fetchArray(SQLITE3_ASSOC);
+    
+    if ($user) {
+        // Update last login
+        $stmt = $db->prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = :id');
+        $stmt->bindValue(':id', $user['id'], SQLITE3_INTEGER);
+        $stmt->execute();
+        
+        $userId = $user['id'];
+        $username = $user['username'];
+        $email = $user['email'];
+    } else {
+        // Check if email already exists
+        $stmt = $db->prepare('SELECT id FROM users WHERE email = :email');
+        $stmt->bindValue(':email', $googleUser['email'], SQLITE3_TEXT);
+        $result = $stmt->execute();
+        $existingUser = $result->fetchArray();
+        
+        if ($existingUser) {
+            // Link Google account to existing user
+            $stmt = $db->prepare('UPDATE users SET google_id = :google_id, profile_picture = :picture, auth_provider = :provider WHERE email = :email');
+            $stmt->bindValue(':google_id', $googleUser['id'], SQLITE3_TEXT);
+            $stmt->bindValue(':picture', $googleUser['picture'] ?? null, SQLITE3_TEXT);
+            $stmt->bindValue(':provider', 'google', SQLITE3_TEXT);
+            $stmt->bindValue(':email', $googleUser['email'], SQLITE3_TEXT);
+            $stmt->execute();
+            
+            $userId = $existingUser['id'];
+            
+            $stmt = $db->prepare('SELECT username, email FROM users WHERE id = :id');
+            $stmt->bindValue(':id', $userId, SQLITE3_INTEGER);
+            $result = $stmt->execute();
+            $user = $result->fetchArray(SQLITE3_ASSOC);
+            $username = $user['username'];
+            $email = $user['email'];
+        } else {
+            // Create new user
+            $username = generateUsernameFromEmail($googleUser['email']);
+            
+            // Ensure unique username
+            $originalUsername = $username;
+            $counter = 1;
+            while (true) {
+                $stmt = $db->prepare('SELECT id FROM users WHERE username = :username');
+                $stmt->bindValue(':username', $username, SQLITE3_TEXT);
+                $result = $stmt->execute();
+                if (!$result->fetchArray()) break;
+                $username = $originalUsername . $counter;
+                $counter++;
+            }
+            
+            $stmt = $db->prepare('INSERT INTO users (username, email, password, google_id, profile_picture, auth_provider) VALUES (:username, :email, :password, :google_id, :picture, :provider)');
+            $stmt->bindValue(':username', $username, SQLITE3_TEXT);
+            $stmt->bindValue(':email', $googleUser['email'], SQLITE3_TEXT);
+            $stmt->bindValue(':password', '', SQLITE3_TEXT); // No password for Google users
+            $stmt->bindValue(':google_id', $googleUser['id'], SQLITE3_TEXT);
+            $stmt->bindValue(':picture', $googleUser['picture'] ?? null, SQLITE3_TEXT);
+            $stmt->bindValue(':provider', 'google', SQLITE3_TEXT);
+            $stmt->execute();
+            
+            $userId = $db->lastInsertRowID();
+            $email = $googleUser['email'];
+        }
+    }
+    
+    // Create session token
+    $token = generateSessionToken();
+    $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 7); // 7 days
+    
+    $stmt = $db->prepare('INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (:user_id, :token, :expires_at)');
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':token', $token, SQLITE3_TEXT);
+    $stmt->bindValue(':expires_at', $expiresAt, SQLITE3_TEXT);
+    $stmt->execute();
+    
+    $db->close();
+    
+    // Set session
+    $_SESSION['user_id'] = $userId;
+    $_SESSION['username'] = $username;
+    $_SESSION['email'] = $email;
+    $_SESSION['session_token'] = $token;
+    
+    return [
+        'success' => true,
+        'userId' => $userId,
+        'username' => $username,
+        'email' => $email,
+        'token' => $token
+    ];
+}
+
+function generateUsernameFromEmail($email) {
+    $username = explode('@', $email)[0];
+    $username = preg_replace('/[^a-zA-Z0-9_]/', '', $username);
+    if (strlen($username) < 3) {
+        $username = 'user' . $username;
+    }
+    if (strlen($username) > 20) {
+        $username = substr($username, 0, 20);
+    }
+    return $username;
 }
 
 // Save download to history
@@ -330,8 +502,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => true, 'history' => $history]);
             break;
         
+        case 'google_auth_url':
+            echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
+            break;
+        
         default:
             echo json_encode(['success' => false, 'error' => 'Invalid action']);
     }
+    exit;
+}
+
+// GET endpoint for Google OAuth URL
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'google_auth_url') {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
     exit;
 }

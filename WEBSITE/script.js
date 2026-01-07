@@ -104,6 +104,19 @@ async function checkAuthStatus() {
         
         if (data.loggedIn && data.user) {
             updateUserNavigation(data.user);
+            
+            // Check for login success message
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('login') && urlParams.get('login') === 'success') {
+                const provider = urlParams.get('provider') || 'local';
+                if (provider === 'google') {
+                    showToast(`Welcome back, ${data.user.username}! Signed in with Google`, 'success');
+                } else {
+                    showToast(`Welcome back, ${data.user.username}!`, 'success');
+                }
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         } else {
             updateUserNavigation(null);
         }
