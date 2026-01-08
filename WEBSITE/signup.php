@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - Legend House</title>
     <link rel="stylesheet" href="auth-style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
 </head>
 <body>
     <div class="auth-container">
@@ -113,6 +113,9 @@
                     </svg>
                     <span class="btn-text">Sign up with Google</span>
                 </button>
+                <p style="font-size: 0.75rem; color: #999; text-align: center; margin-top: 0.5rem;">
+                    If Google OAuth is not configured, use email/password above
+                </p>
             </form>
             
             <div class="auth-footer">
@@ -306,7 +309,7 @@
                 if (data.success && data.url) {
                     window.location.href = data.url;
                 } else {
-                    showError('Failed to initialize Google Sign-Up');
+                    showError(data.error || 'Google Sign-Up is not available. Please use email/password signup or contact the administrator.');
                 }
             } catch (error) {
                 showError('Network error. Please try again.');

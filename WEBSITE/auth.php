@@ -62,6 +62,11 @@ function getDB() {
     return new SQLite3(DB_FILE);
 }
 
+// Alias for compatibility with tools
+function getDatabase() {
+    return getDB();
+}
+
 // Validate email
 function isValidEmail($email) {
     return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
@@ -239,6 +244,10 @@ function getCurrentUser() {
 
 // Google OAuth functions
 function getGoogleAuthUrl() {
+    if (!defined('GOOGLE_OAUTH_ENABLED') || !GOOGLE_OAUTH_ENABLED) {
+        return null;
+    }
+    
     $params = [
         'client_id' => GOOGLE_CLIENT_ID,
         'redirect_uri' => GOOGLE_REDIRECT_URI,
@@ -249,6 +258,10 @@ function getGoogleAuthUrl() {
     ];
     
     return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
+}
+
+function isGoogleOAuthEnabled() {
+    return defined('GOOGLE_OAUTH_ENABLED') && GOOGLE_OAUTH_ENABLED;
 }
 
 function getGoogleAccessToken($code) {
@@ -503,6 +516,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         
         case 'google_auth_url':
+            if (!isGoogleOAuthEnabled()) {
+                echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
+                break;
+            }
             echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
             break;
         
@@ -515,6 +532,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // GET endpoint for Google OAuth URL
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'google_auth_url') {
     header('Content-Type: application/json');
+    if (!isGoogleOAuthEnabled()) {
+        echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
+        exit;
+    }
     echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
     exit;
 }

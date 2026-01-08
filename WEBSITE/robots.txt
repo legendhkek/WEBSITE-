@@ -1,0 +1,30 @@
+# robots.txt for Legend House
+
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Disallow sensitive directories
+Disallow: /admin/
+Disallow: /config/
+Disallow: /cache/
+Disallow: /tmp/
+Disallow: /sessions/
+Disallow: /uploads/private/
+
+# Allow public assets
+Allow: /css/
+Allow: /js/
+Allow: /images/
+Allow: /tools/
+
+# Sitemap location (create this later if needed)
+# Sitemap: https://yourdomain.com/sitemap.xml
+
+# ads.txt location for advertisers
+# ads.txt is available at: https://yourdomain.com/ads.txt
+
+# Crawl-delay for polite bots
+Crawl-delay: 1
+
+# Last updated: 2026-01-08

@@ -87,21 +87,38 @@ The most powerful torrent search engine with **AI-powered features**, **WebTorre
    cd WEBSITE
    ```
 
-2. **Set permissions** (Linux/Mac):
-   ```bash
-   chmod 755 .
-   chmod 666 users.db  # Will be created automatically
-   ```
-
-3. **Start PHP development server**:
+2. **Start PHP development server**:
    ```bash
    php -S localhost:8000
    ```
 
-4. **Open in browser**:
+3. **Open in browser**:
    ```
    http://localhost:8000
    ```
+
+4. **Optional: Configure Google OAuth** (see GOOGLE_OAUTH_SETUP.md)
+   - Without OAuth, users can still register/login with email/password
+   - Many features work without any authentication
+
+### What Works Without Login?
+
+You can use these features immediately without creating an account:
+- ✅ Search across 10+ torrent sources
+- ✅ View torrent details (seeds, size, quality)
+- ✅ Copy magnet links
+- ✅ Stream videos in browser (WebTorrent)
+- ✅ Access the Tools Hub page
+- ✅ Export results
+
+### What Requires Login?
+
+Advanced features that require authentication:
+- 📊 Download history tracking
+- 🔧 Advanced tools (Google Dorker, Proxy Scraper, etc.)
+- 🧲 Torrent file upload and processing
+- 💾 Save favorite torrents
+- 👤 Profile management
 
 ## 📁 Project Structure
 
