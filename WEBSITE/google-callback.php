@@ -6,6 +6,7 @@
  */
 
 // Enable error reporting for debugging
+// TODO: Disable display_errors in production and use error_log only
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -17,7 +18,7 @@ try {
     require_once 'auth.php';
 } catch (Exception $e) {
     error_log('Error loading auth.php: ' . $e->getMessage());
-    die('Error loading authentication system. Please check server logs.');
+    die('An error occurred during authentication. Please try again or contact support if the issue persists.');
 }
 
 // Check if we have an authorization code
@@ -64,7 +65,7 @@ if (!$tokenData || !isset($tokenData['access_token'])) {
     $errorMsg .= $dirPath . '/google-callback.php';
     
     error_log('Token exchange failed. Expected redirect URI: ' . $errorMsg);
-    error_log('Token data received: ' . print_r($tokenData, true));
+    error_log('Token data structure: ' . (is_array($tokenData) ? 'array with keys: ' . implode(', ', array_keys($tokenData)) : 'not an array'));
     header('Location: login.php?error=' . urlencode($errorMsg));
     exit;
 }
@@ -82,7 +83,7 @@ try {
 }
 
 if (!$googleUser || !isset($googleUser['id'])) {
-    error_log('Failed to get user information. Response: ' . print_r($googleUser, true));
+    error_log('Failed to get user information. Has email: ' . (isset($googleUser['email']) ? 'yes' : 'no'));
     header('Location: login.php?error=' . urlencode('Failed to get user information from Google'));
     exit;
 }
