@@ -34,7 +34,15 @@ $code = $_GET['code'];
 $tokenData = getGoogleAccessToken($code);
 
 if (!$tokenData || !isset($tokenData['access_token'])) {
-    header('Location: login.php?error=' . urlencode('Failed to get access token from Google'));
+    $errorMsg = 'Failed to get access token from Google. ';
+    $errorMsg .= 'Please ensure the Google OAuth redirect URI in Google Cloud Console is set to: ';
+    $errorMsg .= (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
+    $dirPath = dirname($_SERVER['PHP_SELF']);
+    $dirPath = ($dirPath === '/' || $dirPath === '\\') ? '' : $dirPath;
+    $errorMsg .= $dirPath . '/google-callback.php';
+    
+    error_log('Token exchange failed. Expected redirect URI: ' . $errorMsg);
+    header('Location: login.php?error=' . urlencode($errorMsg));
     exit;
 }
 

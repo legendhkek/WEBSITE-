@@ -281,9 +281,23 @@ function getGoogleAccessToken($code) {
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
     
     if ($httpCode !== 200) {
+        // Log detailed error information
+        error_log("Google OAuth Token Exchange Failed - HTTP {$httpCode}");
+        error_log("Redirect URI used: " . GOOGLE_REDIRECT_URI);
+        if ($curlError) {
+            error_log("cURL Error: " . $curlError);
+        }
+        if ($response) {
+            error_log("Google Response: " . $response);
+            $errorData = json_decode($response, true);
+            if (isset($errorData['error_description'])) {
+                error_log("Error Description: " . $errorData['error_description']);
+            }
+        }
         return null;
     }
     
