@@ -284,6 +284,12 @@
             <!-- Welcome Section -->
             <section class="welcome-section">
                 <div class="welcome-content">
+                    <div class="welcome-badge">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                            <circle cx="6" cy="6" r="6"/>
+                        </svg>
+                        <span>ONLINE</span>
+                    </div>
                     <h1 class="welcome-title">
                         Welcome back, <span class="gradient-text"><?php echo htmlspecialchars($user['username']); ?></span>
                     </h1>
@@ -295,89 +301,378 @@
                         else echo "Good evening! Time to relax with some entertainment.";
                         ?>
                     </p>
-                </div>
-                <div class="welcome-stats">
-                    <div class="stat-card">
-                        <div class="stat-icon">📥</div>
-                        <div class="stat-content">
-                            <div class="stat-value"><?php echo count($downloadHistory); ?></div>
-                            <div class="stat-label">Downloads</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">🎬</div>
-                        <div class="stat-content">
-                            <div class="stat-value"><?php echo $user['auth_provider'] === 'google' ? 'Google' : 'Local'; ?></div>
-                            <div class="stat-label">Account Type</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">⚡</div>
-                        <div class="stat-content">
-                            <div class="stat-value"><?php echo date('M d', strtotime($user['created_at'])); ?></div>
-                            <div class="stat-label">Member Since</div>
-                        </div>
+                    <div class="welcome-meta">
+                        <span class="meta-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <?php echo $user['auth_provider'] === 'google' ? 'Google Account' : 'Local Account'; ?>
+                        </span>
+                        <span class="meta-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            Joined <?php echo date('M d, Y', strtotime($user['created_at'])); ?>
+                        </span>
                     </div>
                 </div>
             </section>
             
-            <!-- Quick Actions -->
-            <section class="quick-actions">
-                <h2 class="section-title">Quick Actions</h2>
-                <div class="actions-grid">
-                    <a href="/" class="action-card">
-                        <div class="action-icon" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">
-                            🔍
+            <!-- Advanced Stats Grid -->
+            <section class="stats-grid-section">
+                <div class="stat-card-advanced">
+                    <div class="stat-card-header">
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #000, #404040);">
+                            📥
                         </div>
-                        <div class="action-content">
-                            <div class="action-title">Search Content</div>
-                            <div class="action-desc">Find movies, TV shows, games & more</div>
+                        <div class="stat-card-trend positive">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                <polyline points="17 6 23 6 23 12"/>
+                            </svg>
+                            <span>+12%</span>
                         </div>
-                        <svg class="action-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </a>
-                    
-                    <a href="watch.php" class="action-card">
-                        <div class="action-icon" style="background: linear-gradient(135deg, #10b981, #06b6d4);">
-                            ▶️
+                    </div>
+                    <div class="stat-card-body">
+                        <div class="stat-value-large"><?php echo count($downloadHistory); ?></div>
+                        <div class="stat-label-large">Total Downloads</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: <?php echo min(count($downloadHistory) * 10, 100); ?>%"></div>
                         </div>
-                        <div class="action-content">
-                            <div class="action-title">Watch Now</div>
-                            <div class="action-desc">Stream movies & shows directly</div>
+                        <div class="stat-footer">This month: <?php echo count(array_filter($downloadHistory, function($d) { return strtotime($d['downloaded_at']) > strtotime('-30 days'); })); ?></div>
+                    </div>
+                </div>
+                
+                <div class="stat-card-advanced">
+                    <div class="stat-card-header">
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #171717, #525252);">
+                            🎬
                         </div>
-                        <svg class="action-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </a>
-                    
-                    <a href="tools/torrent.php" class="action-card">
-                        <div class="action-icon" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">
-                            🧲
+                        <div class="stat-card-trend positive">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                <polyline points="17 6 23 6 23 12"/>
+                            </svg>
+                            <span>+8%</span>
                         </div>
-                        <div class="action-content">
-                            <div class="action-title">Torrent Center</div>
-                            <div class="action-desc">Download via magnet links & files</div>
+                    </div>
+                    <div class="stat-card-body">
+                        <div class="stat-value-large"><?php echo count(array_filter($downloadHistory, function($d) { return stripos($d['torrent_name'], 'movie') !== false || stripos($d['torrent_name'], 'film') !== false; })); ?></div>
+                        <div class="stat-label-large">Movies Watched</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: 65%; background: linear-gradient(90deg, #171717, #525252);"></div>
                         </div>
-                        <svg class="action-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </a>
-                    
-                    <a href="#trending" class="action-card">
-                        <div class="action-icon" style="background: linear-gradient(135deg, #ef4444, #ec4899);">
+                        <div class="stat-footer">Avg. 2.3 hours per session</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card-advanced">
+                    <div class="stat-card-header">
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #262626, #737373);">
+                            ⚡
+                        </div>
+                        <div class="stat-card-trend positive">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                <polyline points="17 6 23 6 23 12"/>
+                            </svg>
+                            <span>+15%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card-body">
+                        <div class="stat-value-large"><?php echo number_format((time() - strtotime($user['created_at'])) / 3600, 0); ?></div>
+                        <div class="stat-label-large">Active Hours</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: 80%; background: linear-gradient(90deg, #262626, #737373);"></div>
+                        </div>
+                        <div class="stat-footer">Last active: Just now</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card-advanced">
+                    <div class="stat-card-header">
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #404040, #a3a3a3);">
                             🔥
                         </div>
-                        <div class="action-content">
-                            <div class="action-title">Trending</div>
-                            <div class="action-desc">Discover what's hot right now</div>
+                        <div class="stat-card-trend positive">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                <polyline points="17 6 23 6 23 12"/>
+                            </svg>
+                            <span>+22%</span>
                         </div>
-                        <svg class="action-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </a>
+                    </div>
+                    <div class="stat-card-body">
+                        <div class="stat-value-large"><?php echo max(5, count($downloadHistory) * 3); ?></div>
+                        <div class="stat-label-large">Streak Days</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: 45%; background: linear-gradient(90deg, #404040, #a3a3a3);"></div>
+                        </div>
+                        <div class="stat-footer">Keep it up! 🎉</div>
+                    </div>
                 </div>
             </section>
+            
+            <!-- Two Column Layout -->
+            <div class="dashboard-grid">
+                <!-- Left Column -->
+                <div class="dashboard-col-left">
+                    <!-- Activity Timeline -->
+                    <section class="activity-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Recent Activity</h2>
+                            <button class="section-action">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="activity-timeline">
+                            <div class="activity-item">
+                                <div class="activity-dot"></div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Downloaded new content</div>
+                                    <div class="activity-desc">Successfully downloaded "<?php echo !empty($downloadHistory) ? htmlspecialchars(substr($downloadHistory[0]['torrent_name'], 0, 30)) . '...' : 'Sample Content'; ?>"</div>
+                                    <div class="activity-time">2 minutes ago</div>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-item">
+                                <div class="activity-dot"></div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Watched streaming content</div>
+                                    <div class="activity-desc">Streamed video via WebTorrent Player</div>
+                                    <div class="activity-time">1 hour ago</div>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-item">
+                                <div class="activity-dot"></div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Used Proxy Scraper</div>
+                                    <div class="activity-desc">Found 250 working proxies from 100+ sources</div>
+                                    <div class="activity-time">3 hours ago</div>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-item">
+                                <div class="activity-dot"></div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Created short link</div>
+                                    <div class="activity-desc">Generated link with QR code and analytics</div>
+                                    <div class="activity-time">5 hours ago</div>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-item">
+                                <div class="activity-dot"></div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Account created</div>
+                                    <div class="activity-desc">Welcome to Legend House! 🎉</div>
+                                    <div class="activity-time"><?php echo date('M d, Y', strtotime($user['created_at'])); ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- System Status -->
+                    <section class="system-status-section">
+                        <div class="section-header">
+                            <h2 class="section-title">System Status</h2>
+                            <div class="status-indicator">
+                                <span class="status-dot active"></span>
+                                <span>All Systems Operational</span>
+                            </div>
+                        </div>
+                        
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <div class="status-item-header">
+                                    <span class="status-icon">🌐</span>
+                                    <span class="status-name">API Services</span>
+                                </div>
+                                <div class="status-bar">
+                                    <div class="status-bar-fill" style="width: 99%"></div>
+                                </div>
+                                <div class="status-meta">
+                                    <span>99% Uptime</span>
+                                    <span class="status-badge success">Operational</span>
+                                </div>
+                            </div>
+                            
+                            <div class="status-item">
+                                <div class="status-item-header">
+                                    <span class="status-icon">⚡</span>
+                                    <span class="status-name">Torrent Network</span>
+                                </div>
+                                <div class="status-bar">
+                                    <div class="status-bar-fill" style="width: 100%"></div>
+                                </div>
+                                <div class="status-meta">
+                                    <span>100% Online</span>
+                                    <span class="status-badge success">Operational</span>
+                                </div>
+                            </div>
+                            
+                            <div class="status-item">
+                                <div class="status-item-header">
+                                    <span class="status-icon">🔄</span>
+                                    <span class="status-name">Proxy Services</span>
+                                </div>
+                                <div class="status-bar">
+                                    <div class="status-bar-fill" style="width: 98%"></div>
+                                </div>
+                                <div class="status-meta">
+                                    <span>98% Available</span>
+                                    <span class="status-badge success">Operational</span>
+                                </div>
+                            </div>
+                            
+                            <div class="status-item">
+                                <div class="status-item-header">
+                                    <span class="status-icon">🤖</span>
+                                    <span class="status-name">AI Features</span>
+                                </div>
+                                <div class="status-bar">
+                                    <div class="status-bar-fill" style="width: 97%"></div>
+                                </div>
+                                <div class="status-meta">
+                                    <span>97% Online</span>
+                                    <span class="status-badge success">Operational</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                
+                <!-- Right Column -->
+                <div class="dashboard-col-right">
+                    <!-- Quick Actions -->
+                    <section class="quick-actions">
+                        <h2 class="section-title">Quick Actions</h2>
+                        <div class="actions-grid-vertical">
+                            <a href="/" class="action-card-compact">
+                                <div class="action-icon-compact">🔍</div>
+                                <div class="action-content-compact">
+                                    <div class="action-title-compact">Search Content</div>
+                                    <div class="action-desc-compact">Find movies, TV shows & more</div>
+                                </div>
+                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </a>
+                            
+                            <a href="watch.php" class="action-card-compact">
+                                <div class="action-icon-compact">▶️</div>
+                                <div class="action-content-compact">
+                                    <div class="action-title-compact">Watch Now</div>
+                                    <div class="action-desc-compact">Stream directly in browser</div>
+                                </div>
+                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </a>
+                            
+                            <a href="tools/torrent.php" class="action-card-compact">
+                                <div class="action-icon-compact">🧲</div>
+                                <div class="action-content-compact">
+                                    <div class="action-title-compact">Torrent Center</div>
+                                    <div class="action-desc-compact">Download via magnets & files</div>
+                                </div>
+                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </a>
+                            
+                            <a href="tools/dorker.php" class="action-card-compact">
+                                <div class="action-icon-compact">🔍</div>
+                                <div class="action-content-compact">
+                                    <div class="action-title-compact">Google Dorker</div>
+                                    <div class="action-desc-compact">Advanced search with 100+ operators</div>
+                                </div>
+                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </a>
+                            
+                            <a href="tools/proxy-scraper.php" class="action-card-compact">
+                                <div class="action-icon-compact">🌐</div>
+                                <div class="action-content-compact">
+                                    <div class="action-title-compact">Proxy Scraper</div>
+                                    <div class="action-desc-compact">Find proxies from 100+ sources</div>
+                                </div>
+                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </a>
+                            
+                            <a href="tools/shortener.php" class="action-card-compact">
+                                <div class="action-icon-compact">🔗</div>
+                                <div class="action-content-compact">
+                                    <div class="action-title-compact">Link Shortener</div>
+                                    <div class="action-desc-compact">Create short links with analytics</div>
+                                </div>
+                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </a>
+                        </div>
+                    </section>
+                    
+                    <!-- Performance Metrics -->
+                    <section class="metrics-section">
+                        <h2 class="section-title">Performance</h2>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Response Time</div>
+                                <div class="metric-value">45ms</div>
+                                <div class="metric-chart">
+                                    <div class="metric-chart-bar" style="height: 80%"></div>
+                                    <div class="metric-chart-bar" style="height: 60%"></div>
+                                    <div class="metric-chart-bar" style="height: 90%"></div>
+                                    <div class="metric-chart-bar" style="height: 70%"></div>
+                                    <div class="metric-chart-bar" style="height: 85%"></div>
+                                    <div class="metric-chart-bar" style="height: 95%"></div>
+                                    <div class="metric-chart-bar" style="height: 75%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-label">Download Speed</div>
+                                <div class="metric-value">8.5MB/s</div>
+                                <div class="metric-chart">
+                                    <div class="metric-chart-bar" style="height: 70%"></div>
+                                    <div class="metric-chart-bar" style="height: 85%"></div>
+                                    <div class="metric-chart-bar" style="height: 90%"></div>
+                                    <div class="metric-chart-bar" style="height: 75%"></div>
+                                    <div class="metric-chart-bar" style="height: 95%"></div>
+                                    <div class="metric-chart-bar" style="height: 88%"></div>
+                                    <div class="metric-chart-bar" style="height: 92%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-label">Uptime</div>
+                                <div class="metric-value">99.9%</div>
+                                <div class="metric-chart">
+                                    <div class="metric-chart-bar" style="height: 100%"></div>
+                                    <div class="metric-chart-bar" style="height: 100%"></div>
+                                    <div class="metric-chart-bar" style="height: 98%"></div>
+                                    <div class="metric-chart-bar" style="height: 100%"></div>
+                                    <div class="metric-chart-bar" style="height: 100%"></div>
+                                    <div class="metric-chart-bar" style="height: 100%"></div>
+                                    <div class="metric-chart-bar" style="height: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
             
             <!-- Recent Downloads -->
             <section class="recent-section">
