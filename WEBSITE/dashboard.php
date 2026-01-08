@@ -61,166 +61,22 @@
             </a>
             
             <nav class="header-nav">
-                <a href="/" class="nav-link">
+                <a href="home.php" class="nav-link">
                     <span class="nav-icon">🏠</span>
                     Home
+                </a>
+                <a href="dashboard.php" class="nav-link" style="border: 2px solid var(--black); font-weight: 600;">
+                    <span class="nav-icon">📊</span>
+                    Dashboard
                 </a>
                 <a href="watch.php" class="nav-link">
                     <span class="nav-icon">▶️</span>
                     Watch
                 </a>
-                <div class="nav-dropdown">
-                    <button class="nav-link dropdown-trigger">
-                        <span class="nav-icon">🛠️</span>
-                        Tools
-                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="dropdown-menu tools-menu">
-                        <!-- Torrent Tools Section -->
-                        <div class="dropdown-section-header">
-                            <span class="section-icon">🧲</span>
-                            <span class="section-title">Torrent Tools</span>
-                        </div>
-                        <a href="tools/torrent.php" class="dropdown-item">
-                            <span class="dropdown-icon">⬇️</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Download Center</div>
-                                <div class="dropdown-item-desc">All-in-one torrent management hub</div>
-                            </div>
-                        </a>
-                        <a href="tools/torrent.php#magnet" class="dropdown-item">
-                            <span class="dropdown-icon">🧲</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Magnet Links</div>
-                                <div class="dropdown-item-desc">Paste and process magnet URIs instantly</div>
-                            </div>
-                        </a>
-                        <a href="tools/torrent.php#file" class="dropdown-item">
-                            <span class="dropdown-icon">📁</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Upload Torrent File</div>
-                                <div class="dropdown-item-desc">Drag & drop .torrent files for parsing</div>
-                            </div>
-                        </a>
-                        <a href="tools/torrent.php#hash" class="dropdown-item">
-                            <span class="dropdown-icon">🔑</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Info Hash</div>
-                                <div class="dropdown-item-desc">Generate magnet link from hash</div>
-                            </div>
-                        </a>
-                        
-                        <div class="dropdown-divider"></div>
-                        
-                        <!-- Media Tools Section -->
-                        <div class="dropdown-section-header">
-                            <span class="section-icon">🎬</span>
-                            <span class="section-title">Media Tools</span>
-                        </div>
-                        <a href="watch.php" class="dropdown-item">
-                            <span class="dropdown-icon">▶️</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Stream Player</div>
-                                <div class="dropdown-item-desc">WebTorrent-powered instant streaming</div>
-                            </div>
-                        </a>
-                        <a href="#subtitle-generator" class="dropdown-item">
-                            <span class="dropdown-icon">💬</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Subtitle Generator</div>
-                                <div class="dropdown-item-desc">Auto-generate and sync subtitles</div>
-                            </div>
-                        </a>
-                        <a href="#video-converter" class="dropdown-item">
-                            <span class="dropdown-icon">🔄</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Video Converter</div>
-                                <div class="dropdown-item-desc">Convert between formats online</div>
-                            </div>
-                        </a>
-                        
-                        <div class="dropdown-divider"></div>
-                        
-                        <!-- AI Tools Section -->
-                        <div class="dropdown-section-header">
-                            <span class="section-icon">🤖</span>
-                            <span class="section-title">AI Tools</span>
-                        </div>
-                        <a href="/#voice-search" class="dropdown-item">
-                            <span class="dropdown-icon">🎤</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Voice Search</div>
-                                <div class="dropdown-item-desc">Hands-free content discovery</div>
-                            </div>
-                        </a>
-                        <a href="/#ai-suggestions" class="dropdown-item">
-                            <span class="dropdown-icon">💡</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Smart Suggestions</div>
-                                <div class="dropdown-item-desc">AI-powered search improvements</div>
-                            </div>
-                        </a>
-                        <a href="/#content-analysis" class="dropdown-item">
-                            <span class="dropdown-icon">🔍</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Content Analysis</div>
-                                <div class="dropdown-item-desc">Extract metadata with AI</div>
-                            </div>
-                        </a>
-                        
-                        <div class="dropdown-divider"></div>
-                        
-                        <!-- Utility Tools Section -->
-                        <div class="dropdown-section-header">
-                            <span class="section-icon">⚙️</span>
-                            <span class="section-title">Utility Tools</span>
-                        </div>
-                        <a href="#download-manager" class="dropdown-item">
-                            <span class="dropdown-icon">📥</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Download Manager</div>
-                                <div class="dropdown-item-desc">Track and manage all downloads</div>
-                            </div>
-                        </a>
-                        <a href="#bandwidth-monitor" class="dropdown-item">
-                            <span class="dropdown-icon">📊</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Bandwidth Monitor</div>
-                                <div class="dropdown-item-desc">Real-time network usage stats</div>
-                            </div>
-                        </a>
-                        <a href="tools/shortener.php" class="dropdown-item">
-                            <span class="dropdown-icon">🔗</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Link Shortener</div>
-                                <div class="dropdown-item-desc">Create shareable short links with analytics</div>
-                            </div>
-                        </a>
-                        <a href="tools/proxy-scraper.php" class="dropdown-item">
-                            <span class="dropdown-icon">🔍</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Proxy Scraper</div>
-                                <div class="dropdown-item-desc">Find and validate working proxies</div>
-                            </div>
-                        </a>
-                        <a href="tools/rotating-proxy.php" class="dropdown-item">
-                            <span class="dropdown-icon">🔄</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Rotating Proxy Maker</div>
-                                <div class="dropdown-item-desc">Create residential rotating proxy pools</div>
-                            </div>
-                        </a>
-                        <a href="tools/dorker.php" class="dropdown-item">
-                            <span class="dropdown-icon">🔍</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Google Dorker</div>
-                                <div class="dropdown-item-desc">Advanced Google search with 50+ operators</div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
+                <a href="tools.php" class="nav-link">
+                    <span class="nav-icon">🛠️</span>
+                    Tools
+                </a>
                 <div class="user-menu">
                     <button class="user-menu-trigger">
                         <?php 
@@ -259,7 +115,7 @@
                                 <div class="dropdown-item-title">Dashboard</div>
                             </div>
                         </a>
-                        <a href="#settings" class="dropdown-item">
+                        <a href="settings.php" class="dropdown-item">
                             <span class="dropdown-icon">⚙️</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Settings</div>
@@ -318,6 +174,44 @@
                             </svg>
                             Joined <?php echo date('M d, Y', strtotime($user['created_at'])); ?>
                         </span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Search Section in Dashboard -->
+            <section class="dashboard-search-section" style="margin-bottom: 3rem;">
+                <div class="search-card" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #000;">
+                        🔍 Search Torrents
+                    </h2>
+                    <form id="searchForm" action="home.php" method="get" style="display: flex; gap: 1rem;">
+                        <input 
+                            type="text" 
+                            name="q" 
+                            id="searchInput" 
+                            placeholder="Search movies, TV shows, games, anime..." 
+                            style="flex: 1; padding: 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem;"
+                            required
+                        >
+                        <select name="category" style="padding: 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem; min-width: 150px;">
+                            <option value="all">🔍 All</option>
+                            <option value="movies">🎬 Movies</option>
+                            <option value="tv">📺 TV Shows</option>
+                            <option value="games">🎮 Games</option>
+                            <option value="software">💻 Software</option>
+                            <option value="anime">🎌 Anime</option>
+                            <option value="music">🎵 Music</option>
+                            <option value="ebooks">📚 Ebooks</option>
+                        </select>
+                        <button type="submit" style="padding: 1rem 2rem; background: linear-gradient(135deg, #000, #404040); color: white; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer;">
+                            Search
+                        </button>
+                    </form>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="color: #666; font-size: 0.875rem;">🔥 Trending:</span>
+                        <a href="home.php?q=Avatar+3" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 0.375rem; font-size: 0.875rem; color: #000; text-decoration: none;">Avatar 3</a>
+                        <a href="home.php?q=Dune+2" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 0.375rem; font-size: 0.875rem; color: #000; text-decoration: none;">Dune 2</a>
+                        <a href="home.php?q=GTA+6" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 0.375rem; font-size: 0.875rem; color: #000; text-decoration: none;">GTA 6</a>
                     </div>
                 </div>
             </section>

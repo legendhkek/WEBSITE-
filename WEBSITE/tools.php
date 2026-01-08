@@ -244,8 +244,14 @@
     <?php
     session_start();
     require_once __DIR__ . '/auth.php';
+    
+    // Require login to access tools page
+    if (!isLoggedIn()) {
+        header('Location: login.php');
+        exit;
+    }
+    
     $user = getCurrentUser();
-    // Allow access without login, but show login button if not logged in
     ?>
     
     <!-- Animated Background -->
@@ -257,7 +263,7 @@
     <!-- Header -->
     <header class="dashboard-header">
         <div class="header-container">
-            <a href="/" class="dashboard-logo">
+            <a href="dashboard.php" class="dashboard-logo">
                 <svg width="36" height="36" viewBox="0 0 42 42">
                     <rect x="6" y="12" width="30" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/>
                     <polygon points="21,6 28,12 14,12" fill="currentColor"/>
@@ -267,9 +273,13 @@
             </a>
             
             <nav class="header-nav">
-                <a href="/" class="nav-link">
+                <a href="home.php" class="nav-link">
                     <span class="nav-icon">🏠</span>
                     Home
+                </a>
+                <a href="dashboard.php" class="nav-link">
+                    <span class="nav-icon">📊</span>
+                    Dashboard
                 </a>
                 <a href="watch.php" class="nav-link">
                     <span class="nav-icon">▶️</span>
@@ -311,6 +321,12 @@
                             <span class="dropdown-icon">📊</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Dashboard</div>
+                            </div>
+                        </a>
+                        <a href="settings.php" class="dropdown-item">
+                            <span class="dropdown-icon">⚙️</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Settings</div>
                             </div>
                         </a>
                         <button onclick="logoutUser()" class="dropdown-item logout-item">
