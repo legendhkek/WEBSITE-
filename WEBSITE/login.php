@@ -85,6 +85,9 @@
                     </svg>
                     <span class="btn-text">Sign in with Google</span>
                 </button>
+                <p style="font-size: 0.75rem; color: #999; text-align: center; margin-top: 0.5rem;">
+                    If Google OAuth is not configured, use email/password above
+                </p>
             </form>
             
             <div class="auth-footer">

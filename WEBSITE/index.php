@@ -242,8 +242,8 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🔒</div>
-                    <h3>No Sign Up</h3>
-                    <p>No registration required. Just search, stream, and download</p>
+                    <h3>No Sign Up Required</h3>
+                    <p>Browse and search without creating an account. Optional login for advanced features.</p>
                 </div>
             </div>
         </div>
