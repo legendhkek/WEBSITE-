@@ -250,9 +250,9 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showToast('Account created! Redirecting to login...', 'success');
+                    showToast('Account created! Redirecting to dashboard...', 'success');
                     setTimeout(() => {
-                        window.location.href = 'login.php';
+                        window.location.href = 'dashboard.php';
                     }, 1500);
                 } else {
                     showError(data.error || 'Registration failed');
