@@ -222,7 +222,7 @@
                 if (data.success && data.url) {
                     window.location.href = data.url;
                 } else {
-                    showError('Failed to initialize Google Sign-In');
+                    showError(data.error || 'Google Sign-In is not available. Please use email/password login or contact the administrator.');
                 }
             } catch (error) {
                 showError('Network error. Please try again.');

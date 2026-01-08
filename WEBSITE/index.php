@@ -148,7 +148,7 @@
                     <span class="nav-btn-icon">▶️</span>
                     <span class="nav-btn-text">Watch Now</span>
                 </a>
-                <a href="tools/torrent.php" class="nav-btn" title="Tools - Torrent Center, Media Tools, AI Tools, Utilities">
+                <a href="tools.php" class="nav-btn" title="Tools - Torrent Center, Media Tools, AI Tools, Utilities">
                     <span class="nav-btn-icon">🛠️</span>
                     <span class="nav-btn-text">Tools</span>
                 </a>

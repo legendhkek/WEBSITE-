@@ -24,11 +24,66 @@ async function checkAIAvailability() {
             initAIFeatures();
         } else {
             console.log('💡 AI Features: Disabled (API key not configured)');
+            // Show a one-time notification if user tries to use AI features
+            showAIDisabledNotice();
         }
     } catch (error) {
         console.error('AI check failed:', error);
         aiState.enabled = false;
+        showAIDisabledNotice();
     }
+}
+
+// Show notice that AI features are disabled
+function showAIDisabledNotice() {
+    // Add a small banner or notice (only once per session)
+    if (sessionStorage.getItem('aiNoticeShown')) return;
+    
+    const notice = document.createElement('div');
+    notice.className = 'ai-disabled-notice';
+    notice.innerHTML = `
+        <div class="notice-content">
+            <span class="notice-icon">💡</span>
+            <span class="notice-text">AI features are currently disabled. Contact administrator to enable AI-powered suggestions.</span>
+            <button class="notice-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    notice.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(20, 20, 30, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        max-width: 400px;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        backdrop-filter: blur(10px);
+    `;
+    
+    const closeBtn = notice.querySelector('.notice-close');
+    if (closeBtn) {
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 12px;
+        `;
+    }
+    
+    document.body.appendChild(notice);
+    sessionStorage.setItem('aiNoticeShown', 'true');
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notice.parentElement) {
+            notice.remove();
+        }
+    }, 5000);
 }
 
 // Initialize AI-powered features

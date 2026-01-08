@@ -245,6 +245,7 @@
     session_start();
     require_once __DIR__ . '/auth.php';
     $user = getCurrentUser();
+    // Allow access without login, but show login button if not logged in
     ?>
     
     <!-- Animated Background -->
