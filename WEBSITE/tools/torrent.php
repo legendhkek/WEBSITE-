@@ -9,7 +9,7 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
          crossorigin="anonymous"></script>
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="torrent-style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
     <!-- Header -->
     <header class="header">
         <div class="container">
-            <a href="index.php" class="logo">
+            <a href="../index.php" class="logo">
                 <div class="logo-icon">
                     <svg width="42" height="42" viewBox="0 0 42 42">
                         <defs>
@@ -41,7 +41,7 @@
                 </div>
             </a>
             <nav class="nav">
-                <a href="index.php" class="nav-btn">
+                <a href="../index.php" class="nav-btn">
                     <span class="nav-btn-icon">🏠</span>
                     <span class="nav-btn-text">Home</span>
                 </a>

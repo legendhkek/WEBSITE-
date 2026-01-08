@@ -61,7 +61,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS url_clicks (
                 </div>
                 
                 <nav class="main-nav">
-                    <a href="index.php">Home</a>
+                    <a href="../index.php">Home</a>
                     <a href="watch.php">Watch</a>
                     <div class="dropdown">
                         <button class="dropbtn">🛠️ Tools ▼</button>

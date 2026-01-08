@@ -367,7 +367,7 @@
             </div>
             
             <div class="tools-grid">
-                <a href="torrent.php" class="tool-card">
+                <a href="tools/torrent.php" class="tool-card">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">⬇️</span>
                         <h3 class="tool-card-title">Download Center</h3>
@@ -387,7 +387,7 @@
                     </span>
                 </a>
                 
-                <a href="torrent.php#magnet" class="tool-card">
+                <a href="tools/torrent.php#magnet" class="tool-card">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">🧲</span>
                         <h3 class="tool-card-title">Magnet Link Processor</h3>
@@ -407,7 +407,7 @@
                     </span>
                 </a>
                 
-                <a href="torrent.php#file" class="tool-card">
+                <a href="tools/torrent.php#file" class="tool-card">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">📁</span>
                         <h3 class="tool-card-title">Torrent File Parser</h3>
@@ -427,7 +427,7 @@
                     </span>
                 </a>
                 
-                <a href="torrent.php#hash" class="tool-card">
+                <a href="tools/torrent.php#hash" class="tool-card">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">🔑</span>
                         <h3 class="tool-card-title">Info Hash to Magnet</h3>
@@ -606,7 +606,7 @@
             </div>
             
             <div class="tools-grid">
-                <a href="shortener.php" class="tool-card">
+                <a href="tools/shortener.php" class="tool-card">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">🔗</span>
                         <h3 class="tool-card-title">Link Shortener</h3>
@@ -626,7 +626,7 @@
                     </span>
                 </a>
                 
-                <a href="proxy-scraper.php" class="tool-card">
+                <a href="tools/proxy-scraper.php" class="tool-card">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">🔍</span>
                         <h3 class="tool-card-title">Proxy Scraper</h3>
@@ -646,7 +646,7 @@
                     </span>
                 </a>
                 
-                <a href="rotating-proxy.php" class="tool-card">
+                <a href="tools/rotating-proxy.php" class="tool-card">
                     <div class="tool-card-header">
                         <span class="tool-card-icon">🔄</span>
                         <h3 class="tool-card-title">Rotating Proxy Maker</h3>

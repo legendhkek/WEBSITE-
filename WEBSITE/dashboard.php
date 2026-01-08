@@ -83,28 +83,28 @@
                             <span class="section-icon">🧲</span>
                             <span class="section-title">Torrent Tools</span>
                         </div>
-                        <a href="torrent.php" class="dropdown-item">
+                        <a href="tools/torrent.php" class="dropdown-item">
                             <span class="dropdown-icon">⬇️</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Download Center</div>
                                 <div class="dropdown-item-desc">All-in-one torrent management hub</div>
                             </div>
                         </a>
-                        <a href="torrent.php#magnet" class="dropdown-item">
+                        <a href="tools/torrent.php#magnet" class="dropdown-item">
                             <span class="dropdown-icon">🧲</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Magnet Links</div>
                                 <div class="dropdown-item-desc">Paste and process magnet URIs instantly</div>
                             </div>
                         </a>
-                        <a href="torrent.php#file" class="dropdown-item">
+                        <a href="tools/torrent.php#file" class="dropdown-item">
                             <span class="dropdown-icon">📁</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Upload Torrent File</div>
                                 <div class="dropdown-item-desc">Drag & drop .torrent files for parsing</div>
                             </div>
                         </a>
-                        <a href="torrent.php#hash" class="dropdown-item">
+                        <a href="tools/torrent.php#hash" class="dropdown-item">
                             <span class="dropdown-icon">🔑</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Info Hash</div>
@@ -191,11 +191,25 @@
                                 <div class="dropdown-item-desc">Real-time network usage stats</div>
                             </div>
                         </a>
-                        <a href="#link-shortener" class="dropdown-item">
+                        <a href="tools/shortener.php" class="dropdown-item">
                             <span class="dropdown-icon">🔗</span>
                             <div class="dropdown-item-content">
                                 <div class="dropdown-item-title">Link Shortener</div>
-                                <div class="dropdown-item-desc">Create shareable short links</div>
+                                <div class="dropdown-item-desc">Create shareable short links with analytics</div>
+                            </div>
+                        </a>
+                        <a href="tools/proxy-scraper.php" class="dropdown-item">
+                            <span class="dropdown-icon">🔍</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Proxy Scraper</div>
+                                <div class="dropdown-item-desc">Find and validate working proxies</div>
+                            </div>
+                        </a>
+                        <a href="tools/rotating-proxy.php" class="dropdown-item">
+                            <span class="dropdown-icon">🔄</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Rotating Proxy Maker</div>
+                                <div class="dropdown-item-desc">Create residential rotating proxy pools</div>
                             </div>
                         </a>
                     </div>
@@ -330,7 +344,7 @@
                         </svg>
                     </a>
                     
-                    <a href="torrent.php" class="action-card">
+                    <a href="tools/torrent.php" class="action-card">
                         <div class="action-icon" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">
                             🧲
                         </div>
@@ -362,7 +376,7 @@
             <section class="recent-section">
                 <div class="section-header">
                     <h2 class="section-title">Recent Downloads</h2>
-                    <a href="torrent.php" class="section-link">
+                    <a href="tools/torrent.php" class="section-link">
                         View All
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="9 18 15 12 9 6"></polyline>
@@ -375,7 +389,7 @@
                     <div class="empty-icon">📭</div>
                     <div class="empty-title">No downloads yet</div>
                     <div class="empty-desc">Start downloading torrents to see them here</div>
-                    <a href="torrent.php" class="empty-btn">
+                    <a href="tools/torrent.php" class="empty-btn">
                         Go to Torrent Center
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="9 18 15 12 9 6"></polyline>
@@ -423,7 +437,7 @@
                         <div class="feature-content">
                             <h3 class="feature-title">Magnet Links</h3>
                             <p class="feature-desc">Paste magnet links to instantly download torrents. Automatic hash extraction and validation.</p>
-                            <a href="torrent.php#magnet" class="feature-link">Try it now →</a>
+                            <a href="tools/torrent.php#magnet" class="feature-link">Try it now →</a>
                         </div>
                     </div>
                     
@@ -432,7 +446,7 @@
                         <div class="feature-content">
                             <h3 class="feature-title">Torrent Files</h3>
                             <p class="feature-desc">Upload .torrent files with drag & drop. Content-based hash generation and processing.</p>
-                            <a href="torrent.php#file" class="feature-link">Upload file →</a>
+                            <a href="tools/torrent.php#file" class="feature-link">Upload file →</a>
                         </div>
                     </div>
                     
@@ -441,7 +455,7 @@
                         <div class="feature-content">
                             <h3 class="feature-title">Info Hash</h3>
                             <p class="feature-desc">Generate magnet links from 40-character info hashes. Perfect for sharing torrents.</p>
-                            <a href="torrent.php#hash" class="feature-link">Generate →</a>
+                            <a href="tools/torrent.php#hash" class="feature-link">Generate →</a>
                         </div>
                     </div>
                     
