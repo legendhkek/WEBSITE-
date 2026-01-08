@@ -164,11 +164,16 @@ function registerUser($username, $email, $password) {
         $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
         $stmt->bindValue(':token', $token, SQLITE3_TEXT);
         $stmt->bindValue(':expires_at', $expiresAt, SQLITE3_TEXT);
-        $stmt->execute();
+        
+        if (!$stmt->execute()) {
+            $db->close();
+            return ['success' => false, 'error' => 'Failed to create session. Please try logging in.'];
+        }
         
         $db->close();
         
         // Set session for auto-login
+        // Note: username and email are already validated above (lines 119-129)
         $_SESSION['user_id'] = $userId;
         $_SESSION['username'] = $username;
         $_SESSION['email'] = $email;
