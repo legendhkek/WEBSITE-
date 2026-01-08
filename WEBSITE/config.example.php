@@ -14,7 +14,10 @@ define('DB_FILE', __DIR__ . '/users.db');
 // Get your credentials from: https://console.cloud.google.com/
 define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: 'YOUR_GOOGLE_CLIENT_ID_HERE');
 define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: 'YOUR_GOOGLE_CLIENT_SECRET_HERE');
-define('GOOGLE_REDIRECT_URI', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . dirname($_SERVER['PHP_SELF']) . "/google-callback.php");
+// Build redirect URI and handle root directory case to avoid double slashes
+$dirPath = dirname($_SERVER['PHP_SELF']);
+$dirPath = ($dirPath === '/' || $dirPath === '\\') ? '' : $dirPath;
+define('GOOGLE_REDIRECT_URI', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . $dirPath . "/google-callback.php");
 
 // Session Configuration
 define('SESSION_LIFETIME', 86400 * 7); // 7 days in seconds
