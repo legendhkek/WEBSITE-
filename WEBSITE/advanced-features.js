@@ -25,19 +25,22 @@ async function checkAIAvailability() {
         } else {
             console.log('💡 AI Features: Disabled (API key not configured)');
             // Show a one-time notification if user tries to use AI features
-            showAIDisabledNotice();
+            showAIDisabledNoticeOnce();
         }
     } catch (error) {
         console.error('AI check failed:', error);
         aiState.enabled = false;
-        showAIDisabledNotice();
+        showAIDisabledNoticeOnce();
     }
 }
 
-// Show notice that AI features are disabled
-function showAIDisabledNotice() {
-    // Add a small banner or notice (only once per session)
+// Show notice that AI features are disabled (once per session)
+function showAIDisabledNoticeOnce() {
+    // Only show once per session
     if (sessionStorage.getItem('aiNoticeShown')) return;
+    
+    // Mark as shown immediately to prevent race conditions
+    sessionStorage.setItem('aiNoticeShown', 'true');
     
     const notice = document.createElement('div');
     notice.className = 'ai-disabled-notice';
@@ -76,7 +79,6 @@ function showAIDisabledNotice() {
     }
     
     document.body.appendChild(notice);
-    sessionStorage.setItem('aiNoticeShown', 'true');
     
     // Auto-remove after 5 seconds
     setTimeout(() => {
