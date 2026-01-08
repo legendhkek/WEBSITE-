@@ -212,6 +212,13 @@
                                 <div class="dropdown-item-desc">Create residential rotating proxy pools</div>
                             </div>
                         </a>
+                        <a href="tools/dorker.php" class="dropdown-item">
+                            <span class="dropdown-icon">🔍</span>
+                            <div class="dropdown-item-content">
+                                <div class="dropdown-item-title">Google Dorker</div>
+                                <div class="dropdown-item-desc">Advanced Google search with 50+ operators</div>
+                            </div>
+                        </a>
                     </div>
                 </div>
                 <div class="user-menu">

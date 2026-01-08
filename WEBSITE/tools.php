@@ -340,11 +340,11 @@
         
         <div class="tools-stats">
             <div class="tools-stat">
-                <div class="tools-stat-value">19+</div>
+                <div class="tools-stat-value">20+</div>
                 <div class="tools-stat-label">Total Tools</div>
             </div>
             <div class="tools-stat">
-                <div class="tools-stat-value">10</div>
+                <div class="tools-stat-value">12</div>
                 <div class="tools-stat-label">Active Now</div>
             </div>
             <div class="tools-stat">
@@ -602,7 +602,7 @@
                 <div>
                     <h2 class="tools-section-title">Utility Tools</h2>
                 </div>
-                <span class="tools-section-desc">5 tools (3 active)</span>
+                <span class="tools-section-desc">6 tools (4 active)</span>
             </div>
             
             <div class="tools-grid">
@@ -659,6 +659,26 @@
                         <span class="tool-feature-tag">Rotating Pool</span>
                         <span class="tool-feature-tag">API Access</span>
                         <span class="tool-feature-tag">Health Monitor</span>
+                    </div>
+                    <span class="tool-card-status active">
+                        <span class="status-dot"></span>
+                        Active
+                    </span>
+                </a>
+                
+                <a href="tools/dorker.php" class="tool-card">
+                    <div class="tool-card-header">
+                        <span class="tool-card-icon">🔍</span>
+                        <h3 class="tool-card-title">Google Dorker</h3>
+                    </div>
+                    <p class="tool-card-desc">
+                        Advanced Google dorking with 50+ operators. Reverse-engineered scraping, 
+                        no API required, with 12 pre-built categories and export options.
+                    </p>
+                    <div class="tool-card-features">
+                        <span class="tool-feature-tag">50+ Operators</span>
+                        <span class="tool-feature-tag">No API</span>
+                        <span class="tool-feature-tag">Fast Results</span>
                     </div>
                     <span class="tool-card-status active">
                         <span class="status-dot"></span>
