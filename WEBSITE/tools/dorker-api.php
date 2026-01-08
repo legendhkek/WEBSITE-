@@ -60,18 +60,7 @@ function handleDork($db, $user) {
         return;
     }
 
-    // Rate limiting: max 60 dorks per hour
-    $stmt = $db->prepare("
-        SELECT COUNT(*) as count FROM dorker_queries 
-        WHERE user_id = ? AND created_at > ?
-    ");
-    $stmt->execute([$user['id'], time() - 3600]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($row['count'] >= 60) {
-        echo json_encode(['success' => false, 'error' => 'Rate limit exceeded. Max 60 dorks per hour.']);
-        return;
-    }
+    // No rate limiting - unlimited dorking for discovery
 
     // Save query
     $stmt = $db->prepare("INSERT INTO dorker_queries (user_id, dork_query, created_at) VALUES (?, ?, ?)");
