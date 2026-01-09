@@ -146,6 +146,7 @@ function callBlackboxAPI($prompt) {
     
     if ($curlError) {
         error_log("Blackbox API CURL error: $curlError");
+        // Don't expose detailed errors to users, just log them
         return null;
     }
     

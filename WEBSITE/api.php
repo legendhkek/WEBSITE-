@@ -63,7 +63,11 @@ function getRandomUA() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // SSE PROGRESS STREAMING
 // ═══════════════════════════════════════════════════════════════════════════════
+$sseMode = false;
+
 function initSSE() {
+    global $sseMode;
+    $sseMode = true;
     header('Content-Type: text/event-stream');
     header('Cache-Control: no-cache');
     header('Connection: keep-alive');
@@ -73,6 +77,9 @@ function initSSE() {
 }
 
 function sendProgress($percent, $message, $source = '', $found = 0) {
+    global $sseMode;
+    if (!$sseMode) return; // Only send if in SSE mode
+    
     echo "data: " . json_encode([
         'type' => 'progress',
         'percent' => $percent,
@@ -84,6 +91,9 @@ function sendProgress($percent, $message, $source = '', $found = 0) {
 }
 
 function sendResults($data) {
+    global $sseMode;
+    if (!$sseMode) return; // Only send if in SSE mode
+    
     echo "data: " . json_encode([
         'type' => 'complete',
         'data' => $data
@@ -92,6 +102,9 @@ function sendResults($data) {
 }
 
 function sendError($message) {
+    global $sseMode;
+    if (!$sseMode) return; // Only send if in SSE mode
+    
     echo "data: " . json_encode([
         'type' => 'error',
         'message' => $message
