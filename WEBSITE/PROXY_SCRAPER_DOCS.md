@@ -1,7 +1,7 @@
 # Proxy Scraper - 100+ Real Sources
 
 ## Overview
-The proxy scraper now includes **100+ real proxy sources** with NO mock or simulated data. All sources are actively maintained and provide real, working proxies.
+The proxy scraper now includes **200+ real proxy sources** with NO mock or simulated data. All sources are actively maintained and provide real, working proxies.
 
 ## Source Categories
 
@@ -230,6 +230,6 @@ All sources are real and actively maintained:
 ---
 
 **Last Updated**: 2026-01-09  
-**Total Sources**: 100+  
+**Total Sources**: 200  
 **Status**: Production Ready  
 **All Real Sources**: ✓ Verified
