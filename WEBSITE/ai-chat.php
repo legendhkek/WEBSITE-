@@ -176,21 +176,33 @@ function getAIResponse($message, $history = [], $context = 'general') {
         ],
         CURLOPT_TIMEOUT => 30,
         CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_CONNECTTIMEOUT => 10
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 3
     ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
+    $curlErrno = curl_errno($ch);
     curl_close($ch);
     
     if ($curlError) {
-        error_log("Blackbox AI Chat CURL error: $curlError");
-        // Check if it's a DNS/connection issue
-        if (strpos($curlError, 'resolve host') !== false || strpos($curlError, 'Could not resolve') !== false) {
-            return "I apologize, but the AI service is currently unreachable. This might be a temporary network issue or the service configuration needs to be updated. Please try again later or contact support if the issue persists.";
+        error_log("Blackbox AI Chat CURL error (errno: $curlErrno): $curlError");
+        
+        // Provide specific error messages based on error type
+        if ($curlErrno === 6) { // CURLE_COULDNT_RESOLVE_HOST
+            return "I apologize, but I cannot reach the AI service right now. This appears to be a network connectivity issue. Please check your internet connection and try again later.";
+        } elseif ($curlErrno === 7) { // CURLE_COULDNT_CONNECT
+            return "I apologize, but the AI service is currently unavailable. The service may be temporarily down. Please try again in a few minutes.";
+        } elseif ($curlErrno === 28) { // CURLE_OPERATION_TIMEDOUT
+            return "I apologize, but the AI service is taking too long to respond. Please try again with a shorter message or wait a moment before retrying.";
+        } elseif ($curlErrno === 35 || $curlErrno === 60) { // SSL errors
+            return "I apologize, but there's a security certificate issue connecting to the AI service. Please contact the administrator to resolve this.";
         }
-        return "I apologize, but I'm unable to connect to the AI service at the moment. Error: " . $curlError . ". Please try again later.";
+        
+        // Generic error for other cases
+        return "I apologize, but I'm unable to connect to the AI service at the moment. Please try again later. If the problem persists, contact support.";
     }
     
     if ($httpCode !== 200) {

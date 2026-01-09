@@ -218,13 +218,23 @@ function httpGet($url, $timeout = 8) {
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+    $curlError = curl_error($ch);
+    $curlErrno = curl_errno($ch);
     curl_close($ch);
+    
+    // Log connection errors for debugging
+    if ($curlErrno !== 0) {
+        $host = parse_url($url, PHP_URL_HOST);
+        error_log("HTTP GET failed for $host (errno: $curlErrno): $curlError");
+    }
     
     return [
         'success' => $code >= 200 && $code < 400 && $body !== false,
         'body' => $body ?: '',
         'code' => $code,
-        'url' => $finalUrl
+        'url' => $finalUrl,
+        'error' => $curlError,
+        'errno' => $curlErrno
     ];
 }
 

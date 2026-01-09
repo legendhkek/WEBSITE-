@@ -112,6 +112,7 @@ function validateBlackboxConfig() {
  */
 function callBlackboxAPI($prompt) {
     if (!validateBlackboxConfig()) {
+        error_log("Blackbox API: Configuration validation failed");
         return null;
     }
     
@@ -134,19 +135,29 @@ function callBlackboxAPI($prompt) {
             'Content-Type: application/json',
             'Authorization: Bearer ' . BLACKBOX_API_KEY
         ],
-        CURLOPT_TIMEOUT => 10,
+        CURLOPT_TIMEOUT => 15,
         CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_CONNECTTIMEOUT => 5
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 3
     ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
+    $curlErrno = curl_errno($ch);
     curl_close($ch);
     
     if ($curlError) {
-        error_log("Blackbox API CURL error: $curlError");
-        // Don't expose detailed errors to users, just log them
+        error_log("Blackbox API CURL error (errno: $curlErrno): $curlError");
+        // Check for specific network issues
+        if ($curlErrno === 6) { // CURLE_COULDNT_RESOLVE_HOST
+            error_log("Blackbox API: DNS resolution failed - check network connectivity");
+        } elseif ($curlErrno === 7) { // CURLE_COULDNT_CONNECT
+            error_log("Blackbox API: Connection failed - service may be down");
+        } elseif ($curlErrno === 28) { // CURLE_OPERATION_TIMEDOUT
+            error_log("Blackbox API: Request timeout - service may be slow");
+        }
         return null;
     }
     
@@ -163,7 +174,7 @@ function callBlackboxAPI($prompt) {
     $result = json_decode($response, true);
     
     if (!$result || !isset($result['choices'][0]['message']['content'])) {
-        error_log("Blackbox API: Invalid response format");
+        error_log("Blackbox API: Invalid response format - " . substr($response, 0, 200));
         return null;
     }
     
