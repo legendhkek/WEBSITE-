@@ -541,7 +541,11 @@ function processBulk() {
         const progressDetail = document.getElementById('progress-detail');
         
         if (progressBar) progressBar.style.width = progress.percentage + '%';
-        if (progressInfo) progressInfo.textContent = `Processing: ${progress.currentDork.substring(0, 50)}...`;
+        if (progressInfo) {
+            // Sanitize and truncate currentDork to prevent XSS
+            const sanitizedDork = progress.currentDork.substring(0, 50).replace(/[<>'"]/g, '');
+            progressInfo.textContent = `Processing: ${sanitizedDork}...`;
+        }
         if (progressDetail) progressDetail.innerHTML = `
             Processed: ${progress.processed}/${progress.total} | 
             Found: ${progress.resultsFound} results
@@ -875,25 +879,46 @@ function processBulk() {
             container.innerHTML = sortedResults.map((result, index) => {
                 const score = result.score || (window.enhancedDorker ? window.enhancedDorker.scoreResult(result) : 0);
                 const scoreColor = score >= 70 ? '#dc2626' : score >= 40 ? '#f59e0b' : '#10b981';
+                
+                // Sanitize data for safe display
+                const sanitizedTitle = (result.title || '').replace(/[<>]/g, '');
+                const sanitizedUrl = (result.url || '').replace(/["'<>]/g, '');
+                const sanitizedDesc = (result.description || '').replace(/[<>]/g, '');
+                const sanitizedCached = result.cached ? (result.cached || '').replace(/["'<>]/g, '') : null;
+                
                 const scoreBadge = score > 0 ? `<span style="background:${scoreColor}; color:white; padding:0.25rem 0.5rem; border-radius:0.25rem; font-size:0.75rem; font-weight:600; margin-left:0.5rem;">Score: ${score}</span>` : '';
                 
-                return `
+                const resultHtml = `
                     <div class="result-item" style="position:relative; padding-left:1rem; border-left:4px solid ${scoreColor};">
-                        <a href="${result.url}" target="_blank" class="result-title">
-                            ${index + 1}. ${result.title}
+                        <a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" class="result-title">
+                            ${index + 1}. ${sanitizedTitle}
                             ${scoreBadge}
                         </a>
-                        <div class="result-url">${result.url}</div>
-                        <div class="result-description">${result.description}</div>
+                        <div class="result-url">${sanitizedUrl}</div>
+                        <div class="result-description">${sanitizedDesc}</div>
                         <div class="result-actions">
-                            <button class="action-btn" onclick="copyToClipboard('${result.url.replace(/'/g, "\\'")}')">📋 Copy URL</button>
-                            <button class="action-btn" onclick="window.open('${result.url}', '_blank')">🔗 Open</button>
-                            ${result.cached ? `<button class="action-btn" onclick="window.open('${result.cached}', '_blank')">💾 Cached</button>` : ''}
+                            <button class="action-btn" data-url="${sanitizedUrl}">📋 Copy URL</button>
+                            <button class="action-btn" data-open-url="${sanitizedUrl}">🔗 Open</button>
+                            ${sanitizedCached ? `<button class="action-btn" data-open-url="${sanitizedCached}">💾 Cached</button>` : ''}
                             ${score > 0 ? `<button class="action-btn" style="background:#f3f4f6; font-weight:600;">🎯 Relevance: ${score}/100</button>` : ''}
                         </div>
                     </div>
                 `;
+                return resultHtml;
             }).join('');
+            
+            // Add event listeners for buttons (safer than inline onclick)
+            container.querySelectorAll('button[data-url]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    copyToClipboard(this.dataset.url);
+                });
+            });
+            
+            container.querySelectorAll('button[data-open-url]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    window.open(this.dataset.openUrl, '_blank', 'noopener,noreferrer');
+                });
+            });
         }
 
         function updateStats(stats) {

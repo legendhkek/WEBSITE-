@@ -405,7 +405,9 @@ function extractDomain(url) {
     try {
         const urlObj = new URL(url);
         return urlObj.hostname;
-    } catch {
+    } catch (e) {
+        // Log error for debugging
+        console.warn('Failed to parse URL:', url, e);
         return '';
     }
 }
@@ -445,13 +447,25 @@ async function processBulkDorks(dorkList, progressCallback) {
                 const data = await response.json();
                 
                 if (data.success && data.results) {
-                    // Add metadata to each result
-                    const enhancedResults = data.results.map(r => ({
-                        ...r,
-                        source_dork: dork,
-                        score: scoreResult(r),
-                        timestamp: new Date().toISOString()
-                    }));
+                    // Add metadata to each result with URL validation
+                    const enhancedResults = data.results.map(r => {
+                        let isValidUrl = false;
+                        try {
+                            const urlObj = new URL(r.url);
+                            // Only accept http and https protocols
+                            isValidUrl = ['http:', 'https:'].includes(urlObj.protocol);
+                        } catch (e) {
+                            console.warn('Invalid URL in results:', r.url);
+                        }
+                        
+                        return {
+                            ...r,
+                            source_dork: dork,
+                            score: isValidUrl ? scoreResult(r) : 0,
+                            timestamp: new Date().toISOString(),
+                            isValid: isValidUrl
+                        };
+                    }).filter(r => r.isValid); // Only include valid URLs
                     
                     results.push(...enhancedResults);
                     processedCount++;

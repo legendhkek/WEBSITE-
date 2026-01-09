@@ -174,7 +174,8 @@ function scrapeGoogle($dork, $page = 0, $maxPages = 3) {
         
         // Add delay between pages to avoid detection
         if ($currentPage < $page + $maxPages - 1) {
-            usleep(rand(500000, 1500000)); // 0.5-1.5 second random delay
+            // Configurable delay: shorter for better UX, still effective
+            usleep(rand(300000, 800000)); // 0.3-0.8 second random delay
         }
     }
 
@@ -307,10 +308,17 @@ function cleanGoogleUrl($url) {
     // Remove additional Google tracking parameters
     $url = preg_replace('/&(sa|ved|usg)=[^&]+/', '', $url);
     
-    // Validate URL
+    // Validate URL and ensure safe protocols
     if (filter_var($url, FILTER_VALIDATE_URL)) {
-        // Skip Google's own links and non-http(s) URLs
+        $scheme = parse_url($url, PHP_URL_SCHEME);
         $host = parse_url($url, PHP_URL_HOST);
+        
+        // Only allow HTTP and HTTPS protocols
+        if (!in_array(strtolower($scheme), ['http', 'https'])) {
+            return null;
+        }
+        
+        // Skip Google's own links and invalid hosts
         if ($host && strpos($host, 'google.com') === false && strpos($host, 'google.') === false) {
             return $url;
         }

@@ -859,16 +859,19 @@
         // Add visual feedback for actions
         document.querySelectorAll('button, a.action-card-compact, a.tool-card').forEach(element => {
             element.addEventListener('click', function(e) {
+                // Get element position for proper ripple placement
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
                 // Ripple effect
                 const ripple = document.createElement('span');
                 ripple.style.position = 'absolute';
                 ripple.style.borderRadius = '50%';
                 ripple.style.background = 'rgba(255, 255, 255, 0.6)';
                 ripple.style.width = ripple.style.height = '100px';
-                ripple.style.marginLeft = '-50px';
-                ripple.style.marginTop = '-50px';
-                ripple.style.left = e.pageX + 'px';
-                ripple.style.top = e.pageY + 'px';
+                ripple.style.left = (x - 50) + 'px';
+                ripple.style.top = (y - 50) + 'px';
                 ripple.style.pointerEvents = 'none';
                 ripple.style.animation = 'ripple 0.6s ease-out';
                 
