@@ -39,10 +39,14 @@ define('SEARCH_CACHE_TTL', 600); // 10 minutes
 
 // Blackbox API Configuration (for advanced AI features)
 // Get your API key from: https://www.blackbox.ai/
-// Leave empty or set to placeholder value to disable AI features
-define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'sk-wyuAEctTvkFUnR2S5_voig');
-define('BLACKBOX_API_ENDPOINT', 'https://api.blackbox.ai/v1/chat/completions');
-define('AI_FEATURES_ENABLED', !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE');
+// To use environment variable: Set BLACKBOX_API_KEY environment variable
+define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'sk-EaCMR2Zc9NrXAb7_1FkHZQ');
+define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://api.blackbox.ai/chat/completions');
+
+// AI is enabled only if both API key and endpoint are configured
+$hasApiKey = !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';
+$hasEndpoint = !empty(BLACKBOX_API_ENDPOINT);
+define('AI_FEATURES_ENABLED', $hasApiKey && $hasEndpoint);
 
 // Google AdSense Configuration
 define('GOOGLE_ADSENSE_CLIENT', 'ca-pub-1940810089559549');

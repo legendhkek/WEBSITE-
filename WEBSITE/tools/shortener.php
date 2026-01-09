@@ -6,7 +6,7 @@ require_once __DIR__ . '/../auth.php';
 // Check if user is logged in
 $user = getCurrentUser();
 if (!$user) {
-    header('Location: login.php');
+    header('Location: ../login.php');
     exit;
 }
 
@@ -44,7 +44,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS url_clicks (
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Link Shortener - Legend House</title>
-    <link rel="stylesheet" href="dashboard-style.css">
+    <link rel="stylesheet" href="../dashboard-style.css">
     <link rel="stylesheet" href="shortener-style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -499,6 +499,15 @@ function createABTest() {
         </main>
     </div>
 
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem 1rem; background: var(--white); border-top: 2px solid var(--gray-200); margin-top: 3rem;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <p style="margin: 0; font-size: 0.9rem; color: var(--gray-600);">
+                <strong style="color: var(--black);">Powered by Legend House</strong> • Advanced Tools Platform
+            </p>
+        </div>
+    </footer>
+
     <script src="shortener-script.js"></script>
     <script>
         // Initialize on page load
@@ -506,6 +515,13 @@ function createABTest() {
             loadUserLinks();
             initializeAnalytics();
         });
+    </script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="../ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'general' for shortener page
+        document.body.dataset.aiContext = 'general';
     </script>
 </body>
 </html>

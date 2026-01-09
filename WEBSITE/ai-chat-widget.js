@@ -15,6 +15,11 @@ class LegendAIChat {
         this.messages = [];
         this.isLoading = false;
         
+        // Detect base path - check if we're in a subdirectory
+        const scriptTag = document.currentScript || document.querySelector('script[src*="ai-chat-widget.js"]');
+        const scriptSrc = scriptTag ? scriptTag.src : '';
+        this.basePath = scriptSrc.includes('../ai-chat-widget.js') ? '../' : '';
+        
         this.init();
     }
     
@@ -30,7 +35,7 @@ class LegendAIChat {
     
     async checkAvailability() {
         try {
-            const response = await fetch('ai-chat.php?action=available');
+            const response = await fetch(this.basePath + 'ai-chat.php?action=available');
             const data = await response.json();
             return data.success && data.available;
         } catch (error) {
@@ -486,7 +491,7 @@ class LegendAIChat {
         this.isLoading = true;
         
         try {
-            const response = await fetch('ai-chat.php?action=chat', {
+            const response = await fetch(this.basePath + 'ai-chat.php?action=chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

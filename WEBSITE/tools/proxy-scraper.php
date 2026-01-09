@@ -6,7 +6,7 @@ require_once __DIR__ . '/../auth.php';
 // Check if user is logged in
 $user = getCurrentUser();
 if (!$user) {
-    header('Location: login.php');
+    header('Location: ../login.php');
     exit;
 }
 
@@ -45,7 +45,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS proxy_sources (
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proxy Scraper - Legend House</title>
-    <link rel="stylesheet" href="dashboard-style.css">
+    <link rel="stylesheet" href="../dashboard-style.css">
     <link rel="stylesheet" href="shortener-style.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
      crossorigin="anonymous"></script>
@@ -222,6 +222,22 @@ $db->exec("CREATE TABLE IF NOT EXISTS proxy_sources (
         </main>
     </div>
 
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem 1rem; background: var(--white); border-top: 2px solid var(--gray-200); margin-top: 3rem;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <p style="margin: 0; font-size: 0.9rem; color: var(--gray-600);">
+                <strong style="color: var(--black);">Powered by Legend House</strong> • Advanced Tools Platform
+            </p>
+        </div>
+    </footer>
+
     <script src="proxy-scraper-script.js"></script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="../ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'general' for proxy scraper page
+        document.body.dataset.aiContext = 'general';
+    </script>
 </body>
 </html>

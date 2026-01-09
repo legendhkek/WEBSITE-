@@ -361,7 +361,7 @@
                 <div class="tools-stat-label">Total Tools</div>
             </div>
             <div class="tools-stat">
-                <div class="tools-stat-value">12</div>
+                <div class="tools-stat-value">13</div>
                 <div class="tools-stat-label">Active Now</div>
             </div>
             <div class="tools-stat">
@@ -619,7 +619,7 @@
                 <div>
                     <h2 class="tools-section-title">Utility Tools</h2>
                 </div>
-                <span class="tools-section-desc">6 tools (4 active)</span>
+                <span class="tools-section-desc">6 tools (5 active)</span>
             </div>
             
             <div class="tools-grid">
@@ -676,6 +676,25 @@
                         <span class="tool-feature-tag">Rotating Pool</span>
                         <span class="tool-feature-tag">API Access</span>
                         <span class="tool-feature-tag">Health Monitor</span>
+                    </div>
+                    <span class="tool-card-status active">
+                        <span class="status-dot"></span>
+                        Active
+                    </span>
+                </a>
+                
+                <a href="tools/residential-proxy-maker.php" class="tool-card">
+                    <div class="tool-card-header">
+                        <span class="tool-card-icon">🏠</span>
+                        <h3 class="tool-card-title">Residential Proxy Maker</h3>
+                    </div>
+                    <p class="tool-card-desc">
+                        Scrape & auto-check proxies from 200+ sources. Convert 200+ proxies to residential rotating pools. Real-time stats tracking and TXT export.
+                    </p>
+                    <div class="tool-card-features">
+                        <span class="tool-feature-tag">200+ Sources</span>
+                        <span class="tool-feature-tag">Auto-Check</span>
+                        <span class="tool-feature-tag">Real Stats</span>
                     </div>
                     <span class="tool-card-status active">
                         <span class="status-dot"></span>
@@ -746,6 +765,18 @@
         </section>
     </div>
     
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 3rem 1rem; background: var(--gray-50); border-top: 2px solid var(--gray-200); margin-top: 4rem;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <p style="margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 600; color: var(--black);">
+                🏠 Powered by Legend House
+            </p>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--gray-600);">
+                Advanced Tools Platform • All Tools Free to Use
+            </p>
+        </div>
+    </footer>
+    
     <!-- Scripts -->
     <script>
         // Dropdown toggle
@@ -778,6 +809,13 @@
                 window.location.href = 'auth.php?action=logout';
             }
         }
+    </script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'general' for tools hub page
+        document.body.dataset.aiContext = 'general';
     </script>
 </body>
 </html>

@@ -190,7 +190,7 @@
                             <rect x="3" y="8" width="18" height="13" rx="2"/>
                             <polygon points="12,3 19,8 5,8"/>
                         </svg>
-                        LEGEND HOUSE
+                        Powered by LEGEND HOUSE
                     </span>
                     <span class="footer-divider"></span>
                     <span class="footer-stats">Advanced Torrent Center</span>
@@ -204,6 +204,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
     <script src="torrent-script.js"></script>
-    <script src="script.js"></script>
+    <script src="../script.js"></script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="../ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'torrents' for torrent page
+        document.body.dataset.aiContext = 'torrents';
+    </script>
 </body>
 </html>

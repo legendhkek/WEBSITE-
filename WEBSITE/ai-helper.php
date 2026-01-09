@@ -91,18 +91,36 @@ function getTrendingTopics() {
 }
 
 /**
- * Call Blackbox AI API
+ * Validate Blackbox API configuration
+ */
+function validateBlackboxConfig() {
+    if (!defined('BLACKBOX_API_KEY') || empty(BLACKBOX_API_KEY)) {
+        error_log("Blackbox API: API key not configured");
+        return false;
+    }
+    
+    if (!defined('BLACKBOX_API_ENDPOINT') || empty(BLACKBOX_API_ENDPOINT)) {
+        error_log("Blackbox API: API endpoint not configured");
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Call Blackbox AI API (OpenAI-compatible)
  */
 function callBlackboxAPI($prompt) {
-    if (!defined('BLACKBOX_API_KEY') || !defined('BLACKBOX_API_ENDPOINT')) {
+    if (!validateBlackboxConfig()) {
         return null;
     }
     
+    // OpenAI-compatible request format
     $data = [
+        'model' => 'blackboxai',
         'messages' => [
             ['role' => 'user', 'content' => $prompt]
         ],
-        'model' => 'blackbox',
         'max_tokens' => 500,
         'temperature' => 0.7
     ];
@@ -117,21 +135,34 @@ function callBlackboxAPI($prompt) {
             'Authorization: Bearer ' . BLACKBOX_API_KEY
         ],
         CURLOPT_TIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_CONNECTTIMEOUT => 5
     ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
     
-    if ($httpCode !== 200 || !$response) {
-        error_log("Blackbox API error: HTTP $httpCode");
+    if ($curlError) {
+        error_log("Blackbox API CURL error: $curlError");
+        return null;
+    }
+    
+    if ($httpCode !== 200) {
+        error_log("Blackbox API HTTP error: $httpCode - Response: " . substr($response, 0, 200));
+        return null;
+    }
+    
+    if (!$response) {
+        error_log("Blackbox API: Empty response");
         return null;
     }
     
     $result = json_decode($response, true);
     
     if (!$result || !isset($result['choices'][0]['message']['content'])) {
+        error_log("Blackbox API: Invalid response format");
         return null;
     }
     

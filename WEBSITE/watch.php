@@ -546,5 +546,12 @@
     <!-- WebTorrent Script -->
     <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
     <script src="watch.js"></script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'general' for watch page
+        document.body.dataset.aiContext = 'general';
+    </script>
 </body>
 </html>
