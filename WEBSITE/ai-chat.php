@@ -132,7 +132,7 @@ function handleChat($db, $user) {
 }
 
 /**
- * Get AI response using Blackbox API (OpenAI-compatible)
+ * Get AI response using Blackbox API
  */
 function getAIResponse($message, $history = [], $context = 'general') {
     if (!validateBlackboxConfig()) {
@@ -141,9 +141,8 @@ function getAIResponse($message, $history = [], $context = 'general') {
     
     $systemPrompt = getSystemPrompt($context);
     
-    $messages = [
-        ['role' => 'system', 'content' => $systemPrompt]
-    ];
+    // Build messages array with system prompt as first user message context
+    $messages = [];
     
     // Add conversation history
     foreach ($history as $msg) {
@@ -153,16 +152,28 @@ function getAIResponse($message, $history = [], $context = 'general') {
         ];
     }
     
-    // Add current message
-    $messages[] = ['role' => 'user', 'content' => $message];
+    // Add current message with system context
+    $fullMessage = "Context: " . $systemPrompt . "\n\nUser: " . $message;
+    $messages[] = ['role' => 'user', 'content' => $fullMessage];
     
-    // OpenAI-compatible request format
+    // Blackbox AI native request format
     $data = [
-        'model' => 'blackboxai',  // Use blackboxai model
         'messages' => $messages,
-        'max_tokens' => 2000,
-        'temperature' => 0.7,
-        'stream' => false
+        'id' => uniqid('legendhouse_chat_'),
+        'previewToken' => null,
+        'userId' => null,
+        'codeModelMode' => true,
+        'agentMode' => [],
+        'trendingAgentMode' => [],
+        'isMicMode' => false,
+        'maxTokens' => 2000,
+        'isChromeExt' => false,
+        'githubToken' => null,
+        'clickedAnswer2' => false,
+        'clickedAnswer3' => false,
+        'clickedForceWebSearch' => false,
+        'visitFromDelta' => false,
+        'mobileClient' => false
     ];
     
     $ch = curl_init(BLACKBOX_API_ENDPOINT);
@@ -172,13 +183,16 @@ function getAIResponse($message, $history = [], $context = 'general') {
         CURLOPT_POSTFIELDS => json_encode($data),
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . BLACKBOX_API_KEY
+            'Accept: application/json',
+            'Origin: https://www.blackbox.ai',
+            'Referer: https://www.blackbox.ai/',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         ],
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 45,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_CONNECTTIMEOUT => 15,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS => 3
+        CURLOPT_MAXREDIRS => 5
     ]);
     
     $response = curl_exec($ch);
@@ -206,7 +220,7 @@ function getAIResponse($message, $history = [], $context = 'general') {
     }
     
     if ($httpCode !== 200) {
-        error_log("Blackbox AI Chat HTTP error: $httpCode - Response: " . substr($response, 0, 200));
+        error_log("Blackbox AI Chat HTTP error: $httpCode - Response: " . substr($response, 0, 500));
         return "I apologize, but the AI service returned an error (HTTP $httpCode). Please try again later.";
     }
     
@@ -215,14 +229,18 @@ function getAIResponse($message, $history = [], $context = 'general') {
         return "I apologize, but I received an empty response from the AI service. Please try again.";
     }
     
-    $result = json_decode($response, true);
+    // Blackbox returns plain text response
+    $content = trim($response);
     
-    if (!$result || !isset($result['choices'][0]['message']['content'])) {
-        error_log("Blackbox AI Chat: Invalid response format - " . substr($response, 0, 200));
-        return "I apologize, but I received an invalid response from the AI service. Please try again.";
+    // Clean up any markdown artifacts
+    $content = preg_replace('/^\$@\$v=undefined-rv1\$@\$/i', '', $content);
+    $content = trim($content);
+    
+    if (empty($content)) {
+        return "I apologize, but I received an empty response. Please try again.";
     }
     
-    return $result['choices'][0]['message']['content'];
+    return $content;
 }
 
 /**
