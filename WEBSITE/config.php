@@ -38,10 +38,9 @@ define('CACHE_TTL', 1800); // 30 minutes
 define('SEARCH_CACHE_TTL', 600); // 10 minutes
 
 // Blackbox API Configuration (for advanced AI features)
-// NOTE: The Blackbox AI API service (api.blackbox.ai) is currently unavailable
-// AI features are temporarily disabled until a working API endpoint is configured
-// To enable: Set BLACKBOX_API_KEY environment variable and update BLACKBOX_API_ENDPOINT
-define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: '');
+// Get your API key from: https://www.blackbox.ai/
+// To use environment variable: Set BLACKBOX_API_KEY environment variable
+define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'sk-EaCMR2Zc9NrXAb7_1FkHZQ');
 define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://api.blackbox.ai/v1/chat/completions');
 
 // AI is enabled only if both API key and endpoint are configured
