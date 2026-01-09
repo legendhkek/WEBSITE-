@@ -41,7 +41,7 @@ define('SEARCH_CACHE_TTL', 600); // 10 minutes
 // Get your API key from: https://www.blackbox.ai/
 // To use environment variable: Set BLACKBOX_API_KEY environment variable
 define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'sk-EaCMR2Zc9NrXAb7_1FkHZQ');
-define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://api.blackbox.ai/v1/chat/completions');
+define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://api.blackbox.ai/chat/completions');
 
 // AI is enabled only if both API key and endpoint are configured
 $hasApiKey = !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';

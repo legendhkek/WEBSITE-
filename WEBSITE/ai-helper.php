@@ -108,18 +108,19 @@ function validateBlackboxConfig() {
 }
 
 /**
- * Call Blackbox AI API
+ * Call Blackbox AI API (OpenAI-compatible)
  */
 function callBlackboxAPI($prompt) {
     if (!validateBlackboxConfig()) {
         return null;
     }
     
+    // OpenAI-compatible request format
     $data = [
+        'model' => 'blackboxai',
         'messages' => [
             ['role' => 'user', 'content' => $prompt]
         ],
-        'model' => 'blackbox',
         'max_tokens' => 500,
         'temperature' => 0.7
     ];

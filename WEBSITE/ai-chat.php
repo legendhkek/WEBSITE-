@@ -132,7 +132,7 @@ function handleChat($db, $user) {
 }
 
 /**
- * Get AI response using Blackbox API
+ * Get AI response using Blackbox API (OpenAI-compatible)
  */
 function getAIResponse($message, $history = [], $context = 'general') {
     if (!validateBlackboxConfig()) {
@@ -156,9 +156,10 @@ function getAIResponse($message, $history = [], $context = 'general') {
     // Add current message
     $messages[] = ['role' => 'user', 'content' => $message];
     
+    // OpenAI-compatible request format
     $data = [
+        'model' => 'blackboxai',  // Use blackboxai model
         'messages' => $messages,
-        'model' => 'blackbox',
         'max_tokens' => 2000,
         'temperature' => 0.7,
         'stream' => false
@@ -185,7 +186,7 @@ function getAIResponse($message, $history = [], $context = 'general') {
     
     if ($curlError) {
         error_log("Blackbox AI Chat CURL error: $curlError");
-        return "I apologize, but I'm unable to connect to the AI service at the moment. Please try again later or contact support if the issue persists.";
+        return "I apologize, but I'm unable to connect to the AI service at the moment. Error: " . $curlError;
     }
     
     if ($httpCode !== 200) {
@@ -201,7 +202,7 @@ function getAIResponse($message, $history = [], $context = 'general') {
     $result = json_decode($response, true);
     
     if (!$result || !isset($result['choices'][0]['message']['content'])) {
-        error_log("Blackbox AI Chat: Invalid response format");
+        error_log("Blackbox AI Chat: Invalid response format - " . substr($response, 0, 200));
         return "I apologize, but I received an invalid response from the AI service. Please try again.";
     }
     

@@ -43,32 +43,38 @@ function scrapeProxies() {
     
     $proxies = [];
     
-    // Predefined proxy sources (mock - in production, these would be real API calls)
-    $proxyLists = [
-        'free-proxy-list' => generateMockProxies(20),
-        'proxyscrape' => generateMockProxies(15),
-        'proxy-list' => generateMockProxies(10),
-        'spys' => generateMockProxies(12),
-        'geonode' => generateMockProxies(18),
-        'pubproxy' => generateMockProxies(8)
-    ];
+    // Real proxy scraping from public sources
+    $proxyLists = [];
     
-    if (in_array('all', $sources)) {
-        foreach ($proxyLists as $list) {
-            $proxies = array_merge($proxies, $list);
-        }
-    } else {
-        foreach ($sources as $source) {
-            if (isset($proxyLists[$source])) {
-                $proxies = array_merge($proxies, $proxyLists[$source]);
-            }
-        }
+    if (in_array('all', $sources) || in_array('free-proxy-list', $sources)) {
+        $proxyLists['free-proxy-list'] = scrapeFreeProxyList();
+    }
+    if (in_array('all', $sources) || in_array('proxyscrape', $sources)) {
+        $proxyLists['proxyscrape'] = scrapeProxyScrape();
+    }
+    if (in_array('all', $sources) || in_array('proxy-list', $sources)) {
+        $proxyLists['proxy-list'] = scrapeProxyListDownload();
+    }
+    if (in_array('all', $sources) || in_array('geonode', $sources)) {
+        $proxyLists['geonode'] = scrapeGeonode();
+    }
+    if (in_array('all', $sources) || in_array('pubproxy', $sources)) {
+        $proxyLists['pubproxy'] = scrapePubProxy();
+    }
+    
+    foreach ($proxyLists as $list) {
+        $proxies = array_merge($proxies, $list);
     }
     
     // Add custom source if provided
     if ($customSource) {
         try {
-            $content = @file_get_contents($customSource);
+            $content = @file_get_contents($customSource, false, stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                ]
+            ]));
             if ($content) {
                 $lines = explode("\n", $content);
                 foreach ($lines as $line) {
@@ -77,21 +83,197 @@ function scrapeProxies() {
                         $proxies[] = [
                             'ip' => $matches[1],
                             'port' => intval($matches[2]),
-                            'protocol' => 'http'
+                            'protocol' => 'http',
+                            'source' => 'custom'
                         ];
                     }
                 }
             }
         } catch (Exception $e) {
-            // Ignore custom source errors
+            error_log("Custom proxy source error: " . $e->getMessage());
+        }
+    }
+    
+    // Remove duplicates
+    $unique = [];
+    $seen = [];
+    foreach ($proxies as $proxy) {
+        $key = $proxy['ip'] . ':' . $proxy['port'];
+        if (!isset($seen[$key])) {
+            $seen[$key] = true;
+            $unique[] = $proxy;
         }
     }
     
     echo json_encode([
         'success' => true,
-        'proxies' => $proxies,
-        'total' => count($proxies)
+        'proxies' => $unique,
+        'total' => count($unique)
     ]);
+}
+
+// Scrape from ProxyScrape API
+function scrapeProxyScrape() {
+    $proxies = [];
+    try {
+        $url = 'https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all&simplified=true';
+        $content = @file_get_contents($url, false, stream_context_create([
+            'http' => [
+                'timeout' => 15,
+                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ]
+        ]));
+        
+        if ($content) {
+            $lines = explode("\n", trim($content));
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (preg_match('/^(\d+\.\d+\.\d+\.\d+):(\d+)$/', $line, $matches)) {
+                    $proxies[] = [
+                        'ip' => $matches[1],
+                        'port' => intval($matches[2]),
+                        'protocol' => 'http',
+                        'source' => 'proxyscrape'
+                    ];
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log("ProxyScrape scraping error: " . $e->getMessage());
+    }
+    return $proxies;
+}
+
+// Scrape from Geonode API
+function scrapeGeonode() {
+    $proxies = [];
+    try {
+        $url = 'https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http%2Chttps';
+        $content = @file_get_contents($url, false, stream_context_create([
+            'http' => [
+                'timeout' => 15,
+                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ]
+        ]));
+        
+        if ($content) {
+            $data = json_decode($content, true);
+            if (isset($data['data']) && is_array($data['data'])) {
+                foreach ($data['data'] as $proxy) {
+                    if (isset($proxy['ip']) && isset($proxy['port'])) {
+                        $proxies[] = [
+                            'ip' => $proxy['ip'],
+                            'port' => intval($proxy['port']),
+                            'protocol' => isset($proxy['protocols'][0]) ? strtolower($proxy['protocols'][0]) : 'http',
+                            'source' => 'geonode',
+                            'country' => $proxy['country'] ?? 'Unknown',
+                            'anonymity' => $proxy['anonymityLevel'] ?? 'Unknown'
+                        ];
+                    }
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Geonode scraping error: " . $e->getMessage());
+    }
+    return $proxies;
+}
+
+// Scrape from PubProxy API
+function scrapePubProxy() {
+    $proxies = [];
+    try {
+        $url = 'http://pubproxy.com/api/proxy?limit=20&format=json&type=http';
+        $content = @file_get_contents($url, false, stream_context_create([
+            'http' => [
+                'timeout' => 15,
+                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ]
+        ]));
+        
+        if ($content) {
+            $data = json_decode($content, true);
+            if (isset($data['data']) && is_array($data['data'])) {
+                foreach ($data['data'] as $proxy) {
+                    if (isset($proxy['ip']) && isset($proxy['port'])) {
+                        $proxies[] = [
+                            'ip' => $proxy['ip'],
+                            'port' => intval($proxy['port']),
+                            'protocol' => $proxy['type'] ?? 'http',
+                            'source' => 'pubproxy',
+                            'country' => $proxy['country'] ?? 'Unknown'
+                        ];
+                    }
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log("PubProxy scraping error: " . $e->getMessage());
+    }
+    return $proxies;
+}
+
+// Scrape from Free-Proxy-List.net
+function scrapeFreeProxyList() {
+    $proxies = [];
+    try {
+        $url = 'https://www.free-proxy-list.net/';
+        $content = @file_get_contents($url, false, stream_context_create([
+            'http' => [
+                'timeout' => 15,
+                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ]
+        ]));
+        
+        if ($content) {
+            // Parse HTML table for proxy data
+            if (preg_match_all('/<tr><td>(\d+\.\d+\.\d+\.\d+)<\/td><td>(\d+)<\/td>/', $content, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $match) {
+                    $proxies[] = [
+                        'ip' => $match[1],
+                        'port' => intval($match[2]),
+                        'protocol' => 'http',
+                        'source' => 'free-proxy-list'
+                    ];
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Free-Proxy-List scraping error: " . $e->getMessage());
+    }
+    return $proxies;
+}
+
+// Scrape from proxy-list.download
+function scrapeProxyListDownload() {
+    $proxies = [];
+    try {
+        $url = 'https://www.proxy-list.download/api/v1/get?type=http';
+        $content = @file_get_contents($url, false, stream_context_create([
+            'http' => [
+                'timeout' => 15,
+                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ]
+        ]));
+        
+        if ($content) {
+            $lines = explode("\n", trim($content));
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (preg_match('/^(\d+\.\d+\.\d+\.\d+):(\d+)$/', $line, $matches)) {
+                    $proxies[] = [
+                        'ip' => $matches[1],
+                        'port' => intval($matches[2]),
+                        'protocol' => 'http',
+                        'source' => 'proxy-list'
+                    ];
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Proxy-List-Download scraping error: " . $e->getMessage());
+    }
+    return $proxies;
 }
 
 function validateProxy() {
