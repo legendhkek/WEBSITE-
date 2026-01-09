@@ -557,32 +557,144 @@ function processBulk() {
                 </div>
 
                 <div class="form-group">
-                    <label>Quick Categories</label>
+                    <label>Quick Categories (150+ Available)</label>
                     <div class="category-grid">
-                        <button class="category-btn" data-category="admin">Admin Panels</button>
-                        <button class="category-btn" data-category="files">Exposed Files</button>
-                        <button class="category-btn" data-category="vulns">Vulnerabilities</button>
-                        <button class="category-btn" data-category="logins">Login Pages</button>
-                        <button class="category-btn" data-category="docs">Sensitive Docs</button>
-                        <button class="category-btn" data-category="dirs">Directories</button>
-                        <button class="category-btn" data-category="iot">IoT Devices</button>
-                        <button class="category-btn" data-category="emails">Email Harvest</button>
+                        <button class="category-btn" data-category="admin">🔐 Admin Panels</button>
+                        <button class="category-btn" data-category="files">📁 Exposed Files</button>
+                        <button class="category-btn" data-category="vulns">⚠️ Vulnerabilities</button>
+                        <button class="category-btn" data-category="logins">🔑 Login Pages</button>
+                        <button class="category-btn" data-category="docs">📄 Sensitive Docs</button>
+                        <button class="category-btn" data-category="dirs">📂 Directories</button>
+                        <button class="category-btn" data-category="iot">📹 IoT Devices</button>
+                        <button class="category-btn" data-category="emails">📧 Email Lists</button>
+                        <button class="category-btn" data-category="api-keys">🔑 API Keys</button>
+                        <button class="category-btn" data-category="database-files">💾 Databases</button>
+                        <button class="category-btn" data-category="git-repos">🔧 Git Repos</button>
+                        <button class="category-btn" data-category="aws-s3">☁️ AWS S3</button>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <select id="categorySelect" class="form-input" onchange="loadCategoryDork(this.value)">
+                            <option value="">-- Load More Categories --</option>
+                            <optgroup label="Security & Vulnerabilities">
+                                <option value="sql-injection">SQL Injection</option>
+                                <option value="xss-vulns">XSS Vulnerabilities</option>
+                                <option value="lfi">Local File Inclusion</option>
+                                <option value="rfi">Remote File Inclusion</option>
+                                <option value="open-redirects">Open Redirects</option>
+                                <option value="xxe-injection">XXE Injection</option>
+                                <option value="ssrf-vulns">SSRF Vulnerabilities</option>
+                                <option value="command-injection">Command Injection</option>
+                                <option value="path-traversal">Path Traversal</option>
+                                <option value="csrf-vulnerable">CSRF Vulnerable</option>
+                            </optgroup>
+                            <optgroup label="Admin & Authentication">
+                                <option value="admin-panels">Admin Panels</option>
+                                <option value="login-pages">Login Pages</option>
+                                <option value="wp-admin">WordPress Admin</option>
+                                <option value="cpanel">cPanel</option>
+                                <option value="phpmyadmin">phpMyAdmin</option>
+                                <option value="joomla-admin">Joomla Admin</option>
+                                <option value="drupal-admin">Drupal Admin</option>
+                                <option value="magento-admin">Magento Admin</option>
+                            </optgroup>
+                            <optgroup label="Exposed Files">
+                                <option value="config-files">Config Files</option>
+                                <option value="database-files">Database Files</option>
+                                <option value="log-files">Log Files</option>
+                                <option value="backup-files">Backup Files</option>
+                                <option value="env-files">Environment Files</option>
+                                <option value="ssh-keys">SSH Keys</option>
+                                <option value="credentials">Credentials</option>
+                                <option value="git-config">Git Config</option>
+                            </optgroup>
+                            <optgroup label="Sensitive Documents">
+                                <option value="financial-docs">Financial Documents</option>
+                                <option value="legal-docs">Legal Documents</option>
+                                <option value="medical-records">Medical Records</option>
+                                <option value="email-lists">Email Lists</option>
+                                <option value="password-lists">Password Lists</option>
+                                <option value="invoices">Invoices</option>
+                            </optgroup>
+                            <optgroup label="IoT & Devices">
+                                <option value="webcams">Webcams</option>
+                                <option value="printers">Printers</option>
+                                <option value="routers">Routers</option>
+                                <option value="security-cameras">Security Cameras</option>
+                                <option value="nas-devices">NAS Devices</option>
+                            </optgroup>
+                            <optgroup label="Cloud Services">
+                                <option value="aws-s3">AWS S3 Buckets</option>
+                                <option value="azure-storage">Azure Storage</option>
+                                <option value="google-cloud">Google Cloud</option>
+                                <option value="firebase-db">Firebase DB</option>
+                                <option value="heroku-apps">Heroku Apps</option>
+                            </optgroup>
+                            <optgroup label="Development">
+                                <option value="github-secrets">GitHub Secrets</option>
+                                <option value="api-keys">API Keys</option>
+                                <option value="git-repos">Git Repositories</option>
+                                <option value="docker-files">Docker Files</option>
+                                <option value="jenkins-servers">Jenkins Servers</option>
+                                <option value="aws-keys">AWS Keys</option>
+                            </optgroup>
+                            <optgroup label="Advanced">
+                                <option value="api-endpoints">API Endpoints</option>
+                                <option value="swagger-docs">Swagger Docs</option>
+                                <option value="graphql-endpoints">GraphQL</option>
+                                <option value="directory-listings">Directory Listings</option>
+                                <option value="vulnerable-apps">Vulnerable Apps</option>
+                                <option value="web-shells">Web Shells</option>
+                            </optgroup>
+                        </select>
                     </div>
                 </div>
 
                 <button class="dork-btn" onclick="startDorking()">🚀 Start Dorking</button>
 
                 <div class="operators-help">
-                    <h3>Common Operators:</h3>
+                    <h3>📚 Advanced Google Dork Operators (100+):</h3>
                     <div class="operator-list">
-                        <div>• site: - Specific domain</div>
-                        <div>• intitle: - Page title</div>
-                        <div>• inurl: - In URL</div>
-                        <div>• filetype: - File type</div>
-                        <div>• intext: - In body</div>
-                        <div>• cache: - Cached page</div>
-                        <div>• link: - Links to page</div>
+                        <div><strong>Basic:</strong></div>
+                        <div>• site: - Search specific domain</div>
+                        <div>• intitle: - Search in page title</div>
+                        <div>• inurl: - Search in URL</div>
+                        <div>• filetype: - Search specific file type</div>
+                        <div>• ext: - File extension (same as filetype)</div>
+                        <div>• intext: - Search in page body</div>
+                        <div>• allintext: - All words in body</div>
+                        <div>• allintitle: - All words in title</div>
+                        <div>• allinurl: - All words in URL</div>
+                        <div>• cache: - View cached version</div>
+                        <div>• link: - Pages linking to URL</div>
                         <div>• related: - Similar pages</div>
+                        <div>• info: - Info about page</div>
+                        <div><strong>Advanced:</strong></div>
+                        <div>• | - OR operator (pipe)</div>
+                        <div>• - - Exclude term (minus)</div>
+                        <div>• " " - Exact phrase match</div>
+                        <div>• * - Wildcard (any word)</div>
+                        <div>• .. - Number range (e.g., 2020..2024)</div>
+                        <div>• AROUND(X) - Words near each other</div>
+                        <div>• stocks: - Stock market info</div>
+                        <div>• define: - Definition of term</div>
+                        <div>• weather: - Weather info</div>
+                        <div>• movie: - Movie info</div>
+                        <div><strong>Combinations:</strong></div>
+                        <div>• Use () for grouping queries</div>
+                        <div>• Chain multiple operators</div>
+                        <div>• Combine with keywords</div>
+                        <div>• Use negation effectively</div>
+                    </div>
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-300);">
+                        <strong>💡 Pro Tips:</strong>
+                        <div style="font-size: 0.813rem; color: var(--gray-600); margin-top: 0.5rem; line-height: 1.6;">
+                            • Combine operators for powerful searches<br>
+                            • Use quotes for exact matches<br>
+                            • Use minus (-) to exclude unwanted results<br>
+                            • Try multiple operators together<br>
+                            • Test different combinations<br>
+                            • Save successful dorks for later
+                        </div>
                     </div>
                 </div>
             </div>
@@ -607,17 +719,36 @@ function processBulk() {
     </div>
 
     <script>
-        // Category presets
+        // Category presets - Enhanced with more dorks
         const categoryDorks = {
-            admin: 'intitle:"admin" OR intitle:"administrator" OR intitle:"login" inurl:admin',
-            files: 'filetype:env OR filetype:sql OR filetype:log OR filetype:conf',
-            vulns: 'intext:"sql syntax near" OR intext:"mysql_fetch" OR intext:"error in your SQL"',
-            logins: 'inurl:wp-admin OR inurl:administrator OR inurl:cpanel OR inurl:webmail',
-            docs: 'filetype:pdf OR filetype:doc OR filetype:xlsx confidential OR password',
-            dirs: 'intitle:"index of" inurl:/admin/ OR inurl:/backup/ OR inurl:/config/',
-            iot: 'inurl:view/view.shtml OR inurl:ViewerFrame?Mode= OR inurl:/admin/login.asp',
-            emails: 'intext:"@gmail.com" OR intext:"@yahoo.com" OR intext:"@hotmail.com"'
+            admin: 'intitle:"admin" OR intitle:"administrator" OR intitle:"login" inurl:admin OR inurl:administrator',
+            files: 'filetype:env OR filetype:sql OR filetype:log OR filetype:conf OR filetype:config OR filetype:bak',
+            vulns: 'intext:"sql syntax near" OR intext:"mysql_fetch" OR intext:"error in your SQL" OR intext:"Warning: mysql"',
+            logins: 'inurl:wp-admin OR inurl:administrator OR inurl:cpanel OR inurl:webmail OR inurl:login OR inurl:signin',
+            docs: 'filetype:pdf OR filetype:doc OR filetype:xlsx OR filetype:docx intext:"confidential" OR intext:"password"',
+            dirs: 'intitle:"index of" inurl:/admin/ OR inurl:/backup/ OR inurl:/config/ OR inurl:/data/',
+            iot: 'inurl:view/view.shtml OR inurl:ViewerFrame?Mode= OR inurl:/admin/login.asp OR inurl:video.cgi',
+            emails: 'intext:"@gmail.com" OR intext:"@yahoo.com" OR intext:"@hotmail.com" OR intext:"@outlook.com" filetype:csv OR filetype:txt',
+            'api-keys': 'intext:"api_key" OR intext:"apikey" OR intext:"api key" OR intext:"secret_key" filetype:json OR filetype:txt OR filetype:js',
+            'database-files': 'filetype:sql OR filetype:db OR filetype:mdb OR filetype:sqlite intext:INSERT OR intext:"CREATE TABLE"',
+            'git-repos': 'inurl:.git/config OR inurl:.git/HEAD OR intext:"repositoryformatversion" OR intitle:"index of" .git',
+            'aws-s3': 'site:s3.amazonaws.com OR inurl:".s3.amazonaws.com" OR inurl:s3.amazonaws.com'
         };
+
+        // Function to load category from dropdown
+        function loadCategoryDork(category) {
+            if (!category) return;
+            
+            // Check if category exists in enhancedDorker categories
+            if (window.enhancedDorker && window.enhancedDorker.categories && window.enhancedDorker.categories[category]) {
+                document.getElementById('dorkQuery').value = window.enhancedDorker.categories[category];
+            } else if (categoryDorks[category]) {
+                document.getElementById('dorkQuery').value = categoryDorks[category];
+            }
+            
+            // Reset select
+            document.getElementById('categorySelect').value = '';
+        }
 
         // Category button handlers
         document.querySelectorAll('.category-btn').forEach(btn => {

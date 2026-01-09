@@ -97,123 +97,236 @@ function handleDork($db, $user) {
     ]);
 }
 
-function scrapeGoogle($dork, $page = 0) {
-    // User agents for rotation (anti-detection)
+function scrapeGoogle($dork, $page = 0, $maxPages = 3) {
+    // Enhanced user agents for better rotation (anti-detection)
     $userAgents = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 OPR/107.0.0.0'
     ];
 
-    $url = "https://www.google.com/search?q=" . urlencode($dork);
-    $url .= "&start=" . ($page * 10);
-    $url .= "&num=10";
+    $allResults = [];
+    
+    // Multi-page scraping for more comprehensive results
+    for ($currentPage = $page; $currentPage < $page + $maxPages; $currentPage++) {
+        $url = "https://www.google.com/search?q=" . urlencode($dork);
+        $url .= "&start=" . ($currentPage * 10);
+        $url .= "&num=10";
+        $url .= "&filter=0"; // Disable auto-filtering of similar results
+        $url .= "&pws=0"; // Disable personalization
 
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_HTTPHEADER => [
-            'User-Agent: ' . $userAgents[array_rand($userAgents)],
-            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language: en-US,en;q=0.5',
-            'Accept-Encoding: gzip, deflate, br',
-            'DNT: 1',
-            'Connection: keep-alive',
-            'Upgrade-Insecure-Requests: 1',
-            'Sec-Fetch-Dest: document',
-            'Sec-Fetch-Mode: navigate',
-            'Sec-Fetch-Site: none',
-            'Cache-Control: max-age=0'
-        ]
-    ]);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_ENCODING => '', // Enable gzip/deflate decompression
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: ' . $userAgents[array_rand($userAgents)],
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language: en-US,en;q=0.9',
+                'Accept-Encoding: gzip, deflate, br',
+                'DNT: 1',
+                'Connection: keep-alive',
+                'Upgrade-Insecure-Requests: 1',
+                'Sec-Fetch-Dest: document',
+                'Sec-Fetch-Mode: navigate',
+                'Sec-Fetch-Site: none',
+                'Sec-Fetch-User: ?1',
+                'Cache-Control: max-age=0',
+                'sec-ch-ua: "Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+                'sec-ch-ua-mobile: ?0',
+                'sec-ch-ua-platform: "Windows"'
+            ],
+            CURLOPT_REFERER => 'https://www.google.com/'
+        ]);
 
-    $html = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+        $html = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-    if ($httpCode !== 200 || !$html) {
-        return [];
+        if ($httpCode !== 200 || !$html) {
+            break; // Stop if request fails
+        }
+
+        // Check for CAPTCHA or rate limiting
+        if (strpos($html, 'recaptcha') !== false || 
+            strpos($html, 'unusual traffic') !== false ||
+            strpos($html, 'automated queries') !== false) {
+            break; // Stop if blocked
+        }
+
+        // Parse results from this page
+        $pageResults = parseGoogleResults($html);
+        
+        if (empty($pageResults)) {
+            break; // Stop if no more results
+        }
+        
+        $allResults = array_merge($allResults, $pageResults);
+        
+        // Add delay between pages to avoid detection
+        if ($currentPage < $page + $maxPages - 1) {
+            usleep(rand(500000, 1500000)); // 0.5-1.5 second random delay
+        }
     }
 
-    // Check for CAPTCHA
-    if (strpos($html, 'recaptcha') !== false || strpos($html, 'unusual traffic') !== false) {
-        return [];
+    // Remove duplicates based on URL
+    $uniqueResults = [];
+    $seenUrls = [];
+    foreach ($allResults as $result) {
+        $url = $result['url'];
+        if (!in_array($url, $seenUrls)) {
+            $seenUrls[] = $url;
+            $uniqueResults[] = $result;
+        }
     }
 
-    // Parse results
-    return parseGoogleResults($html);
+    return $uniqueResults;
 }
 
 function parseGoogleResults($html) {
     $results = [];
     
-    // Remove newlines and extra spaces
+    // Remove newlines and extra spaces for easier parsing
     $html = preg_replace('/\s+/', ' ', $html);
     
-    // Match result blocks (this is reverse-engineered parsing)
-    // Google's HTML structure: <div class="g"> contains each result
-    preg_match_all('/<div class="[^"]*\bg\b[^"]*"[^>]*>(.*?)<\/div>(?=<div class="[^"]*\bg\b|$)/s', $html, $blocks);
+    // Enhanced parsing for multiple Google result formats
+    // Method 1: Standard div class="g" results
+    preg_match_all('/<div[^>]*class="[^"]*\bg\b[^"]*"[^>]*>(.*?)<\/div>(?=<div[^>]*class="[^"]*\bg\b|<div[^>]*id="botstuff"|$)/s', $html, $blocks);
     
     foreach ($blocks[1] as $block) {
-        $result = [];
-        
-        // Extract URL
-        if (preg_match('/<a[^>]+href="([^"]+)"[^>]*>/i', $block, $urlMatch)) {
-            $url = $urlMatch[1];
-            // Clean URL (remove Google redirects)
-            if (preg_match('/url\?q=([^&]+)/', $url, $cleanUrl)) {
-                $url = urldecode($cleanUrl[1]);
-            }
-            $result['url'] = $url;
-        }
-        
-        // Extract title
-        if (preg_match('/<h3[^>]*>(.*?)<\/h3>/is', $block, $titleMatch)) {
-            $result['title'] = strip_tags($titleMatch[1]);
-            $result['title'] = html_entity_decode($result['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        }
-        
-        // Extract description/snippet
-        if (preg_match('/<div[^>]*data-sncf="[^"]*"[^>]*>(.*?)<\/div>/is', $block, $descMatch)) {
-            $result['description'] = strip_tags($descMatch[1]);
-            $result['description'] = html_entity_decode($result['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        } elseif (preg_match('/<span[^>]*>(.*?)<\/span>/is', $block, $descMatch)) {
-            $result['description'] = strip_tags($descMatch[1]);
-            $result['description'] = html_entity_decode($result['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        }
-        
-        // Extract cached link if available
-        if (preg_match('/cache:[^"\']+/i', $block, $cacheMatch)) {
-            $result['cached'] = 'https://webcache.googleusercontent.com/search?' . $cacheMatch[0];
-        }
-        
-        // Only add if we have at least a URL and title
-        if (isset($result['url']) && isset($result['title'])) {
-            // Clean up
-            $result['title'] = trim($result['title']);
-            $result['description'] = isset($result['description']) ? trim($result['description']) : '';
-            
-            // Skip if title or URL is empty
-            if (empty($result['title']) || empty($result['url'])) {
-                continue;
-            }
-            
-            // Skip Google's own links
-            if (strpos($result['url'], 'google.com') !== false) {
-                continue;
-            }
-            
+        $result = parseResultBlock($block);
+        if ($result) {
             $results[] = $result;
         }
     }
     
+    // Method 2: Newer format with data-hveid attribute
+    if (empty($results)) {
+        preg_match_all('/<div[^>]*data-hveid="[^"]*"[^>]*>(.*?)<\/div>(?=<div[^>]*data-hveid=|<div[^>]*id="botstuff"|$)/s', $html, $blocks2);
+        
+        foreach ($blocks2[1] as $block) {
+            $result = parseResultBlock($block);
+            if ($result) {
+                $results[] = $result;
+            }
+        }
+    }
+    
+    // Method 3: Alternative parsing using different markers
+    if (empty($results)) {
+        preg_match_all('/<div[^>]*class="[^"]*yuRUbf[^"]*"[^>]*>(.*?)<\/div>/s', $html, $urlBlocks);
+        preg_match_all('/<div[^>]*class="[^"]*VwiC3b[^"]*"[^>]*>(.*?)<\/div>/s', $html, $descBlocks);
+        
+        for ($i = 0; $i < min(count($urlBlocks[1]), count($descBlocks[1])); $i++) {
+            $result = [];
+            
+            // Extract URL and title from yuRUbf block
+            if (preg_match('/<a[^>]*href="([^"]+)"[^>]*>/i', $urlBlocks[1][$i], $urlMatch)) {
+                $url = cleanGoogleUrl($urlMatch[1]);
+                if ($url) {
+                    $result['url'] = $url;
+                }
+            }
+            
+            if (preg_match('/<h3[^>]*>(.*?)<\/h3>/is', $urlBlocks[1][$i], $titleMatch)) {
+                $result['title'] = cleanText(strip_tags($titleMatch[1]));
+            }
+            
+            // Extract description from VwiC3b block
+            $result['description'] = cleanText(strip_tags($descBlocks[1][$i]));
+            
+            if (isset($result['url']) && isset($result['title']) && !empty($result['title'])) {
+                $results[] = $result;
+            }
+        }
+    }
+    
     return $results;
+}
+
+function parseResultBlock($block) {
+    $result = [];
+    
+    // Extract URL with multiple methods
+    if (preg_match('/<a[^>]*href="([^"]+)"[^>]*>/i', $block, $urlMatch)) {
+        $url = cleanGoogleUrl($urlMatch[1]);
+        if ($url) {
+            $result['url'] = $url;
+        }
+    }
+    
+    // Extract title with fallback methods
+    if (preg_match('/<h3[^>]*>(.*?)<\/h3>/is', $block, $titleMatch)) {
+        $result['title'] = cleanText(strip_tags($titleMatch[1]));
+    } elseif (preg_match('/<div[^>]*role="heading"[^>]*>(.*?)<\/div>/is', $block, $titleMatch)) {
+        $result['title'] = cleanText(strip_tags($titleMatch[1]));
+    }
+    
+    // Extract description/snippet with multiple methods
+    if (preg_match('/<div[^>]*class="[^"]*VwiC3b[^"]*"[^>]*>(.*?)<\/div>/is', $block, $descMatch)) {
+        $result['description'] = cleanText(strip_tags($descMatch[1]));
+    } elseif (preg_match('/<div[^>]*data-sncf="[^"]*"[^>]*>(.*?)<\/div>/is', $block, $descMatch)) {
+        $result['description'] = cleanText(strip_tags($descMatch[1]));
+    } elseif (preg_match('/<span[^>]*class="[^"]*st[^"]*"[^>]*>(.*?)<\/span>/is', $block, $descMatch)) {
+        $result['description'] = cleanText(strip_tags($descMatch[1]));
+    } elseif (preg_match('/<div[^>]*style="[^"]*"[^>]*>(.*?)<\/div>/is', $block, $descMatch)) {
+        $desc = cleanText(strip_tags($descMatch[1]));
+        if (strlen($desc) > 20) { // Only use if it looks like a description
+            $result['description'] = $desc;
+        }
+    }
+    
+    // Extract cached link if available
+    if (preg_match('/webcache\.googleusercontent\.com[^"\']+/i', $block, $cacheMatch)) {
+        $result['cached'] = 'https://' . $cacheMatch[0];
+    }
+    
+    // Validate and return result
+    if (isset($result['url']) && isset($result['title']) && !empty($result['title'])) {
+        return $result;
+    }
+    
+    return null;
+}
+
+function cleanGoogleUrl($url) {
+    // Remove Google redirect wrappers
+    if (preg_match('/url\?q=([^&]+)/', $url, $cleanUrl)) {
+        $url = urldecode($cleanUrl[1]);
+    }
+    
+    // Remove additional Google tracking parameters
+    $url = preg_replace('/&(sa|ved|usg)=[^&]+/', '', $url);
+    
+    // Validate URL
+    if (filter_var($url, FILTER_VALIDATE_URL)) {
+        // Skip Google's own links and non-http(s) URLs
+        $host = parse_url($url, PHP_URL_HOST);
+        if ($host && strpos($host, 'google.com') === false && strpos($host, 'google.') === false) {
+            return $url;
+        }
+    }
+    
+    return null;
+}
+
+function cleanText($text) {
+    // Decode HTML entities
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    // Remove extra whitespace
+    $text = preg_replace('/\s+/', ' ', $text);
+    // Trim
+    $text = trim($text);
+    return $text;
 }
 
 function handleExport($db, $user) {
