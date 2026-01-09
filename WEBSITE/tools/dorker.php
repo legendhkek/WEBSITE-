@@ -822,7 +822,8 @@ function processBulk() {
             resultsContainer.innerHTML = `
                 <div class="loading-state">
                     <div class="spinner"></div>
-                    <p>Dorking in progress... Please wait.</p>
+                    <p>🔍 Advanced Google Dorking in progress...</p>
+                    <p style="font-size:0.875rem; color:#666; margin-top:0.5rem;">Optimizing query and scraping multiple pages</p>
                 </div>
             `;
 
@@ -839,6 +840,12 @@ function processBulk() {
 
                 if (data.success) {
                     currentResults = data.results;
+                    
+                    // Show query optimization info if available
+                    if (data.query_info) {
+                        displayQueryInfo(data.query_info);
+                    }
+                    
                     displayResults(data.results);
                     updateStats(data.stats);
                 } else {
@@ -855,6 +862,46 @@ function processBulk() {
                     </div>
                 `;
             }
+        }
+        
+        // Display query optimization information
+        function displayQueryInfo(queryInfo) {
+            const container = document.getElementById('resultsContainer');
+            
+            let infoHtml = '<div style="background:#f0f9ff; border-left:4px solid #0284c7; padding:1rem; margin-bottom:1rem; border-radius:0.5rem;">';
+            infoHtml += '<h4 style="margin:0 0 0.5rem 0; font-size:0.875rem; font-weight:600; color:#0369a1;">📊 Query Analysis</h4>';
+            
+            if (queryInfo.optimized !== queryInfo.original) {
+                infoHtml += `<p style="margin:0.25rem 0; font-size:0.813rem;"><strong>Original:</strong> <code style="background:#e0f2fe; padding:0.125rem 0.375rem; border-radius:0.25rem;">${queryInfo.original}</code></p>`;
+                infoHtml += `<p style="margin:0.25rem 0; font-size:0.813rem;"><strong>Optimized:</strong> <code style="background:#dbeafe; padding:0.125rem 0.375rem; border-radius:0.25rem;">${queryInfo.optimized}</code></p>`;
+            }
+            
+            if (queryInfo.suggestions && queryInfo.suggestions.operators_used && queryInfo.suggestions.operators_used.length > 0) {
+                infoHtml += `<p style="margin:0.5rem 0 0.25rem 0; font-size:0.813rem;"><strong>Operators Used:</strong> ${queryInfo.suggestions.operators_used.map(op => `<span style="background:#bae6fd; padding:0.125rem 0.375rem; border-radius:0.25rem; margin-right:0.25rem;">${op}</span>`).join('')}</p>`;
+            }
+            
+            if (queryInfo.suggestions && queryInfo.suggestions.complexity) {
+                const complexityColors = {
+                    'basic': '#86efac',
+                    'intermediate': '#fbbf24',
+                    'advanced': '#f87171'
+                };
+                const color = complexityColors[queryInfo.suggestions.complexity] || '#86efac';
+                infoHtml += `<p style="margin:0.25rem 0; font-size:0.813rem;"><strong>Complexity:</strong> <span style="background:${color}; padding:0.125rem 0.375rem; border-radius:0.25rem; font-weight:600;">${queryInfo.suggestions.complexity.toUpperCase()}</span></p>`;
+            }
+            
+            if (queryInfo.suggestions && queryInfo.suggestions.tips && queryInfo.suggestions.tips.length > 0) {
+                infoHtml += '<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid #bae6fd;">';
+                infoHtml += '<p style="margin:0 0 0.25rem 0; font-size:0.813rem; font-weight:600;">💡 Tips:</p>';
+                queryInfo.suggestions.tips.forEach(tip => {
+                    infoHtml += `<p style="margin:0.125rem 0; font-size:0.75rem; color:#0369a1;">• ${tip}</p>`;
+                });
+                infoHtml += '</div>';
+            }
+            
+            infoHtml += '</div>';
+            
+            container.innerHTML = infoHtml + container.innerHTML;
         }
 
         function displayResults(results) {
@@ -888,14 +935,43 @@ function processBulk() {
                 
                 const scoreBadge = score > 0 ? `<span style="background:${scoreColor}; color:white; padding:0.25rem 0.5rem; border-radius:0.25rem; font-size:0.75rem; font-weight:600; margin-left:0.5rem;">Score: ${score}</span>` : '';
                 
+                // Display indicators if available
+                let indicatorBadges = '';
+                if (result.indicators && result.indicators.length > 0) {
+                    const iconMap = {
+                        'admin_access': '🔐',
+                        'configuration': '⚙️',
+                        'backup': '💾',
+                        'api': '🔌',
+                        'database': '🗄️',
+                        'version_control': '📦',
+                        'cloud_storage': '☁️'
+                    };
+                    indicatorBadges = '<div style="margin-top:0.5rem;">';
+                    result.indicators.forEach(ind => {
+                        const icon = iconMap[ind] || '🔖';
+                        const label = ind.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        indicatorBadges += `<span style="background:#eff6ff; color:#1e40af; padding:0.125rem 0.5rem; border-radius:0.25rem; font-size:0.75rem; margin-right:0.25rem;">${icon} ${label}</span>`;
+                    });
+                    indicatorBadges += '</div>';
+                }
+                
+                // Show file type if it's a file
+                let fileTypeBadge = '';
+                if (result.is_file && result.file_type) {
+                    fileTypeBadge = `<span style="background:#fef3c7; color:#92400e; padding:0.125rem 0.5rem; border-radius:0.25rem; font-size:0.75rem; margin-left:0.5rem;">📄 ${result.file_type.toUpperCase()}</span>`;
+                }
+                
                 const resultHtml = `
                     <div class="result-item" style="position:relative; padding-left:1rem; border-left:4px solid ${scoreColor};">
                         <a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" class="result-title">
                             ${index + 1}. ${sanitizedTitle}
                             ${scoreBadge}
+                            ${fileTypeBadge}
                         </a>
                         <div class="result-url">${sanitizedUrl}</div>
                         <div class="result-description">${sanitizedDesc}</div>
+                        ${indicatorBadges}
                         <div class="result-actions">
                             <button class="action-btn" data-url="${sanitizedUrl}">📋 Copy URL</button>
                             <button class="action-btn" data-open-url="${sanitizedUrl}">🔗 Open</button>
