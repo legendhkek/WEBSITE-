@@ -16,10 +16,17 @@ define('DB_FILE', __DIR__ . '/users.db');
 // Get credentials from: https://console.cloud.google.com/
 define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '674654993812-krpej9648d2205dqpls1dsq7tuhvlbft.apps.googleusercontent.com');
 define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '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');
-// Build redirect URI and handle root directory case to avoid double slashes
-$dirPath = dirname($_SERVER['PHP_SELF']);
+
+// Build redirect URI with proper protocol and domain handling
+// Google OAuth requires exact match, including trailing slashes and protocols
+$protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || 
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$dirPath = dirname($_SERVER['PHP_SELF'] ?? '/');
 $dirPath = ($dirPath === '/' || $dirPath === '\\') ? '' : $dirPath;
-define('GOOGLE_REDIRECT_URI', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . $dirPath . "/google-callback.php");
+
+// Construct the redirect URI
+define('GOOGLE_REDIRECT_URI', $protocol . '://' . $host . $dirPath . '/google-callback.php');
 define('GOOGLE_OAUTH_ENABLED', !empty(GOOGLE_CLIENT_ID) && !empty(GOOGLE_CLIENT_SECRET));
 
 // Session Configuration

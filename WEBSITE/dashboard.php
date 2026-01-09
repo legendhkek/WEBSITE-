@@ -669,7 +669,7 @@
     </main>
     
     <script>
-        // Dropdown functionality
+        // Enhanced Dashboard JavaScript with Real-Time Features
         document.addEventListener('DOMContentLoaded', () => {
             // Torrent dropdown
             const dropdownTrigger = document.querySelector('.dropdown-trigger');
@@ -697,10 +697,123 @@
                     });
                 }
             });
+            
+            // Animate stat values on load
+            animateStatValues();
+            
+            // Animate progress bars
+            animateProgressBars();
+            
+            // Real-time clock update
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // Add smooth hover effects to cards
+            addCardAnimations();
+            
+            // Initialize tooltips
+            initializeTooltips();
         });
+        
+        // Animate statistics values with counting effect
+        function animateStatValues() {
+            document.querySelectorAll('.stat-value-large, .stat-value, .metric-value').forEach(el => {
+                const target = parseInt(el.textContent) || 0;
+                if (target === 0) return;
+                
+                let current = 0;
+                const increment = target / 50;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        el.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        el.textContent = Math.floor(current);
+                    }
+                }, 20);
+            });
+        }
+        
+        // Animate progress bars
+        function animateProgressBars() {
+            document.querySelectorAll('.stat-progress-bar, .status-bar-fill, .metric-chart-bar').forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.transition = 'width 1s ease-in-out';
+                    bar.style.width = width;
+                }, 100);
+            });
+        }
+        
+        // Real-time clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            // Update any clock elements if they exist
+            const clockElements = document.querySelectorAll('.live-clock');
+            clockElements.forEach(el => {
+                el.textContent = timeString;
+            });
+        }
+        
+        // Add smooth animations to cards
+        function addCardAnimations() {
+            const cards = document.querySelectorAll('.stat-card-advanced, .action-card-compact, .tool-card, .feature-card');
+            
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 50);
+            });
+        }
+        
+        // Initialize tooltips for better UX
+        function initializeTooltips() {
+            // Add title attributes for better accessibility
+            document.querySelectorAll('.action-card-compact, .tool-card').forEach(el => {
+                el.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateX(4px)';
+                });
+                el.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+        }
+        
+        // Enhanced search functionality
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                const input = document.getElementById('searchInput');
+                if (input && input.value.trim() === '') {
+                    e.preventDefault();
+                    input.focus();
+                    input.style.borderColor = 'red';
+                    setTimeout(() => {
+                        input.style.borderColor = '#e5e7eb';
+                    }, 1000);
+                }
+            });
+        }
         
         // Logout function
         async function logoutUser() {
+            if (!confirm('Are you sure you want to logout?')) {
+                return;
+            }
+            
             try {
                 const formData = new FormData();
                 formData.append('action', 'logout');
@@ -710,11 +823,88 @@
                     body: formData
                 });
                 
-                window.location.href = '/';
+                // Smooth fade out before redirect
+                document.body.style.transition = 'opacity 0.3s ease';
+                document.body.style.opacity = '0';
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 300);
             } catch (error) {
                 console.error('Logout failed:', error);
+                alert('Logout failed. Please try again.');
             }
         }
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + K for quick search focus
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+            
+            // Escape to close dropdowns
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+        
+        // Add visual feedback for actions
+        document.querySelectorAll('button, a.action-card-compact, a.tool-card').forEach(element => {
+            element.addEventListener('click', function(e) {
+                // Get element position for proper ripple placement
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Ripple effect
+                const ripple = document.createElement('span');
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.background = 'rgba(255, 255, 255, 0.6)';
+                ripple.style.width = ripple.style.height = '100px';
+                ripple.style.left = (x - 50) + 'px';
+                ripple.style.top = (y - 50) + 'px';
+                ripple.style.pointerEvents = 'none';
+                ripple.style.animation = 'ripple 0.6s ease-out';
+                
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+                
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+        
+        // Add CSS for ripple animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                from {
+                    opacity: 1;
+                    transform: scale(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: scale(4);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'general' for dashboard
+        document.body.dataset.aiContext = 'general';
     </script>
 </body>
 </html>
