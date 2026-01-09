@@ -6,7 +6,7 @@ require_once __DIR__ . '/../auth.php';
 // Check if user is logged in
 $user = getCurrentUser();
 if (!$user) {
-    header('Location: login.php');
+    header('Location: ../login.php');
     exit;
 }
 
