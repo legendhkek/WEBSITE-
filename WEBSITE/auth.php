@@ -35,10 +35,24 @@ function initDatabase() {
         FOREIGN KEY (user_id) REFERENCES users(id)
     )');
     
-    // Add google_id column if not exists
-    $db->exec('ALTER TABLE users ADD COLUMN google_id TEXT UNIQUE');
-    $db->exec('ALTER TABLE users ADD COLUMN profile_picture TEXT');
-    $db->exec('ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT "local"');
+    // Add Google OAuth columns if they don't exist
+    // SQLite doesn't support adding UNIQUE constraint in ALTER TABLE
+    // So we add columns without UNIQUE and handle uniqueness in application logic
+    $result = $db->query("PRAGMA table_info(users)");
+    $columns = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $columns[] = $row['name'];
+    }
+    
+    if (!in_array('google_id', $columns)) {
+        $db->exec('ALTER TABLE users ADD COLUMN google_id TEXT');
+    }
+    if (!in_array('profile_picture', $columns)) {
+        $db->exec('ALTER TABLE users ADD COLUMN profile_picture TEXT');
+    }
+    if (!in_array('auth_provider', $columns)) {
+        $db->exec('ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT "local"');
+    }
     
     // Create download history table
     $db->exec('CREATE TABLE IF NOT EXISTS download_history (
@@ -141,8 +155,38 @@ function registerUser($username, $email, $password) {
     
     if ($stmt->execute()) {
         $userId = $db->lastInsertRowID();
+        
+        // Create session token for auto-login
+        $token = generateSessionToken();
+        $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 7); // 7 days
+        
+        $stmt = $db->prepare('INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (:user_id, :token, :expires_at)');
+        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $stmt->bindValue(':token', $token, SQLITE3_TEXT);
+        $stmt->bindValue(':expires_at', $expiresAt, SQLITE3_TEXT);
+        
+        if (!$stmt->execute()) {
+            $db->close();
+            return ['success' => false, 'error' => 'Failed to create session. Please try logging in.'];
+        }
+        
         $db->close();
-        return ['success' => true, 'userId' => $userId, 'message' => 'Account created successfully!'];
+        
+        // Set session for auto-login
+        // Note: username and email are already validated above (lines 119-129)
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['username'] = $username;
+        $_SESSION['email'] = $email;
+        $_SESSION['session_token'] = $token;
+        
+        return [
+            'success' => true,
+            'userId' => $userId,
+            'username' => $username,
+            'email' => $email,
+            'token' => $token,
+            'message' => 'Account created successfully!'
+        ];
     } else {
         $db->close();
         return ['success' => false, 'error' => 'Failed to create account. Please try again.'];
