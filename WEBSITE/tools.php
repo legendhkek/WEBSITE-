@@ -689,8 +689,7 @@
                         <h3 class="tool-card-title">Residential Proxy Maker</h3>
                     </div>
                     <p class="tool-card-desc">
-                        Scrape & auto-check proxies from 200+ sources. Convert 200+ proxies to residential 
-                        rotating pools. Real-time stats tracking and TXT export.
+                        Scrape & auto-check proxies from 200+ sources. Convert 200+ proxies to residential rotating pools. Real-time stats tracking and TXT export.
                     </p>
                     <div class="tool-card-features">
                         <span class="tool-feature-tag">200+ Sources</span>
