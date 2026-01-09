@@ -190,7 +190,7 @@
                             <rect x="3" y="8" width="18" height="13" rx="2"/>
                             <polygon points="12,3 19,8 5,8"/>
                         </svg>
-                        LEGEND HOUSE
+                        Powered by LEGEND HOUSE
                     </span>
                     <span class="footer-divider"></span>
                     <span class="footer-stats">Advanced Torrent Center</span>

@@ -499,6 +499,15 @@ function createABTest() {
         </main>
     </div>
 
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem 1rem; background: var(--white); border-top: 2px solid var(--gray-200); margin-top: 3rem;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <p style="margin: 0; font-size: 0.9rem; color: var(--gray-600);">
+                <strong style="color: var(--black);">Powered by Legend House</strong> • Advanced Tools Platform
+            </p>
+        </div>
+    </footer>
+
     <script src="shortener-script.js"></script>
     <script>
         // Initialize on page load
@@ -506,6 +515,13 @@ function createABTest() {
             loadUserLinks();
             initializeAnalytics();
         });
+    </script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="../ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'general' for shortener page
+        document.body.dataset.aiContext = 'general';
     </script>
 </body>
 </html>
