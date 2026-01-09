@@ -1052,5 +1052,12 @@ function processBulk() {
             }
         });
     </script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="../ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'dorking' for dorker page
+        document.body.dataset.aiContext = 'dorking';
+    </script>
 </body>
 </html>

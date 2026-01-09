@@ -899,5 +899,12 @@
         `;
         document.head.appendChild(style);
     </script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'general' for dashboard
+        document.body.dataset.aiContext = 'general';
+    </script>
 </body>
 </html>
