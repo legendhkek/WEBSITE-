@@ -515,12 +515,55 @@ function processBulk() {
         return;
     }
     
-    alert(`Processing ${dorks.length} dork queries... This may take a moment.`);
-    window.enhancedDorker.processBulkDorks(dorks).then(results => {
-        currentResults = results;
-        displayResults(results);
+    if (dorks.length > 20) {
+        if (!confirm(`You're about to process ${dorks.length} dork queries. This may take several minutes. Continue?`)) {
+            return;
+        }
+    }
+    
+    // Show progress
+    const progressMsg = document.createElement('div');
+    progressMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:2rem; border-radius:1rem; box-shadow:0 10px 40px rgba(0,0,0,0.2); z-index:9999; min-width:300px; text-align:center;';
+    progressMsg.innerHTML = `
+        <h3 style="margin:0 0 1rem 0;">⚡ Processing Bulk Dorks</h3>
+        <div id="progress-info">Starting...</div>
+        <div style="width:100%; height:8px; background:#e5e7eb; border-radius:4px; margin:1rem 0; overflow:hidden;">
+            <div id="progress-bar" style="height:100%; background:linear-gradient(90deg,#000,#404040); width:0%; transition:width 0.3s;"></div>
+        </div>
+        <small id="progress-detail" style="color:#666;">Processed: 0/${dorks.length}</small>
+    `;
+    document.body.appendChild(progressMsg);
+    
+    // Process with progress callback
+    window.enhancedDorker.processBulkDorks(dorks, (progress) => {
+        const progressBar = document.getElementById('progress-bar');
+        const progressInfo = document.getElementById('progress-info');
+        const progressDetail = document.getElementById('progress-detail');
+        
+        if (progressBar) progressBar.style.width = progress.percentage + '%';
+        if (progressInfo) progressInfo.textContent = `Processing: ${progress.currentDork.substring(0, 50)}...`;
+        if (progressDetail) progressDetail.innerHTML = `
+            Processed: ${progress.processed}/${progress.total} | 
+            Found: ${progress.resultsFound} results
+        `;
+    }).then(bulkResults => {
+        document.body.removeChild(progressMsg);
+        
+        currentResults = bulkResults.results;
+        displayResults(bulkResults.results);
         switchTab('basic');
-        alert(`Bulk processing complete! Found ${results.length} total results.`);
+        
+        // Show comprehensive summary
+        alert(`✅ Bulk Processing Complete!\n\n` +
+              `Total Dorks: ${bulkResults.totalProcessed}\n` +
+              `Successful: ${bulkResults.summary.successful}\n` +
+              `Failed: ${bulkResults.summary.failed}\n` +
+              `Total Results: ${bulkResults.totalResults}\n` +
+              `Avg Results/Dork: ${bulkResults.summary.avgResultsPerDork.toFixed(1)}\n\n` +
+              `Results sorted by relevance score.`);
+    }).catch(error => {
+        document.body.removeChild(progressMsg);
+        alert('❌ Bulk processing failed: ' + error.message);
     });
 }
 </script>
@@ -822,20 +865,35 @@ function processBulk() {
                 return;
             }
 
-            container.innerHTML = results.map((result, index) => `
-                <div class="result-item">
-                    <a href="${result.url}" target="_blank" class="result-title">
-                        ${result.title}
-                    </a>
-                    <div class="result-url">${result.url}</div>
-                    <div class="result-description">${result.description}</div>
-                    <div class="result-actions">
-                        <button class="action-btn" onclick="copyToClipboard('${result.url}')">📋 Copy URL</button>
-                        <button class="action-btn" onclick="window.open('${result.url}', '_blank')">🔗 Open</button>
-                        ${result.cached ? `<button class="action-btn" onclick="window.open('${result.cached}', '_blank')">💾 Cached</button>` : ''}
+            // Sort by score if available
+            const sortedResults = results.sort((a, b) => {
+                const scoreA = a.score || window.enhancedDorker?.scoreResult(a) || 0;
+                const scoreB = b.score || window.enhancedDorker?.scoreResult(b) || 0;
+                return scoreB - scoreA;
+            });
+
+            container.innerHTML = sortedResults.map((result, index) => {
+                const score = result.score || (window.enhancedDorker ? window.enhancedDorker.scoreResult(result) : 0);
+                const scoreColor = score >= 70 ? '#dc2626' : score >= 40 ? '#f59e0b' : '#10b981';
+                const scoreBadge = score > 0 ? `<span style="background:${scoreColor}; color:white; padding:0.25rem 0.5rem; border-radius:0.25rem; font-size:0.75rem; font-weight:600; margin-left:0.5rem;">Score: ${score}</span>` : '';
+                
+                return `
+                    <div class="result-item" style="position:relative; padding-left:1rem; border-left:4px solid ${scoreColor};">
+                        <a href="${result.url}" target="_blank" class="result-title">
+                            ${index + 1}. ${result.title}
+                            ${scoreBadge}
+                        </a>
+                        <div class="result-url">${result.url}</div>
+                        <div class="result-description">${result.description}</div>
+                        <div class="result-actions">
+                            <button class="action-btn" onclick="copyToClipboard('${result.url.replace(/'/g, "\\'")}')">📋 Copy URL</button>
+                            <button class="action-btn" onclick="window.open('${result.url}', '_blank')">🔗 Open</button>
+                            ${result.cached ? `<button class="action-btn" onclick="window.open('${result.cached}', '_blank')">💾 Cached</button>` : ''}
+                            ${score > 0 ? `<button class="action-btn" style="background:#f3f4f6; font-weight:600;">🎯 Relevance: ${score}/100</button>` : ''}
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function updateStats(stats) {

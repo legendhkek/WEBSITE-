@@ -173,72 +173,347 @@ const enhancedDorkCategories = {
     'government-systems': 'site:gov inurl:admin | site:gov inurl:login | site:mil inurl:admin'
 };
 
-// AI-Powered Dork Generator
+// AI-Powered Dork Generator - VERY ADVANCED
 function generateAIDork(description) {
     const keywords = description.toLowerCase().split(' ');
     let dork = '';
+    let operators = [];
     
-    // Analyze keywords and build intelligent dork
-    if (keywords.some(k => ['admin', 'panel', 'control'].includes(k))) {
-        dork += 'inurl:admin | inurl:administrator ';
-    }
-    if (keywords.some(k => ['login', 'signin', 'auth'].includes(k))) {
-        dork += 'intitle:"login" | inurl:login.php ';
-    }
-    if (keywords.some(k => ['file', 'document', 'pdf'].includes(k))) {
-        dork += 'filetype:pdf | filetype:doc ';
-    }
-    if (keywords.some(k => ['database', 'sql', 'mysql'].includes(k))) {
-        dork += 'ext:sql | intext:"mysql" ';
-    }
-    if (keywords.some(k => ['api', 'endpoint', 'rest'].includes(k))) {
-        dork += 'inurl:api/ | inurl:v1/ | inurl:rest/ ';
+    // Comprehensive keyword analysis for intelligent dork generation
+    const keywordMap = {
+        admin: ['admin', 'administrator', 'panel', 'control', 'manage', 'backend'],
+        login: ['login', 'signin', 'sign-in', 'auth', 'authenticate', 'credential'],
+        file: ['file', 'document', 'pdf', 'doc', 'docx', 'xlsx', 'csv'],
+        database: ['database', 'sql', 'mysql', 'postgresql', 'mongo', 'db'],
+        api: ['api', 'endpoint', 'rest', 'graphql', 'webhook'],
+        config: ['config', 'configuration', 'settings', 'env', 'environment'],
+        backup: ['backup', 'bak', 'old', 'copy', 'archive'],
+        log: ['log', 'logs', 'logging', 'error', 'debug'],
+        password: ['password', 'passwd', 'pwd', 'credential', 'secret'],
+        key: ['key', 'apikey', 'api_key', 'token', 'access_token'],
+        cloud: ['aws', 'azure', 'gcp', 's3', 'bucket', 'cloud'],
+        vulnerable: ['vuln', 'vulnerability', 'exploit', 'injection', 'xss', 'sql'],
+        iot: ['camera', 'webcam', 'printer', 'router', 'device', 'iot'],
+        cms: ['wordpress', 'joomla', 'drupal', 'cms', 'wp'],
+        ecommerce: ['shop', 'cart', 'payment', 'checkout', 'store'],
+        social: ['facebook', 'twitter', 'linkedin', 'instagram', 'social'],
+        email: ['email', 'mail', '@gmail', '@yahoo', '@hotmail'],
+        government: ['gov', 'government', 'federal', 'state'],
+        medical: ['medical', 'health', 'patient', 'hospital', 'clinic'],
+        financial: ['bank', 'payment', 'finance', 'invoice', 'transaction']
+    };
+    
+    // Analyze keywords and build intelligent dork query
+    for (const [category, terms] of Object.entries(keywordMap)) {
+        if (keywords.some(k => terms.includes(k))) {
+            switch(category) {
+                case 'admin':
+                    operators.push('inurl:admin | inurl:administrator | intitle:"admin panel"');
+                    break;
+                case 'login':
+                    operators.push('intitle:"login" | inurl:login.php | inurl:signin');
+                    break;
+                case 'file':
+                    operators.push('filetype:pdf | filetype:doc | filetype:xlsx');
+                    break;
+                case 'database':
+                    operators.push('ext:sql | intext:"mysql" | intext:"database"');
+                    break;
+                case 'api':
+                    operators.push('inurl:api/ | inurl:v1/ | inurl:rest/ | intitle:"API"');
+                    break;
+                case 'config':
+                    operators.push('ext:conf | ext:config | ext:cfg | ext:env');
+                    break;
+                case 'backup':
+                    operators.push('ext:bak | inurl:backup | ext:old | ext:copy');
+                    break;
+                case 'log':
+                    operators.push('ext:log | intext:"error" | intext:"warning"');
+                    break;
+                case 'password':
+                    operators.push('intext:password | intext:passwd | intext:"pwd"');
+                    break;
+                case 'key':
+                    operators.push('intext:"api_key" | intext:"apikey" | intext:"token"');
+                    break;
+                case 'cloud':
+                    operators.push('site:s3.amazonaws.com | site:blob.core.windows.net');
+                    break;
+                case 'vulnerable':
+                    operators.push('intext:"SQL syntax" | inurl:id= | intext:"Warning:"');
+                    break;
+                case 'iot':
+                    operators.push('inurl:view/view.shtml | intitle:"camera" | inurl:device');
+                    break;
+                case 'cms':
+                    operators.push('inurl:wp-admin | inurl:administrator | inurl:admin.php');
+                    break;
+                case 'ecommerce':
+                    operators.push('inurl:cart | inurl:checkout | inurl:payment');
+                    break;
+                case 'social':
+                    operators.push('site:facebook.com | site:twitter.com | site:linkedin.com');
+                    break;
+                case 'email':
+                    operators.push('intext:"@gmail.com" | intext:"@yahoo.com" ext:csv');
+                    break;
+                case 'government':
+                    operators.push('site:gov | site:mil | intext:"government"');
+                    break;
+                case 'medical':
+                    operators.push('intext:"patient" | intext:"medical" | intext:"health"');
+                    break;
+                case 'financial':
+                    operators.push('intext:"invoice" | intext:"payment" | intext:"bank"');
+                    break;
+            }
+        }
     }
     
-    return dork.trim() || 'site:' + description;
+    // If no specific operators found, create a general search
+    if (operators.length === 0) {
+        // Extract quoted phrases
+        const quotedPhrases = description.match(/"([^"]+)"/g) || [];
+        const mainTerms = keywords.filter(k => k.length > 3 && !['the', 'and', 'for', 'with'].includes(k));
+        
+        if (quotedPhrases.length > 0) {
+            dork = quotedPhrases.join(' ');
+        } else if (mainTerms.length > 0) {
+            dork = 'intext:"' + mainTerms.join('" OR intext:"') + '"';
+        } else {
+            dork = description;
+        }
+    } else {
+        // Combine operators intelligently
+        dork = operators.slice(0, 3).join(' '); // Limit to 3 operator groups for efficiency
+    }
+    
+    return dork.trim() || 'site:example.com';
 }
 
-// Result Scoring System
+// Advanced Result Scoring System with Machine Learning-like Logic
 function scoreResult(result) {
     let score = 0;
     const url = result.url.toLowerCase();
     const title = result.title.toLowerCase();
+    const description = (result.description || '').toLowerCase();
     
-    // High value indicators
+    // === HIGH VALUE INDICATORS (Critical findings) ===
+    // Configuration and Environment Files (50 points)
+    if (url.match(/\.(env|config|conf|cfg|ini)$/)) score += 50;
+    if (url.includes('.env') || title.includes('.env')) score += 50;
+    if (url.includes('config') && url.match(/\.(php|xml|json|yml)$/)) score += 45;
+    
+    // Database Files (45 points)
+    if (url.match(/\.(sql|db|sqlite|mdb|dbf)$/)) score += 50;
+    if (url.includes('database') || url.includes('backup.sql')) score += 40;
+    
+    // Backup Files (40 points)
+    if (url.match(/\.(bak|backup|old|save|copy)$/)) score += 40;
+    if (url.includes('backup') || url.includes('bak')) score += 35;
+    
+    // Authentication & Admin (35-40 points)
+    if (url.includes('admin') && url.includes('login')) score += 40;
     if (url.includes('admin') || title.includes('admin')) score += 30;
     if (url.includes('login') || title.includes('login')) score += 25;
-    if (url.includes('api') || title.includes('api')) score += 20;
-    if (url.includes('dashboard')) score += 20;
-    if (url.includes('config') || url.includes('.env')) score += 40;
-    if (url.includes('backup') || url.includes('.bak')) score += 35;
+    if (url.includes('administrator')) score += 30;
+    if (url.includes('wp-admin') || url.includes('phpmyadmin')) score += 35;
     
-    // File types
-    if (url.match(/\.(sql|db|env|config)$/)) score += 50;
-    if (url.match(/\.(pdf|doc|xlsx)$/)) score += 15;
-    if (url.match(/\.(log|txt)$/)) score += 10;
+    // API Endpoints (30 points)
+    if (url.includes('/api/') || url.includes('/rest/')) score += 25;
+    if (url.includes('swagger') || url.includes('api-docs')) score += 30;
+    if (url.includes('graphql')) score += 28;
+    if (title.includes('api') && url.includes('v1')) score += 22;
     
-    return Math.min(score, 100);
+    // Security Keys & Credentials (45 points)
+    if (url.includes('key') || url.includes('secret') || url.includes('token')) score += 30;
+    if (description.includes('api_key') || description.includes('secret_key')) score += 45;
+    if (description.includes('password') || description.includes('credential')) score += 40;
+    
+    // === MEDIUM VALUE INDICATORS (Important findings) ===
+    // Dashboard & Control Panels (25 points)
+    if (url.includes('dashboard') || title.includes('dashboard')) score += 25;
+    if (url.includes('cpanel') || url.includes('panel')) score += 28;
+    if (url.includes('control') || url.includes('manage')) score += 20;
+    
+    // Git & Version Control (30 points)
+    if (url.includes('.git/') || url.includes('/.git')) score += 35;
+    if (url.includes('github') && description.includes('api')) score += 25;
+    if (url.includes('.svn/')) score += 30;
+    
+    // Log Files (20 points)
+    if (url.match(/\.(log|txt)$/) && url.includes('log')) score += 25;
+    if (title.includes('error') || title.includes('debug')) score += 18;
+    
+    // Documentation & Sensitive Files (15-25 points)
+    if (url.match(/\.(pdf|doc|docx|xlsx)$/)) {
+        if (description.includes('confidential') || description.includes('private')) score += 25;
+        else score += 15;
+    }
+    
+    // === CLOUD & INFRASTRUCTURE (20-30 points) ===
+    if (url.includes('s3.amazonaws.com') || url.includes('storage.googleapis.com')) score += 30;
+    if (url.includes('blob.core.windows.net')) score += 28;
+    if (url.includes('firebase') || url.includes('herokuapp')) score += 22;
+    
+    // === VULNERABILITY INDICATORS (35 points) ===
+    if (description.includes('sql syntax') || description.includes('mysql_fetch')) score += 40;
+    if (url.includes('id=') || url.includes('page=')) score += 18;
+    if (description.includes('error') && description.includes('line')) score += 25;
+    if (description.includes('warning') || description.includes('notice')) score += 15;
+    
+    // === IOT & DEVICES (25 points) ===
+    if (url.includes('camera') || url.includes('webcam')) score += 28;
+    if (url.includes('printer') || url.includes('device')) score += 22;
+    if (url.includes('view.shtml') || url.includes('ViewerFrame')) score += 30;
+    
+    // === TESTING & DEVELOPMENT (15 points) ===
+    if (url.includes('test') || url.includes('dev') || url.includes('staging')) score += 15;
+    if (url.includes('debug') || url.includes('demo')) score += 18;
+    if (url.includes('sandbox') || url.includes('beta')) score += 12;
+    
+    // === NEGATIVE INDICATORS (reduce score) ===
+    // Common false positives
+    if (url.includes('google.com') || url.includes('wikipedia.org')) score -= 20;
+    if (url.includes('example.com') || url.includes('localhost')) score -= 30;
+    if (title.includes('404') || title.includes('not found')) score -= 25;
+    
+    // === BONUS POINTS ===
+    // Multiple high-value keywords
+    const highValueTerms = ['admin', 'config', 'backup', 'api', 'database', 'password'];
+    const matchCount = highValueTerms.filter(term => 
+        url.includes(term) || title.includes(term)
+    ).length;
+    score += matchCount * 8;
+    
+    // Specific file extensions in combination with paths
+    if (url.includes('/admin/') && url.match(/\.(php|asp|aspx|jsp)$/)) score += 20;
+    if (url.includes('/backup/') && url.match(/\.(sql|zip|tar|gz)$/)) score += 25;
+    
+    // Domain reputation bonus
+    const domain = extractDomain(url);
+    if (domain.endsWith('.gov') || domain.endsWith('.edu')) score += 15;
+    if (domain.endsWith('.mil')) score += 20;
+    
+    // Ensure score stays within 0-100 range
+    return Math.max(0, Math.min(score, 100));
 }
 
-// Bulk Dork Processor
-async function processBulkDorks(dorkList) {
+// Helper function to extract domain from URL
+function extractDomain(url) {
+    try {
+        const urlObj = new URL(url);
+        return urlObj.hostname;
+    } catch {
+        return '';
+    }
+}
+
+// Advanced Bulk Dork Processor with Parallel Processing & Progress
+async function processBulkDorks(dorkList, progressCallback) {
     const results = [];
-    for (const dork of dorkList) {
-        try {
-            const response = await fetch('dorker-api.php?action=dork', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ query: dork })
-            });
-            const data = await response.json();
-            if (data.success) {
-                results.push(...data.results);
+    const errors = [];
+    const batchSize = 3; // Process 3 dorks in parallel for speed
+    const delayBetweenBatches = 2000; // 2 second delay between batches
+    
+    // Split dorks into batches
+    const batches = [];
+    for (let i = 0; i < dorkList.length; i += batchSize) {
+        batches.push(dorkList.slice(i, i + batchSize));
+    }
+    
+    let processedCount = 0;
+    const totalDorks = dorkList.length;
+    
+    // Process each batch
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        
+        // Process dorks in current batch in parallel
+        const batchPromises = batch.map(async (dork, index) => {
+            try {
+                // Add slight delay between requests in same batch
+                await new Promise(resolve => setTimeout(resolve, index * 500));
+                
+                const response = await fetch('dorker-api.php?action=dork', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ query: dork })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.results) {
+                    // Add metadata to each result
+                    const enhancedResults = data.results.map(r => ({
+                        ...r,
+                        source_dork: dork,
+                        score: scoreResult(r),
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    results.push(...enhancedResults);
+                    processedCount++;
+                    
+                    if (progressCallback) {
+                        progressCallback({
+                            processed: processedCount,
+                            total: totalDorks,
+                            percentage: Math.round((processedCount / totalDorks) * 100),
+                            currentDork: dork,
+                            resultsFound: enhancedResults.length
+                        });
+                    }
+                    
+                    return { success: true, dork, count: enhancedResults.length };
+                } else {
+                    errors.push({ dork, error: data.error || 'No results' });
+                    processedCount++;
+                    return { success: false, dork, error: data.error };
+                }
+            } catch (error) {
+                console.error('Bulk dork error for:', dork, error);
+                errors.push({ dork, error: error.message });
+                processedCount++;
+                return { success: false, dork, error: error.message };
             }
-        } catch (error) {
-            console.error('Bulk dork error:', error);
+        });
+        
+        // Wait for current batch to complete
+        await Promise.all(batchPromises);
+        
+        // Delay before next batch (except for last batch)
+        if (batchIndex < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
         }
     }
-    return results;
+    
+    // Remove duplicates based on URL
+    const uniqueResults = [];
+    const seenUrls = new Set();
+    
+    for (const result of results) {
+        if (!seenUrls.has(result.url)) {
+            seenUrls.add(result.url);
+            uniqueResults.push(result);
+        }
+    }
+    
+    // Sort by score (highest first)
+    uniqueResults.sort((a, b) => b.score - a.score);
+    
+    return {
+        results: uniqueResults,
+        totalProcessed: processedCount,
+        totalResults: uniqueResults.length,
+        errors: errors,
+        summary: {
+            successful: processedCount - errors.length,
+            failed: errors.length,
+            avgResultsPerDork: uniqueResults.length / Math.max(processedCount - errors.length, 1)
+        }
+    };
 }
 
 // Domain Reputation Checker
