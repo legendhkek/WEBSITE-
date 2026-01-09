@@ -353,6 +353,8 @@ function scoreResult(result) {
     }
     
     // === CLOUD & INFRASTRUCTURE (20-30 points) ===
+    // Note: These substring checks are for scoring relevance only, not security validation
+    // Actual URL validation happens in cleanGoogleUrl() with proper protocol checks
     if (url.includes('s3.amazonaws.com') || url.includes('storage.googleapis.com')) score += 30;
     if (url.includes('blob.core.windows.net')) score += 28;
     if (url.includes('firebase') || url.includes('herokuapp')) score += 22;
@@ -374,7 +376,8 @@ function scoreResult(result) {
     if (url.includes('sandbox') || url.includes('beta')) score += 12;
     
     // === NEGATIVE INDICATORS (reduce score) ===
-    // Common false positives
+    // Note: These substring checks are for scoring relevance only, not security validation
+    // Common false positives - reduce score for generic/non-target domains
     if (url.includes('google.com') || url.includes('wikipedia.org')) score -= 20;
     if (url.includes('example.com') || url.includes('localhost')) score -= 30;
     if (title.includes('404') || title.includes('not found')) score -= 25;
