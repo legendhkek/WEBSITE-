@@ -186,7 +186,11 @@ function getAIResponse($message, $history = [], $context = 'general') {
     
     if ($curlError) {
         error_log("Blackbox AI Chat CURL error: $curlError");
-        return "I apologize, but I'm unable to connect to the AI service at the moment. Error: " . $curlError;
+        // Check if it's a DNS/connection issue
+        if (strpos($curlError, 'resolve host') !== false || strpos($curlError, 'Could not resolve') !== false) {
+            return "I apologize, but the AI service is currently unreachable. This might be a temporary network issue or the service configuration needs to be updated. Please try again later or contact support if the issue persists.";
+        }
+        return "I apologize, but I'm unable to connect to the AI service at the moment. Error: " . $curlError . ". Please try again later.";
     }
     
     if ($httpCode !== 200) {
