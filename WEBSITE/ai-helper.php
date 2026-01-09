@@ -95,6 +95,12 @@ function getTrendingTopics() {
  */
 function callBlackboxAPI($prompt) {
     if (!defined('BLACKBOX_API_KEY') || !defined('BLACKBOX_API_ENDPOINT')) {
+        error_log("Blackbox API: Configuration missing");
+        return null;
+    }
+    
+    if (empty(BLACKBOX_API_KEY) || empty(BLACKBOX_API_ENDPOINT)) {
+        error_log("Blackbox API: API key or endpoint not configured");
         return null;
     }
     
@@ -117,21 +123,34 @@ function callBlackboxAPI($prompt) {
             'Authorization: Bearer ' . BLACKBOX_API_KEY
         ],
         CURLOPT_TIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_CONNECTTIMEOUT => 5
     ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
     
-    if ($httpCode !== 200 || !$response) {
-        error_log("Blackbox API error: HTTP $httpCode");
+    if ($curlError) {
+        error_log("Blackbox API CURL error: $curlError");
+        return null;
+    }
+    
+    if ($httpCode !== 200) {
+        error_log("Blackbox API HTTP error: $httpCode - Response: " . substr($response, 0, 200));
+        return null;
+    }
+    
+    if (!$response) {
+        error_log("Blackbox API: Empty response");
         return null;
     }
     
     $result = json_decode($response, true);
     
     if (!$result || !isset($result['choices'][0]['message']['content'])) {
+        error_log("Blackbox API: Invalid response format");
         return null;
     }
     

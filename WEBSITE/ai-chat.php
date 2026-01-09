@@ -111,6 +111,7 @@ function handleChat($db, $user) {
     // Get AI response with context
     $aiResponse = getAIResponse($message, $history, $context);
     
+    // Always save and return the AI response (even if it's an error message)
     if ($aiResponse) {
         // Save AI response
         $stmt = $db->prepare("INSERT INTO ai_messages (conversation_id, role, content, created_at) VALUES (?, 'assistant', ?, ?)");
@@ -122,7 +123,10 @@ function handleChat($db, $user) {
             'conversation_id' => $conversationId
         ]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Failed to get AI response']);
+        echo json_encode([
+            'success' => false, 
+            'error' => 'The AI service is currently unavailable. Please check the configuration or try again later.'
+        ]);
     }
 }
 
@@ -130,6 +134,16 @@ function handleChat($db, $user) {
  * Get AI response using Blackbox API
  */
 function getAIResponse($message, $history = [], $context = 'general') {
+    if (!defined('BLACKBOX_API_KEY') || empty(BLACKBOX_API_KEY)) {
+        error_log("AI Chat: API key not configured");
+        return "I apologize, but AI features are currently unavailable. The API service is not configured. Please contact the administrator to enable AI assistance.";
+    }
+    
+    if (!defined('BLACKBOX_API_ENDPOINT') || empty(BLACKBOX_API_ENDPOINT)) {
+        error_log("AI Chat: API endpoint not configured");
+        return "I apologize, but AI features are currently unavailable. The API endpoint is not configured.";
+    }
+    
     $systemPrompt = getSystemPrompt($context);
     
     $messages = [
@@ -165,22 +179,35 @@ function getAIResponse($message, $history = [], $context = 'general') {
             'Authorization: Bearer ' . BLACKBOX_API_KEY
         ],
         CURLOPT_TIMEOUT => 30,
-        CURLOPT_SSL_VERIFYPEER => true
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_CONNECTTIMEOUT => 10
     ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
     
-    if ($httpCode !== 200 || !$response) {
-        error_log("Blackbox AI API error: HTTP $httpCode");
-        return null;
+    if ($curlError) {
+        error_log("Blackbox AI Chat CURL error: $curlError");
+        return "I apologize, but I'm unable to connect to the AI service at the moment. Please try again later or contact support if the issue persists.";
+    }
+    
+    if ($httpCode !== 200) {
+        error_log("Blackbox AI Chat HTTP error: $httpCode - Response: " . substr($response, 0, 200));
+        return "I apologize, but the AI service returned an error (HTTP $httpCode). Please try again later.";
+    }
+    
+    if (!$response) {
+        error_log("Blackbox AI Chat: Empty response");
+        return "I apologize, but I received an empty response from the AI service. Please try again.";
     }
     
     $result = json_decode($response, true);
     
     if (!$result || !isset($result['choices'][0]['message']['content'])) {
-        return null;
+        error_log("Blackbox AI Chat: Invalid response format");
+        return "I apologize, but I received an invalid response from the AI service. Please try again.";
     }
     
     return $result['choices'][0]['message']['content'];
