@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/proxy-sources.php';
 
 header('Content-Type: application/json');
 
@@ -19,8 +20,14 @@ switch ($action) {
     case 'scrape':
         scrapeProxies();
         break;
+    case 'scrape_residential':
+        scrapeResidentialProxies();
+        break;
     case 'validate':
         validateProxy();
+        break;
+    case 'batch_validate':
+        batchValidateProxies();
         break;
     case 'list':
         listProxies();
@@ -31,6 +38,12 @@ switch ($action) {
     case 'export':
         exportProxies();
         break;
+    case 'sources':
+        listAvailableSources();
+        break;
+    case 'stats':
+        getProxyStats();
+        break;
     default:
         echo json_encode(['success' => false, 'error' => 'Invalid action']);
 }
@@ -39,241 +52,110 @@ function scrapeProxies() {
     global $user;
     
     $sources = $_POST['sources'] ?? ['all'];
-    $customSource = $_POST['custom_source'] ?? '';
+    $proxyType = $_POST['proxy_type'] ?? 'all'; // http, https, socks4, socks5, all
+    $maxPerSource = intval($_POST['max_per_source'] ?? 100);
+    
+    $manager = new ProxySourceManager();
+    
+    // Get all proxies from selected sources
+    $proxies = $manager->scrapeMultipleSources($sources, $maxPerSource);
+    
+    // Filter by proxy type if specified
+    if ($proxyType !== 'all') {
+        $proxies = array_filter($proxies, function($proxy) use ($proxyType) {
+            return strcasecmp($proxy['protocol'], $proxyType) === 0;
+        });
+        $proxies = array_values($proxies); // Re-index
+    }
+    
+    // Remove duplicates
+    $unique = removeDuplicates($proxies);
+    
+    // Add metadata
+    $response = [
+        'success' => true,
+        'proxies' => $unique,
+        'total' => count($unique),
+        'sources_used' => count($sources),
+        'total_sources_available' => $manager->getSourceCount(),
+        'timestamp' => time()
+    ];
+    
+    echo json_encode($response);
+}
+
+function scrapeResidentialProxies() {
+    global $user;
+    
+    // Residential proxies from specialized sources
+    $residentialSources = [
+        'https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=all&anonymity=elite',
+        'https://proxylist.geonode.com/api/proxy-list?limit=500&protocols=http&filterUpTime=90&anonymityLevel=elite',
+        // Add more residential-focused sources
+    ];
     
     $proxies = [];
     
-    // Real proxy scraping from public sources
-    $proxyLists = [];
-    
-    if (in_array('all', $sources) || in_array('free-proxy-list', $sources)) {
-        $proxyLists['free-proxy-list'] = scrapeFreeProxyList();
-    }
-    if (in_array('all', $sources) || in_array('proxyscrape', $sources)) {
-        $proxyLists['proxyscrape'] = scrapeProxyScrape();
-    }
-    if (in_array('all', $sources) || in_array('proxy-list', $sources)) {
-        $proxyLists['proxy-list'] = scrapeProxyListDownload();
-    }
-    if (in_array('all', $sources) || in_array('geonode', $sources)) {
-        $proxyLists['geonode'] = scrapeGeonode();
-    }
-    if (in_array('all', $sources) || in_array('pubproxy', $sources)) {
-        $proxyLists['pubproxy'] = scrapePubProxy();
-    }
-    
-    foreach ($proxyLists as $list) {
-        $proxies = array_merge($proxies, $list);
-    }
-    
-    // Add custom source if provided
-    if ($customSource) {
+    foreach ($residentialSources as $url) {
         try {
-            $content = @file_get_contents($customSource, false, stream_context_create([
+            $content = @file_get_contents($url, false, stream_context_create([
                 'http' => [
-                    'timeout' => 10,
+                    'timeout' => 15,
                     'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 ]
             ]));
+            
             if ($content) {
-                $lines = explode("\n", $content);
-                foreach ($lines as $line) {
-                    $line = trim($line);
-                    if (preg_match('/^(\d+\.\d+\.\d+\.\d+):(\d+)$/', $line, $matches)) {
-                        $proxies[] = [
-                            'ip' => $matches[1],
-                            'port' => intval($matches[2]),
-                            'protocol' => 'http',
-                            'source' => 'custom'
-                        ];
+                // Parse response
+                $json = @json_decode($content, true);
+                if ($json && isset($json['data'])) {
+                    foreach ($json['data'] as $proxy) {
+                        if (isset($proxy['ip']) && isset($proxy['port'])) {
+                            $proxies[] = [
+                                'ip' => $proxy['ip'],
+                                'port' => intval($proxy['port']),
+                                'protocol' => $proxy['protocols'][0] ?? 'http',
+                                'type' => 'residential',
+                                'country' => $proxy['country'] ?? 'Unknown',
+                                'anonymity' => 'elite',
+                                'uptime' => $proxy['upTime'] ?? 0,
+                                'source' => 'residential'
+                            ];
+                        }
+                    }
+                } else {
+                    // Parse as text
+                    $lines = explode("\n", $content);
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if (preg_match('/(\d+\.\d+\.\d+\.\d+):(\d+)/', $line, $matches)) {
+                            $proxies[] = [
+                                'ip' => $matches[1],
+                                'port' => intval($matches[2]),
+                                'protocol' => 'http',
+                                'type' => 'residential',
+                                'anonymity' => 'elite',
+                                'source' => 'residential'
+                            ];
+                        }
                     }
                 }
             }
         } catch (Exception $e) {
-            error_log("Custom proxy source error: " . $e->getMessage());
+            error_log("Residential proxy scraping error: " . $e->getMessage());
         }
     }
     
     // Remove duplicates
-    $unique = [];
-    $seen = [];
-    foreach ($proxies as $proxy) {
-        $key = $proxy['ip'] . ':' . $proxy['port'];
-        if (!isset($seen[$key])) {
-            $seen[$key] = true;
-            $unique[] = $proxy;
-        }
-    }
+    $unique = removeDuplicates($proxies);
     
     echo json_encode([
         'success' => true,
         'proxies' => $unique,
-        'total' => count($unique)
+        'total' => count($unique),
+        'type' => 'residential',
+        'timestamp' => time()
     ]);
-}
-
-// Scrape from ProxyScrape API
-function scrapeProxyScrape() {
-    $proxies = [];
-    try {
-        $url = 'https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all&simplified=true';
-        $content = @file_get_contents($url, false, stream_context_create([
-            'http' => [
-                'timeout' => 15,
-                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            ]
-        ]));
-        
-        if ($content) {
-            $lines = explode("\n", trim($content));
-            foreach ($lines as $line) {
-                $line = trim($line);
-                if (preg_match('/^(\d+\.\d+\.\d+\.\d+):(\d+)$/', $line, $matches)) {
-                    $proxies[] = [
-                        'ip' => $matches[1],
-                        'port' => intval($matches[2]),
-                        'protocol' => 'http',
-                        'source' => 'proxyscrape'
-                    ];
-                }
-            }
-        }
-    } catch (Exception $e) {
-        error_log("ProxyScrape scraping error: " . $e->getMessage());
-    }
-    return $proxies;
-}
-
-// Scrape from Geonode API
-function scrapeGeonode() {
-    $proxies = [];
-    try {
-        $url = 'https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http%2Chttps';
-        $content = @file_get_contents($url, false, stream_context_create([
-            'http' => [
-                'timeout' => 15,
-                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            ]
-        ]));
-        
-        if ($content) {
-            $data = json_decode($content, true);
-            if (isset($data['data']) && is_array($data['data'])) {
-                foreach ($data['data'] as $proxy) {
-                    if (isset($proxy['ip']) && isset($proxy['port'])) {
-                        $proxies[] = [
-                            'ip' => $proxy['ip'],
-                            'port' => intval($proxy['port']),
-                            'protocol' => isset($proxy['protocols'][0]) ? strtolower($proxy['protocols'][0]) : 'http',
-                            'source' => 'geonode',
-                            'country' => $proxy['country'] ?? 'Unknown',
-                            'anonymity' => $proxy['anonymityLevel'] ?? 'Unknown'
-                        ];
-                    }
-                }
-            }
-        }
-    } catch (Exception $e) {
-        error_log("Geonode scraping error: " . $e->getMessage());
-    }
-    return $proxies;
-}
-
-// Scrape from PubProxy API
-function scrapePubProxy() {
-    $proxies = [];
-    try {
-        $url = 'http://pubproxy.com/api/proxy?limit=20&format=json&type=http';
-        $content = @file_get_contents($url, false, stream_context_create([
-            'http' => [
-                'timeout' => 15,
-                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            ]
-        ]));
-        
-        if ($content) {
-            $data = json_decode($content, true);
-            if (isset($data['data']) && is_array($data['data'])) {
-                foreach ($data['data'] as $proxy) {
-                    if (isset($proxy['ip']) && isset($proxy['port'])) {
-                        $proxies[] = [
-                            'ip' => $proxy['ip'],
-                            'port' => intval($proxy['port']),
-                            'protocol' => $proxy['type'] ?? 'http',
-                            'source' => 'pubproxy',
-                            'country' => $proxy['country'] ?? 'Unknown'
-                        ];
-                    }
-                }
-            }
-        }
-    } catch (Exception $e) {
-        error_log("PubProxy scraping error: " . $e->getMessage());
-    }
-    return $proxies;
-}
-
-// Scrape from Free-Proxy-List.net
-function scrapeFreeProxyList() {
-    $proxies = [];
-    try {
-        $url = 'https://www.free-proxy-list.net/';
-        $content = @file_get_contents($url, false, stream_context_create([
-            'http' => [
-                'timeout' => 15,
-                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            ]
-        ]));
-        
-        if ($content) {
-            // Parse HTML table for proxy data
-            if (preg_match_all('/<tr><td>(\d+\.\d+\.\d+\.\d+)<\/td><td>(\d+)<\/td>/', $content, $matches, PREG_SET_ORDER)) {
-                foreach ($matches as $match) {
-                    $proxies[] = [
-                        'ip' => $match[1],
-                        'port' => intval($match[2]),
-                        'protocol' => 'http',
-                        'source' => 'free-proxy-list'
-                    ];
-                }
-            }
-        }
-    } catch (Exception $e) {
-        error_log("Free-Proxy-List scraping error: " . $e->getMessage());
-    }
-    return $proxies;
-}
-
-// Scrape from proxy-list.download
-function scrapeProxyListDownload() {
-    $proxies = [];
-    try {
-        $url = 'https://www.proxy-list.download/api/v1/get?type=http';
-        $content = @file_get_contents($url, false, stream_context_create([
-            'http' => [
-                'timeout' => 15,
-                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            ]
-        ]));
-        
-        if ($content) {
-            $lines = explode("\n", trim($content));
-            foreach ($lines as $line) {
-                $line = trim($line);
-                if (preg_match('/^(\d+\.\d+\.\d+\.\d+):(\d+)$/', $line, $matches)) {
-                    $proxies[] = [
-                        'ip' => $matches[1],
-                        'port' => intval($matches[2]),
-                        'protocol' => 'http',
-                        'source' => 'proxy-list'
-                    ];
-                }
-            }
-        }
-    } catch (Exception $e) {
-        error_log("Proxy-List-Download scraping error: " . $e->getMessage());
-    }
-    return $proxies;
 }
 
 function validateProxy() {
@@ -282,25 +164,22 @@ function validateProxy() {
     $ip = $_POST['ip'] ?? '';
     $port = $_POST['port'] ?? 0;
     $protocol = $_POST['protocol'] ?? 'http';
-    $timeout = intval($_POST['timeout'] ?? 5);
+    $timeout = intval($_POST['timeout'] ?? 10);
     
-    // Validate proxy (mock validation - in production would actually test connection)
-    $isWorking = (rand(1, 100) > 30); // 70% success rate simulation
-    $speed = $isWorking ? rand(100, 3000) : 0;
-    $anonymity = $isWorking ? ['Elite', 'Anonymous', 'Transparent'][rand(0, 2)] : 'Unknown';
-    $country = $isWorking ? ['US', 'UK', 'FR', 'DE', 'CA', 'NL', 'SG', 'JP'][rand(0, 7)] : 'Unknown';
+    // Real proxy validation
+    $result = testProxyConnection($ip, $port, $protocol, $timeout);
     
-    if ($isWorking) {
+    if ($result['working']) {
         // Save to database
-        $stmt = $db->prepare("INSERT INTO scraped_proxies (user_id, ip, port, protocol, country, anonymity, speed, tested_at, is_working) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT OR REPLACE INTO scraped_proxies (user_id, ip, port, protocol, country, anonymity, speed, tested_at, is_working) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $user['id'],
             $ip,
             $port,
             $protocol,
-            $country,
-            $anonymity,
-            $speed,
+            $result['country'],
+            $result['anonymity'],
+            $result['speed'],
             time(),
             1
         ]);
@@ -308,18 +187,204 @@ function validateProxy() {
     
     echo json_encode([
         'success' => true,
-        'is_working' => $isWorking,
-        'speed' => $speed,
-        'anonymity' => $anonymity,
-        'country' => $country
+        'is_working' => $result['working'],
+        'speed' => $result['speed'],
+        'anonymity' => $result['anonymity'],
+        'country' => $result['country'],
+        'response_time' => $result['response_time']
+    ]);
+}
+
+function batchValidateProxies() {
+    $proxies = $_POST['proxies'] ?? [];
+    $timeout = intval($_POST['timeout'] ?? 5);
+    $maxConcurrent = intval($_POST['max_concurrent'] ?? 10);
+    
+    $results = [];
+    $chunks = array_chunk($proxies, $maxConcurrent);
+    
+    foreach ($chunks as $chunk) {
+        $chunkResults = [];
+        
+        foreach ($chunk as $proxy) {
+            $result = testProxyConnection(
+                $proxy['ip'],
+                $proxy['port'],
+                $proxy['protocol'] ?? 'http',
+                $timeout
+            );
+            
+            $chunkResults[] = [
+                'ip' => $proxy['ip'],
+                'port' => $proxy['port'],
+                'working' => $result['working'],
+                'speed' => $result['speed'],
+                'anonymity' => $result['anonymity']
+            ];
+        }
+        
+        $results = array_merge($results, $chunkResults);
+    }
+    
+    $workingCount = count(array_filter($results, fn($r) => $r['working']));
+    
+    echo json_encode([
+        'success' => true,
+        'results' => $results,
+        'total_tested' => count($results),
+        'working' => $workingCount,
+        'failed' => count($results) - $workingCount
+    ]);
+}
+
+function testProxyConnection($ip, $port, $protocol, $timeout = 10) {
+    $result = [
+        'working' => false,
+        'speed' => 0,
+        'anonymity' => 'Unknown',
+        'country' => 'Unknown',
+        'response_time' => 0
+    ];
+    
+    $startTime = microtime(true);
+    
+    try {
+        // Test URL - using a service that returns our IP
+        $testUrl = 'http://httpbin.org/ip';
+        
+        // Build proxy URL
+        $proxyUrl = "$protocol://$ip:$port";
+        
+        $context = stream_context_create([
+            'http' => [
+                'proxy' => "tcp://$ip:$port",
+                'request_fulluri' => true,
+                'timeout' => $timeout,
+                'user_agent' => 'Mozilla/5.0'
+            ]
+        ]);
+        
+        $response = @file_get_contents($testUrl, false, $context);
+        $endTime = microtime(true);
+        
+        if ($response) {
+            $result['working'] = true;
+            $result['response_time'] = round(($endTime - $startTime) * 1000); // ms
+            $result['speed'] = $result['response_time'];
+            
+            // Check anonymity level
+            $json = @json_decode($response, true);
+            if ($json && isset($json['origin'])) {
+                $returnedIp = $json['origin'];
+                // If IP is different from proxy IP, it's working
+                $result['anonymity'] = ($returnedIp === $ip) ? 'Transparent' : 'Anonymous';
+            }
+            
+            // Try to detect country (would need GeoIP database for accurate results)
+            $result['country'] = 'Unknown';
+        }
+    } catch (Exception $e) {
+        error_log("Proxy test error for $ip:$port - " . $e->getMessage());
+    }
+    
+    return $result;
+}
+
+function removeDuplicates($proxies) {
+    $unique = [];
+    $seen = [];
+    
+    foreach ($proxies as $proxy) {
+        $key = $proxy['ip'] . ':' . $proxy['port'];
+        if (!isset($seen[$key])) {
+            $seen[$key] = true;
+            $unique[] = $proxy;
+        }
+    }
+    
+    return $unique;
+}
+
+function listAvailableSources() {
+    $manager = new ProxySourceManager();
+    $sources = $manager->getAllSources();
+    
+    $categorized = [];
+    foreach ($sources as $source) {
+        $category = $source['category'];
+        if (!isset($categorized[$category])) {
+            $categorized[$category] = [];
+        }
+        $categorized[$category][] = [
+            'name' => $source['name'],
+            'url' => $source['url']
+        ];
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'total_sources' => count($sources),
+        'categories' => $categorized,
+        'category_counts' => array_map('count', $categorized)
+    ]);
+}
+
+function getProxyStats() {
+    global $db, $user;
+    
+    // Get statistics
+    $stmt = $db->prepare("SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN is_working = 1 THEN 1 END) as working,
+        AVG(speed) as avg_speed,
+        protocol,
+        COUNT(DISTINCT country) as countries
+        FROM scraped_proxies 
+        WHERE user_id = ?
+        GROUP BY protocol
+    ");
+    $stmt->execute([$user['id']]);
+    $stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get total count
+    $stmtTotal = $db->prepare("SELECT COUNT(*) as total FROM scraped_proxies WHERE user_id = ?");
+    $stmtTotal->execute([$user['id']]);
+    $totalRow = $stmtTotal->fetch(PDO::FETCH_ASSOC);
+    
+    echo json_encode([
+        'success' => true,
+        'total_proxies' => $totalRow['total'] ?? 0,
+        'by_protocol' => $stats,
+        'last_updated' => time()
     ]);
 }
 
 function listProxies() {
     global $db, $user;
     
-    $stmt = $db->prepare("SELECT * FROM scraped_proxies WHERE user_id = ? AND is_working = 1 ORDER BY speed ASC");
-    $stmt->execute([$user['id']]);
+    $protocol = $_GET['protocol'] ?? null;
+    $workingOnly = isset($_GET['working_only']) ? boolval($_GET['working_only']) : true;
+    $limit = intval($_GET['limit'] ?? 100);
+    $offset = intval($_GET['offset'] ?? 0);
+    
+    $sql = "SELECT * FROM scraped_proxies WHERE user_id = ?";
+    $params = [$user['id']];
+    
+    if ($protocol) {
+        $sql .= " AND protocol = ?";
+        $params[] = $protocol;
+    }
+    
+    if ($workingOnly) {
+        $sql .= " AND is_working = 1";
+    }
+    
+    $sql .= " ORDER BY speed ASC LIMIT ? OFFSET ?";
+    $params[] = $limit;
+    $params[] = $offset;
+    
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
     
     $proxies = [];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -328,7 +393,10 @@ function listProxies() {
     
     echo json_encode([
         'success' => true,
-        'proxies' => $proxies
+        'proxies' => $proxies,
+        'count' => count($proxies),
+        'limit' => $limit,
+        'offset' => $offset
     ]);
 }
 
@@ -347,9 +415,20 @@ function exportProxies() {
     global $db, $user;
     
     $format = $_GET['format'] ?? 'txt';
+    $protocol = $_GET['protocol'] ?? null;
     
-    $stmt = $db->prepare("SELECT * FROM scraped_proxies WHERE user_id = ? AND is_working = 1 ORDER BY speed ASC");
-    $stmt->execute([$user['id']]);
+    $sql = "SELECT * FROM scraped_proxies WHERE user_id = ? AND is_working = 1";
+    $params = [$user['id']];
+    
+    if ($protocol) {
+        $sql .= " AND protocol = ?";
+        $params[] = $protocol;
+    }
+    
+    $sql .= " ORDER BY speed ASC";
+    
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
     $proxies = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     if ($format === 'txt') {
@@ -379,19 +458,3 @@ function exportProxies() {
     }
     exit;
 }
-
-function generateMockProxies($count) {
-    $proxies = [];
-    $protocols = ['http', 'https', 'socks4', 'socks5'];
-    
-    for ($i = 0; $i < $count; $i++) {
-        $proxies[] = [
-            'ip' => rand(1, 255) . '.' . rand(1, 255) . '.' . rand(1, 255) . '.' . rand(1, 255),
-            'port' => rand(1080, 65535),
-            'protocol' => $protocols[array_rand($protocols)]
-        ];
-    }
-    
-    return $proxies;
-}
-?>
