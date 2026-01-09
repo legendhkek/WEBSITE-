@@ -204,6 +204,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
     <script src="torrent-script.js"></script>
-    <script src="script.js"></script>
+    <script src="../script.js"></script>
+    
+    <!-- AI Chat Widget Integration -->
+    <script src="../ai-chat-widget.js"></script>
+    <script>
+        // Set context to 'torrents' for torrent page
+        document.body.dataset.aiContext = 'torrents';
+    </script>
 </body>
 </html>

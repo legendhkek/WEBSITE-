@@ -45,7 +45,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS proxy_sources (
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proxy Scraper - Legend House</title>
-    <link rel="stylesheet" href="dashboard-style.css">
+    <link rel="stylesheet" href="../dashboard-style.css">
     <link rel="stylesheet" href="shortener-style.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
      crossorigin="anonymous"></script>
