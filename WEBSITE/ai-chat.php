@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/ai-helper.php'; // For shared validation function
 
 // Check if user is logged in
 $user = getCurrentUser();
@@ -134,14 +135,8 @@ function handleChat($db, $user) {
  * Get AI response using Blackbox API
  */
 function getAIResponse($message, $history = [], $context = 'general') {
-    if (!defined('BLACKBOX_API_KEY') || empty(BLACKBOX_API_KEY)) {
-        error_log("AI Chat: API key not configured");
+    if (!validateBlackboxConfig()) {
         return "I apologize, but AI features are currently unavailable. The API service is not configured. Please contact the administrator to enable AI assistance.";
-    }
-    
-    if (!defined('BLACKBOX_API_ENDPOINT') || empty(BLACKBOX_API_ENDPOINT)) {
-        error_log("AI Chat: API endpoint not configured");
-        return "I apologize, but AI features are currently unavailable. The API endpoint is not configured.";
     }
     
     $systemPrompt = getSystemPrompt($context);
