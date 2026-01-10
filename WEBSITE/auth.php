@@ -514,6 +514,172 @@ function getDownloadHistory($userId, $limit = 50) {
     return $history;
 }
 
+// Get platform-wide statistics
+function getPlatformStats() {
+    $db = getDB();
+    $stats = [];
+    
+    // Total users
+    $result = $db->query('SELECT COUNT(*) as total FROM users');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['total_users'] = $row['total'] ?? 0;
+    
+    // Active users (logged in within last 7 days)
+    $stmt = $db->prepare('SELECT COUNT(*) as total FROM users WHERE last_login >= datetime("now", "-7 days")');
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['active_users'] = $row['total'] ?? 0;
+    
+    // New users today
+    $result = $db->query('SELECT COUNT(*) as total FROM users WHERE date(created_at) = date("now")');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['new_users_today'] = $row['total'] ?? 0;
+    
+    // New users this week
+    $result = $db->query('SELECT COUNT(*) as total FROM users WHERE created_at >= datetime("now", "-7 days")');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['new_users_week'] = $row['total'] ?? 0;
+    
+    // Total downloads (platform-wide)
+    $result = $db->query('SELECT COUNT(*) as total FROM download_history');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['total_downloads'] = $row['total'] ?? 0;
+    
+    // Downloads today
+    $result = $db->query('SELECT COUNT(*) as total FROM download_history WHERE date(downloaded_at) = date("now")');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['downloads_today'] = $row['total'] ?? 0;
+    
+    // Downloads this week
+    $result = $db->query('SELECT COUNT(*) as total FROM download_history WHERE downloaded_at >= datetime("now", "-7 days")');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['downloads_week'] = $row['total'] ?? 0;
+    
+    // Google vs Local users
+    $result = $db->query('SELECT COUNT(*) as total FROM users WHERE auth_provider = "google"');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['google_users'] = $row['total'] ?? 0;
+    $stats['local_users'] = $stats['total_users'] - $stats['google_users'];
+    
+    // Most active user (by downloads)
+    $result = $db->query('SELECT users.username, COUNT(download_history.id) as download_count 
+                          FROM download_history 
+                          JOIN users ON users.id = download_history.user_id 
+                          GROUP BY download_history.user_id 
+                          ORDER BY download_count DESC 
+                          LIMIT 1');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['top_user'] = $row ? $row['username'] : null;
+    $stats['top_user_downloads'] = $row ? $row['download_count'] : 0;
+    
+    $db->close();
+    return $stats;
+}
+
+// Get recent platform activity
+function getRecentActivity($limit = 10) {
+    $db = getDB();
+    $activities = [];
+    
+    // Get recent signups
+    $stmt = $db->prepare('SELECT "signup" as type, username, created_at as timestamp FROM users ORDER BY created_at DESC LIMIT :limit');
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $activities[] = [
+            'type' => 'signup',
+            'description' => $row['username'] . ' joined Legend House',
+            'timestamp' => $row['timestamp'],
+            'icon' => '👋'
+        ];
+    }
+    
+    // Get recent downloads
+    $stmt = $db->prepare('SELECT "download" as type, users.username, download_history.torrent_name, download_history.downloaded_at as timestamp 
+                          FROM download_history 
+                          JOIN users ON users.id = download_history.user_id 
+                          ORDER BY download_history.downloaded_at DESC 
+                          LIMIT :limit');
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $activities[] = [
+            'type' => 'download',
+            'description' => substr($row['torrent_name'], 0, 40) . '...',
+            'user' => $row['username'],
+            'timestamp' => $row['timestamp'],
+            'icon' => '📥'
+        ];
+    }
+    
+    // Sort by timestamp descending
+    usort($activities, function($a, $b) {
+        return strtotime($b['timestamp']) - strtotime($a['timestamp']);
+    });
+    
+    $db->close();
+    return array_slice($activities, 0, $limit);
+}
+
+// Track search activity
+function initSearchTracking() {
+    $db = getDB();
+    $db->exec('CREATE TABLE IF NOT EXISTS search_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        query TEXT NOT NULL,
+        category TEXT DEFAULT "all",
+        results_count INTEGER DEFAULT 0,
+        searched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )');
+    $db->close();
+}
+
+// Save search query
+function saveSearchQuery($userId, $query, $category = 'all', $resultsCount = 0) {
+    initSearchTracking();
+    $db = getDB();
+    $stmt = $db->prepare('INSERT INTO search_history (user_id, query, category, results_count) VALUES (:user_id, :query, :category, :results)');
+    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+    $stmt->bindValue(':query', $query, SQLITE3_TEXT);
+    $stmt->bindValue(':category', $category, SQLITE3_TEXT);
+    $stmt->bindValue(':results', $resultsCount, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $db->close();
+    return $result !== false;
+}
+
+// Get search statistics
+function getSearchStats() {
+    initSearchTracking();
+    $db = getDB();
+    $stats = [];
+    
+    // Total searches
+    $result = $db->query('SELECT COUNT(*) as total FROM search_history');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['total_searches'] = $row['total'] ?? 0;
+    
+    // Searches today
+    $result = $db->query('SELECT COUNT(*) as total FROM search_history WHERE date(searched_at) = date("now")');
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stats['searches_today'] = $row['total'] ?? 0;
+    
+    // Popular searches
+    $result = $db->query('SELECT query, COUNT(*) as count FROM search_history GROUP BY LOWER(query) ORDER BY count DESC LIMIT 5');
+    $popular = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $popular[] = $row;
+    }
+    $stats['popular_searches'] = $popular;
+    
+    $db->close();
+    return $stats;
+}
+
 // API endpoint handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');

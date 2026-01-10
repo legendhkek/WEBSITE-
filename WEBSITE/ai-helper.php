@@ -5,11 +5,17 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Supports multiple free AI providers with automatic fallback:
- * 1. DeepInfra (Mistral/Llama) - Primary
- * 2. HuggingFace Inference - Secondary  
- * 3. Blackbox AI - Fallback
- * 4. Local response - Last resort
+ * 1. Blackbox AI - Primary (with your API key)
+ * 2. DuckDuckGo AI - Secondary (free)
+ * 3. DeepInfra (Llama) - Fallback
+ * 4. HuggingFace Inference - Fallback  
+ * 5. Local response - Last resort
  */
+
+// Start session if not already started (needed for getUserAIModel)
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 
 require_once __DIR__ . '/config.php';
 
@@ -22,18 +28,28 @@ if (!file_exists(CACHE_DIR)) {
  * Main AI chat function with provider fallback
  */
 function getAIResponse($message, $context = 'general', $conversationHistory = []) {
+    // Providers in order of preference
+    // Blackbox first if API key is configured, then free alternatives
     $providers = [
-        'deepinfra' => 'callDeepInfra',
-        'huggingface' => 'callHuggingFace',
-        'blackbox' => 'callBlackbox'
+        'blackbox' => 'callBlackbox',      // Primary - uses your API key with GPT-4o
+        'duckduckgo' => 'callDuckDuckGoAI', // Fallback - free
+        'deepinfra' => 'callDeepInfra',     // Fallback - free
+        'huggingface' => 'callHuggingFace'  // Fallback - free
     ];
     
     $systemPrompt = getSystemPrompt($context);
     
     foreach ($providers as $name => $function) {
         try {
+            if (!function_exists($function)) {
+                continue;
+            }
+            
+            error_log("Trying AI provider: $name");
             $response = $function($message, $systemPrompt, $conversationHistory);
+            
             if ($response && strlen($response) > 10) {
+                error_log("AI provider $name succeeded");
                 return $response;
             }
         } catch (Exception $e) {
@@ -43,6 +59,7 @@ function getAIResponse($message, $context = 'general', $conversationHistory = []
     }
     
     // Fallback to intelligent local responses
+    error_log("All AI providers failed, using local fallback");
     return getLocalResponse($message, $context);
 }
 
@@ -138,29 +155,71 @@ function callHuggingFace($message, $systemPrompt, $history = []) {
 }
 
 /**
- * Call Blackbox AI API
+ * Get user's preferred AI model from database
+ */
+function getUserAIModel($userId = null) {
+    $defaultModel = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'blackboxai/openai/gpt-4o';
+    
+    if (!$userId && isset($_SESSION['user_id'])) {
+        $userId = $_SESSION['user_id'];
+    }
+    
+    if (!$userId) {
+        return $defaultModel;
+    }
+    
+    try {
+        $db = new SQLite3(DB_FILE);
+        $stmt = $db->prepare('SELECT ai_model FROM user_settings WHERE user_id = :user_id');
+        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $result = $stmt->execute();
+        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $db->close();
+        
+        return $row['ai_model'] ?? $defaultModel;
+    } catch (Exception $e) {
+        return $defaultModel;
+    }
+}
+
+/**
+ * Call Blackbox AI API (OpenAI-compatible format)
+ * Uses API key from config.php and user's selected model
  */
 function callBlackbox($message, $systemPrompt, $history = []) {
-    $endpoint = 'https://www.blackbox.ai/api/chat';
+    // Get API key and endpoint from config
+    $apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : '';
+    $endpoint = defined('BLACKBOX_API_ENDPOINT') ? BLACKBOX_API_ENDPOINT : 'https://api.blackbox.ai/v1/chat/completions';
     
+    // Get user's preferred model or default
+    $model = getUserAIModel();
+    
+    // Skip if no API key
+    if (empty($apiKey) || $apiKey === 'free') {
+        error_log("Blackbox: No API key configured, skipping");
+        return null;
+    }
+    
+    // Build messages array in OpenAI format
     $messages = [];
+    
+    // Add system message
+    $messages[] = ['role' => 'system', 'content' => $systemPrompt];
+    
+    // Add conversation history
     foreach ($history as $msg) {
         $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
     }
-    $messages[] = ['role' => 'user', 'content' => "$systemPrompt\n\n$message"];
     
+    // Add current user message
+    $messages[] = ['role' => 'user', 'content' => $message];
+    
+    // OpenAI-compatible request format
     $data = [
+        'model' => $model,
         'messages' => $messages,
-        'id' => uniqid('legendhouse_'),
-        'previewToken' => null,
-        'userId' => null,
-        'codeModelMode' => true,
-        'agentMode' => [],
-        'trendingAgentMode' => [],
-        'isMicMode' => false,
-        'maxTokens' => 1024,
-        'isChromeExt' => false,
-        'githubToken' => null
+        'max_tokens' => 1024,
+        'temperature' => 0.7
     ];
     
     $ch = curl_init($endpoint);
@@ -170,12 +229,98 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         CURLOPT_POSTFIELDS => json_encode($data),
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
-            'Accept: application/json',
-            'Origin: https://www.blackbox.ai',
-            'Referer: https://www.blackbox.ai/',
+            'Authorization: Bearer ' . $apiKey
+        ],
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_CONNECTTIMEOUT => 15,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_FOLLOWLOCATION => true
+    ]);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+    
+    if ($curlError) {
+        error_log("Blackbox CURL error: $curlError");
+        return null;
+    }
+    
+    if ($httpCode === 200 && $response) {
+        $data = json_decode($response, true);
+        
+        // Extract response from OpenAI format
+        if (isset($data['choices'][0]['message']['content'])) {
+            $content = trim($data['choices'][0]['message']['content']);
+            if (strlen($content) > 5) {
+                return $content;
+            }
+        }
+    }
+    
+    error_log("Blackbox API failed with HTTP $httpCode");
+    return null;
+}
+
+/**
+ * Call DuckDuckGo AI Chat (Free, no API key needed)
+ */
+function callDuckDuckGoAI($message, $systemPrompt, $history = []) {
+    // Get VQD token first
+    $tokenUrl = 'https://duckduckgo.com/duckchat/v1/status';
+    
+    $ch = curl_init($tokenUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'x-vqd-accept: 1',
             'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         ],
-        CURLOPT_TIMEOUT => 45,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_HEADER => true
+    ]);
+    
+    $tokenResponse = curl_exec($ch);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $headers = substr($tokenResponse, 0, $headerSize);
+    curl_close($ch);
+    
+    // Extract VQD token from headers
+    $vqd = '';
+    if (preg_match('/x-vqd-4:\s*([^\r\n]+)/i', $headers, $matches)) {
+        $vqd = trim($matches[1]);
+    }
+    
+    if (empty($vqd)) {
+        error_log("DuckDuckGo: Failed to get VQD token");
+        return null;
+    }
+    
+    // Make chat request
+    $chatUrl = 'https://duckduckgo.com/duckchat/v1/chat';
+    
+    $messages = [];
+    $messages[] = ['role' => 'user', 'content' => $systemPrompt . "\n\nUser question: " . $message];
+    
+    $data = [
+        'model' => 'gpt-4o-mini',
+        'messages' => $messages
+    ];
+    
+    $ch = curl_init($chatUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($data),
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Accept: text/event-stream',
+            'x-vqd-4: ' . $vqd,
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        ],
+        CURLOPT_TIMEOUT => 60,
         CURLOPT_SSL_VERIFYPEER => false
     ]);
     
@@ -184,9 +329,25 @@ function callBlackbox($message, $systemPrompt, $history = []) {
     curl_close($ch);
     
     if ($httpCode === 200 && $response) {
-        $content = trim($response);
-        $content = preg_replace('/^\$@\$v=undefined-rv1\$@\$/i', '', $content);
-        return trim($content);
+        // Parse SSE response
+        $fullMessage = '';
+        $lines = explode("\n", $response);
+        
+        foreach ($lines as $line) {
+            if (strpos($line, 'data: ') === 0) {
+                $jsonStr = substr($line, 6);
+                if ($jsonStr === '[DONE]') continue;
+                
+                $data = json_decode($jsonStr, true);
+                if (isset($data['message'])) {
+                    $fullMessage .= $data['message'];
+                }
+            }
+        }
+        
+        if (!empty($fullMessage)) {
+            return trim($fullMessage);
+        }
     }
     
     return null;
