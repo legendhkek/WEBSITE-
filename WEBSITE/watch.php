@@ -12,8 +12,6 @@
     
     <link rel="stylesheet" href="style.css">
     
-    
-    
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
     <style>
         .watch-page {
@@ -117,6 +115,174 @@
             text-decoration: underline;
         }
         
+        /* Search Section */
+        .watch-search-section {
+            max-width: 800px;
+            margin: 0 auto 40px;
+            padding: 0 20px;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .search-input-watch {
+            flex: 1;
+            padding: 16px 20px;
+            font-size: 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-glass);
+            border-radius: 12px;
+            color: var(--text-primary);
+            outline: none;
+            transition: var(--transition);
+        }
+        
+        .search-input-watch:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+        
+        .search-btn-watch {
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+        
+        .search-btn-watch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        /* Search Results */
+        .search-results-watch {
+            margin-top: 24px;
+            display: grid;
+            gap: 16px;
+        }
+        
+        .result-card-watch {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            transition: var(--transition);
+        }
+        
+        .result-card-watch:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .result-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .result-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        
+        .result-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-stream {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--stream), var(--stream-dark));
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: var(--transition);
+        }
+        
+        .btn-stream:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-copy {
+            padding: 10px 16px;
+            font-size: 14px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-copy:hover {
+            background: var(--bg-card);
+            border-color: var(--primary);
+        }
+        
+        .loading-spinner-watch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-glass);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        
         /* Player Section */
         .player-section {
             display: none;
@@ -160,10 +326,6 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 24px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
         
         .player-loading h3 {
@@ -379,11 +541,11 @@
                 font-size: 32px;
             }
             
-            .magnet-input-group {
+            .magnet-input-group, .search-form {
                 flex-direction: column;
             }
             
-            .watch-btn {
+            .watch-btn, .search-btn-watch {
                 width: 100%;
                 justify-content: center;
             }
@@ -402,14 +564,15 @@
                 justify-content: center;
             }
             
-            .file-item {
+            .file-item, .result-card-watch {
                 flex-direction: column;
                 gap: 16px;
                 align-items: stretch;
             }
             
-            .file-play-btn {
+            .file-play-btn, .result-actions {
                 justify-content: center;
+                width: 100%;
             }
         }
     </style>
@@ -422,7 +585,7 @@
     <!-- Header -->
     <header class="header">
         <div class="container">
-            <a href="/" class="logo">
+            <a href="home.php" class="logo">
                 <div class="logo-icon">
                     <svg width="42" height="42" viewBox="0 0 42 42">
                         <defs>
@@ -443,9 +606,17 @@
                 </div>
             </a>
             <nav class="nav">
-                <a href="/" class="nav-btn">
+                <a href="home.php" class="nav-btn">
                     <span class="nav-btn-icon">🔍</span>
                     <span class="nav-btn-text">Search</span>
+                </a>
+                <a href="dashboard.php" class="nav-btn">
+                    <span class="nav-btn-icon">📊</span>
+                    <span class="nav-btn-text">Dashboard</span>
+                </a>
+                <a href="tools.php" class="nav-btn">
+                    <span class="nav-btn-icon">🛠️</span>
+                    <span class="nav-btn-text">Tools</span>
                 </a>
             </nav>
         </div>
@@ -456,7 +627,27 @@
         <section class="watch-hero" id="watchHero">
             <div class="container">
                 <h1><span class="title-gradient">Stream</span> Instantly</h1>
-                <p>Paste a magnet link below to stream movies and TV shows directly in your browser. No downloads needed.</p>
+                <p>Search for content or paste a magnet link to stream movies and TV shows directly in your browser.</p>
+                
+                <!-- Search Section -->
+                <div class="watch-search-section">
+                    <form class="search-form" id="watchSearchForm" onsubmit="return searchContent()">
+                        <input type="text" class="search-input-watch" id="watchSearchInput" 
+                               placeholder="Search movies, TV shows, anime... (e.g., Hungama, Avatar, Spider-Man)" 
+                               autocomplete="off">
+                        <button type="submit" class="search-btn-watch">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            Search
+                        </button>
+                    </form>
+                    
+                    <div id="searchResultsContainer"></div>
+                </div>
+                
+                <div class="or-divider">or paste magnet link directly</div>
                 
                 <form class="magnet-form" id="magnetForm" onsubmit="return startStream()">
                     <div class="magnet-input-group">
@@ -471,13 +662,6 @@
                         </button>
                     </div>
                 </form>
-                
-                <div class="or-divider">or</div>
-                
-                <p>
-                    <a href="/" class="search-link">🔍 Search for movies and TV shows</a> 
-                    to find content with streaming options
-                </p>
             </div>
         </section>
         
@@ -547,10 +731,156 @@
     <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
     <script src="watch.js"></script>
     
+    <script>
+    // Search functionality for watch page
+    let searchController = null;
+    
+    function searchContent() {
+        const query = document.getElementById('watchSearchInput').value.trim();
+        if (!query) {
+            showToast('Please enter a search term', 'warning');
+            return false;
+        }
+        
+        const container = document.getElementById('searchResultsContainer');
+        container.innerHTML = `
+            <div class="loading-spinner-watch">
+                <div class="spinner"></div>
+                <p style="margin-top: 20px; color: var(--text-muted);">Searching for "${escapeHtml(query)}"...</p>
+            </div>
+        `;
+        
+        // Cancel previous request
+        if (searchController) {
+            searchController.abort();
+        }
+        searchController = new AbortController();
+        
+        // Fetch from API
+        fetch(`api.php?action=search&query=${encodeURIComponent(query)}&category=all`, {
+            signal: searchController.signal
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.results && data.results.length > 0) {
+                displaySearchResults(data.results);
+            } else {
+                container.innerHTML = `
+                    <div class="no-results">
+                        <p style="font-size: 48px; margin-bottom: 16px;">🔍</p>
+                        <h3 style="color: var(--text-primary); margin-bottom: 8px;">No results found for "${escapeHtml(query)}"</h3>
+                        <p>Try different keywords or check the spelling</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(err => {
+            if (err.name !== 'AbortError') {
+                container.innerHTML = `
+                    <div class="no-results">
+                        <p style="font-size: 48px; margin-bottom: 16px;">⚠️</p>
+                        <h3 style="color: var(--text-primary); margin-bottom: 8px;">Search failed</h3>
+                        <p>Please try again later</p>
+                    </div>
+                `;
+            }
+        });
+        
+        return false;
+    }
+    
+    function displaySearchResults(results) {
+        const container = document.getElementById('searchResultsContainer');
+        
+        // Filter for streamable content (with magnet links)
+        const streamable = results.filter(r => {
+            return r.downloadMethods && r.downloadMethods.some(m => m.type === 'magnet');
+        });
+        
+        if (streamable.length === 0) {
+            container.innerHTML = `
+                <div class="no-results">
+                    <p style="font-size: 48px; margin-bottom: 16px;">📺</p>
+                    <h3 style="color: var(--text-primary); margin-bottom: 8px;">No streamable content found</h3>
+                    <p>Results were found but none have magnet links for streaming</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="search-results-watch">
+                ${streamable.slice(0, 15).map((r, i) => {
+                    const magnet = r.downloadMethods.find(m => m.type === 'magnet')?.url || '';
+                    const seeds = r.seeds || 0;
+                    const size = r.size || 'Unknown';
+                    const quality = r.quality || '';
+                    const source = r.source || '';
+                    
+                    return `
+                        <div class="result-card-watch">
+                            <div class="result-info">
+                                <div class="result-title">${escapeHtml(r.name)}</div>
+                                <div class="result-meta">
+                                    ${quality ? `<span>📺 ${quality}</span>` : ''}
+                                    <span>📦 ${size}</span>
+                                    <span>🌱 ${seeds} seeds</span>
+                                    ${source ? `<span>📡 ${source}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="result-actions">
+                                <button class="btn-stream" onclick='streamFromSearch(${JSON.stringify(magnet).replace(/'/g, "\\'")})''>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                    Stream
+                                </button>
+                                <button class="btn-copy" onclick='copyToClipboard(${JSON.stringify(magnet).replace(/'/g, "\\'")})''>
+                                    📋 Copy
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            <p style="text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 14px;">
+                Showing ${Math.min(streamable.length, 15)} of ${streamable.length} streamable results
+            </p>
+        `;
+    }
+    
+    function streamFromSearch(magnet) {
+        document.getElementById('magnetInput').value = magnet;
+        startStream();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Magnet link copied!', 'success');
+        }).catch(() => {
+            // Fallback
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('Magnet link copied!', 'success');
+        });
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    </script>
+    
     <!-- AI Chat Widget Integration -->
     <script src="ai-chat-widget.js"></script>
     <script>
-        // Set context to 'general' for watch page
         document.body.dataset.aiContext = 'general';
     </script>
 </body>

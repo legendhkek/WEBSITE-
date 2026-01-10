@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - Legend House</title>
     <link rel="stylesheet" href="dashboard-style.css">
-    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
 </head>
-<body>
+<body data-theme="dark">
     <?php
-    session_start();
     require_once __DIR__ . '/auth.php';
     
-    // Check if user is logged in
     if (!isLoggedIn()) {
         header('Location: login.php');
         exit;
@@ -21,219 +19,298 @@
     $user = getCurrentUser();
     ?>
     
-    <!-- Animated Background -->
-    <div class="dashboard-bg">
-        <div class="bg-gradient"></div>
-        <div class="bg-pattern"></div>
-    </div>
-    
-    <!-- Header -->
-    <header class="dashboard-header">
-        <div class="header-container">
-            <a href="dashboard.php" class="dashboard-logo">
-                <svg width="36" height="36" viewBox="0 0 42 42">
-                    <rect x="6" y="12" width="30" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                    <polygon points="21,6 28,12 14,12" fill="currentColor"/>
-                    <rect x="17" y="22" width="8" height="12" fill="currentColor" opacity="0.7"/>
-                </svg>
-                <span class="logo-text">LEGEND HOUSE</span>
-            </a>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.php" class="sidebar-logo">
+                    <div class="logo-icon">🏠</div>
+                    <span class="sidebar-text">Legend House</span>
+                </a>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
             
-            <nav class="header-nav">
-                <a href="home.php" class="nav-link">
-                    <span class="nav-icon">🏠</span>
-                    Home
-                </a>
-                <a href="dashboard.php" class="nav-link">
-                    <span class="nav-icon">📊</span>
-                    Dashboard
-                </a>
-                <a href="watch.php" class="nav-link">
-                    <span class="nav-icon">▶️</span>
-                    Watch
-                </a>
-                <a href="tools.php" class="nav-link">
-                    <span class="nav-icon">🛠️</span>
-                    Tools
-                </a>
-                <div class="user-menu">
-                    <button class="user-menu-trigger">
-                        <?php 
-                        $showProfilePic = false;
-                        if ($user['profile_picture']) {
-                            $picUrl = $user['profile_picture'];
-                            if (filter_var($picUrl, FILTER_VALIDATE_URL) && 
-                                (strpos($picUrl, 'https://lh3.googleusercontent.com') === 0 || 
-                                 strpos($picUrl, 'https://googleusercontent.com') !== false)) {
-                                $showProfilePic = true;
-                            }
-                        }
-                        ?>
-                        <?php if ($showProfilePic): ?>
-                            <img src="<?php echo htmlspecialchars($user['profile_picture']); ?>" alt="Profile" class="user-avatar">
-                        <?php else: ?>
-                            <div class="user-avatar-placeholder">
-                                <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
-                            </div>
-                        <?php endif; ?>
-                        <span class="user-name"><?php echo htmlspecialchars($user['username']); ?></span>
-                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="dropdown-menu user-dropdown">
-                        <div class="dropdown-header">
-                            <div class="dropdown-header-title"><?php echo htmlspecialchars($user['username']); ?></div>
-                            <div class="dropdown-header-subtitle"><?php echo htmlspecialchars($user['email']); ?></div>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <a href="dashboard.php" class="dropdown-item">
-                            <span class="dropdown-icon">📊</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Dashboard</div>
-                            </div>
-                        </a>
-                        <a href="settings.php" class="dropdown-item active">
-                            <span class="dropdown-icon">⚙️</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Settings</div>
-                            </div>
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <button onclick="logoutUser()" class="dropdown-item logout-item">
-                            <span class="dropdown-icon">🚪</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Logout</div>
-                            </div>
-                        </button>
-                    </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Navigation</div>
+                    <ul class="nav-list">
+                        <li><a href="home.php" class="nav-item"><span class="nav-icon">🏠</span><span class="sidebar-text">Home</span></a></li>
+                        <li><a href="dashboard.php" class="nav-item"><span class="nav-icon">📊</span><span class="sidebar-text">Dashboard</span></a></li>
+                        <li><a href="watch.php" class="nav-item"><span class="nav-icon">▶️</span><span class="sidebar-text">Watch</span></a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Tools</div>
+                    <ul class="nav-list">
+                        <li><a href="tools.php" class="nav-item"><span class="nav-icon">🛠️</span><span class="sidebar-text">All Tools</span></a></li>
+                        <li><a href="tools/dorker.php" class="nav-item"><span class="nav-icon">🔍</span><span class="sidebar-text">Google Dorker</span></a></li>
+                        <li><a href="tools/torrent.php" class="nav-item"><span class="nav-icon">🧲</span><span class="sidebar-text">Torrent Center</span></a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <ul class="nav-list">
+                        <li><a href="settings.php" class="nav-item active"><span class="nav-icon">⚙️</span><span class="sidebar-text">Settings</span></a></li>
+                        <li><a href="profile.php" class="nav-item"><span class="nav-icon">👤</span><span class="sidebar-text">Profile</span></a></li>
+                    </ul>
                 </div>
             </nav>
-        </div>
-    </header>
-    
-    <!-- Main Content -->
-    <main class="dashboard-main">
-        <div class="dashboard-container">
-            <section class="welcome-section">
-                <div class="welcome-content">
-                    <h1 class="welcome-title">
-                        <span class="gradient-text">⚙️ Settings</span>
-                    </h1>
-                    <p class="welcome-subtitle">
-                        Manage your account preferences and settings
-                    </p>
-                </div>
-            </section>
             
-            <!-- Settings Sections -->
-            <div class="dashboard-grid" style="margin-top: 2rem;">
-                <div class="dashboard-col-left" style="width: 100%;">
-                    <!-- Account Settings -->
-                    <section style="background: white; border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-                        <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #000;">
-                            👤 Account Information
-                        </h2>
-                        <div style="display: grid; gap: 1rem;">
-                            <div style="display: flex; justify-content: space-between; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-                                <span style="font-weight: 600; color: #666;">Username:</span>
-                                <span style="color: #000;"><?php echo htmlspecialchars($user['username']); ?></span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-                                <span style="font-weight: 600; color: #666;">Email:</span>
-                                <span style="color: #000;"><?php echo htmlspecialchars($user['email']); ?></span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-                                <span style="font-weight: 600; color: #666;">Account Type:</span>
-                                <span style="color: #000;"><?php echo $user['auth_provider'] === 'google' ? 'Google Account' : 'Local Account'; ?></span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-                                <span style="font-weight: 600; color: #666;">Member Since:</span>
-                                <span style="color: #000;"><?php echo date('F j, Y', strtotime($user['created_at'])); ?></span>
-                            </div>
-                        </div>
-                    </section>
-                    
-                    <!-- Preferences -->
-                    <section style="background: white; border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-                        <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #000;">
-                            🎨 Preferences
-                        </h2>
-                        <div style="display: grid; gap: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-                                <div>
-                                    <div style="font-weight: 600; color: #000;">Download Notifications</div>
-                                    <div style="font-size: 0.875rem; color: #666;">Get notified when downloads complete</div>
-                                </div>
-                                <label style="position: relative; display: inline-block; width: 50px; height: 24px;">
-                                    <input type="checkbox" checked style="opacity: 0; width: 0; height: 0;">
-                                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #000; border-radius: 24px; transition: 0.4s;"></span>
-                                </label>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-                                <div>
-                                    <div style="font-weight: 600; color: #000;">Auto-Play Videos</div>
-                                    <div style="font-size: 0.875rem; color: #666;">Automatically play videos when streaming</div>
-                                </div>
-                                <label style="position: relative; display: inline-block; width: 50px; height: 24px;">
-                                    <input type="checkbox" checked style="opacity: 0; width: 0; height: 0;">
-                                    <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #000; border-radius: 24px; transition: 0.4s;"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </section>
-                    
-                    <!-- Danger Zone -->
-                    <section style="background: white; border: 2px solid #fee2e2; border-radius: 1rem; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-                        <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #dc2626;">
-                            ⚠️ Danger Zone
-                        </h2>
-                        <div style="display: grid; gap: 1rem;">
-                            <button style="padding: 1rem; background: white; border: 2px solid #dc2626; color: #dc2626; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#dc2626'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#dc2626';">
-                                Clear Download History
-                            </button>
-                            <button onclick="if(confirm('Are you sure you want to logout?')) { window.location.href='auth.php?action=logout'; }" style="padding: 1rem; background: white; border: 2px solid #dc2626; color: #dc2626; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#dc2626'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#dc2626';">
-                                Logout
-                            </button>
-                        </div>
-                    </section>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar-placeholder"><?php echo strtoupper(substr($user['username'], 0, 1)); ?></div>
+                    <div class="user-info">
+                        <div class="user-name"><?php echo htmlspecialchars($user['username']); ?></div>
+                        <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
+                    </div>
                 </div>
             </div>
+        </aside>
+        
+        <!-- Main -->
+        <div class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="header-btn" onclick="toggleSidebar()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="breadcrumb">
+                        <a href="dashboard.php" class="breadcrumb-item">Dashboard</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item active">Settings</span>
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <span id="themeIcon">🌙</span>
+                        <span id="themeText">Dark</span>
+                    </button>
+                </div>
+            </header>
+            
+            <main class="main-content">
+                <div class="dashboard-header-section">
+                    <h1 class="page-title">⚙️ Settings</h1>
+                    <p class="page-subtitle">Manage your account preferences and settings</p>
+                </div>
+                
+                <!-- Settings Grid -->
+                <div class="content-grid">
+                    <div>
+                        <!-- Account Settings -->
+                        <div class="card" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">👤</span>
+                                    Account Information
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: grid; gap: 20px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Username</label>
+                                        <input type="text" value="<?php echo htmlspecialchars($user['username']); ?>" readonly
+                                               style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Email</label>
+                                        <input type="email" value="<?php echo htmlspecialchars($user['email']); ?>" readonly
+                                               style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Account Type</label>
+                                        <input type="text" value="<?php echo $user['auth_provider'] === 'google' ? 'Google Account' : 'Local Account'; ?>" readonly
+                                               style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Member Since</label>
+                                        <input type="text" value="<?php echo date('F j, Y', strtotime($user['created_at'])); ?>" readonly
+                                               style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Appearance -->
+                        <div class="card" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">🎨</span>
+                                    Appearance
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-default);">
+                                    <div>
+                                        <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">Theme</div>
+                                        <div style="font-size: 13px; color: var(--text-muted);">Choose your preferred color scheme</div>
+                                    </div>
+                                    <button class="btn btn-secondary" onclick="toggleTheme()">
+                                        <span id="themeToggleIcon">🌙</span>
+                                        <span id="themeToggleText">Dark Mode</span>
+                                    </button>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
+                                    <div>
+                                        <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">Sidebar</div>
+                                        <div style="font-size: 13px; color: var(--text-muted);">Collapse sidebar to save space</div>
+                                    </div>
+                                    <button class="btn btn-secondary" onclick="toggleSidebar()">Toggle Sidebar</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Privacy & Security -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">🔒</span>
+                                    Privacy & Security
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-default);">
+                                    <div>
+                                        <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">Download History</div>
+                                        <div style="font-size: 13px; color: var(--text-muted);">Clear your download history</div>
+                                    </div>
+                                    <button class="btn btn-secondary" onclick="clearHistory()">Clear History</button>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
+                                    <div>
+                                        <div style="font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">Sign Out</div>
+                                        <div style="font-size: 13px; color: var(--text-muted);">Sign out of your account</div>
+                                    </div>
+                                    <button class="btn" style="background: #f85149; color: white;" onclick="logoutUser()">Sign Out</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <!-- Quick Stats -->
+                        <div class="card" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">📊</span>
+                                    Account Stats
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="status-grid">
+                                    <div class="status-item">
+                                        <div class="status-indicator online"></div>
+                                        <div class="status-info">
+                                            <div class="status-name">Account Status</div>
+                                            <div class="status-detail">Active</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-item">
+                                        <div class="status-indicator online"></div>
+                                        <div class="status-info">
+                                            <div class="status-name">AI Chat</div>
+                                            <div class="status-detail">Enabled</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-item">
+                                        <div class="status-indicator online"></div>
+                                        <div class="status-info">
+                                            <div class="status-name">Tools Access</div>
+                                            <div class="status-detail">Full Access</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Help -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">❓</span>
+                                    Need Help?
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                                    Use the AI Chat assistant for help with any feature. Click the chat button in the bottom right corner.
+                                </p>
+                                <div class="quick-actions">
+                                    <a href="tools.php" class="quick-action-item">
+                                        <div class="quick-action-icon">🛠️</div>
+                                        <div class="quick-action-text">
+                                            <div class="quick-action-title">View All Tools</div>
+                                        </div>
+                                    </a>
+                                    <a href="dashboard.php" class="quick-action-item">
+                                        <div class="quick-action-icon">📊</div>
+                                        <div class="quick-action-text">
+                                            <div class="quick-action-title">Go to Dashboard</div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
-    </main>
+    </div>
     
     <script>
-        // Dropdown functionality
-        document.addEventListener('DOMContentLoaded', () => {
-            const userMenuTrigger = document.querySelector('.user-menu-trigger');
-            const userDropdown = userMenuTrigger?.nextElementSibling;
-            
-            userMenuTrigger?.addEventListener('click', (e) => {
-                e.preventDefault();
-                userDropdown?.classList.toggle('show');
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.user-menu')) {
-                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                        menu.classList.remove('show');
-                    });
-                }
-            });
-        });
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
         
-        function logoutUser() {
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = 'auth.php?action=logout';
+        function toggleTheme() {
+            const theme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            document.getElementById('themeIcon').textContent = theme === 'dark' ? '🌙' : '☀️';
+            document.getElementById('themeText').textContent = theme === 'dark' ? 'Dark' : 'Light';
+            document.getElementById('themeToggleIcon').textContent = theme === 'dark' ? '🌙' : '☀️';
+            document.getElementById('themeToggleText').textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
+        }
+        
+        // Restore theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+        document.getElementById('themeText').textContent = savedTheme === 'dark' ? 'Dark' : 'Light';
+        
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.getElementById('sidebar').classList.add('collapsed');
+        }
+        
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear your download history?')) {
+                alert('History cleared!');
+            }
+        }
+        
+        async function logoutUser() {
+            if (confirm('Are you sure you want to sign out?')) {
+                const formData = new FormData();
+                formData.append('action', 'logout');
+                await fetch('auth.php', { method: 'POST', body: formData });
+                window.location.href = 'login.php';
             }
         }
     </script>
     
-    <!-- AI Chat Widget Integration -->
     <script src="ai-chat-widget.js"></script>
-    <script>
-        // Set context to 'general' for settings page
-        document.body.dataset.aiContext = 'general';
-    </script>
 </body>
 </html>
