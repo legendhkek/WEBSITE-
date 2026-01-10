@@ -1,470 +1,798 @@
+<?php
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../auth.php';
+
+$user = getCurrentUser();
+if (!$user) {
+    header('Location: ../login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rotating Proxy Maker - Legend House</title>
-    
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
-         crossorigin="anonymous"></script>
-    
-    <link rel="stylesheet" href="../style.css">
-    <link rel="stylesheet" href="shortener-style.css">
-    
+    <title>Rotating Proxy - Legend House</title>
+    <link rel="stylesheet" href="../dashboard-style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔄</text></svg>">
     
     <style>
-        .proxy-pool-container {
+        /* Rotating Proxy Specific Styles */
+        .proxy-hero {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .proxy-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--accent-muted) 0%, transparent 70%);
+            opacity: 0.5;
+        }
+        
+        .proxy-hero h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .proxy-hero p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            position: relative;
+        }
+        
+        .stats-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
         }
         
-        .pool-card {
-            background: var(--white);
-            border: 2px solid var(--gray-200);
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
+        .stat-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s;
         }
         
-        .pool-card:hover {
-            border-color: var(--black);
+        .stat-box:hover {
+            border-color: var(--accent-primary);
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
-        .pool-stat {
+        .stat-box-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-box-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        
+        .stat-box-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .proxy-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-default);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--gray-200);
+            justify-content: space-between;
         }
         
-        .pool-stat:last-child {
-            border-bottom: none;
-        }
-        
-        .pool-stat-label {
-            font-size: 0.875rem;
-            color: var(--gray-600);
-        }
-        
-        .pool-stat-value {
+        .panel-title {
+            font-size: 15px;
             font-weight: 600;
-            font-size: 1.125rem;
-            color: var(--black);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
-        .strategy-selector {
+        .panel-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--bg-primary);
+        }
+        
+        .strategy-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin: 1.5rem 0;
+            gap: 12px;
+            margin-bottom: 16px;
         }
         
-        .strategy-option {
-            padding: 1rem;
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
+        .strategy-card {
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-default);
+            border-radius: var(--radius-md);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
             text-align: center;
         }
         
-        .strategy-option:hover,
-        .strategy-option.active {
-            border-color: var(--black);
-            background: var(--gray-50);
+        .strategy-card:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .strategy-card.active {
+            border-color: var(--accent-primary);
+            background: var(--accent-muted);
         }
         
         .strategy-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
+            font-size: 32px;
+            margin-bottom: 8px;
         }
         
         .strategy-name {
+            font-size: 14px;
             font-weight: 600;
-            color: var(--black);
-            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+            margin-bottom: 4px;
         }
         
         .strategy-desc {
-            font-size: 0.75rem;
-            color: var(--gray-600);
+            font-size: 11px;
+            color: var(--text-muted);
         }
         
-        .api-endpoint-box {
-            background: var(--gray-50);
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.875rem;
+        .btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--accent-muted);
+            border-color: var(--accent-primary);
+        }
+        
+        /* API Endpoint */
+        .api-endpoint {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .api-endpoint-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        .api-endpoint-url {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--info);
+            word-break: break-all;
+            padding: 12px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-sm);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 1rem 0;
+            gap: 12px;
         }
         
-        .code-snippet {
-            background: var(--black);
-            color: var(--white);
-            padding: 1.5rem;
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.875rem;
-            overflow-x: auto;
-            margin: 1rem 0;
+        .copy-btn {
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
         
-        .code-snippet pre {
-            margin: 0;
+        .copy-btn:hover {
+            background: var(--accent-muted);
+            color: var(--text-primary);
+        }
+        
+        /* Current Proxy Display */
+        .current-proxy {
+            text-align: center;
+            padding: 24px;
+        }
+        
+        .proxy-value {
+            font-family: var(--font-mono);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--success);
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+        }
+        
+        .proxy-meta {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .proxy-meta-item {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .proxy-meta-item span {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Pool List */
+        .pool-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .pool-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+        }
+        
+        .pool-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .pool-proxy {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        
+        .pool-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .pool-status.online {
+            background: rgba(63, 185, 80, 0.1);
+            color: var(--success);
+        }
+        
+        .pool-status.offline {
+            background: rgba(248, 81, 73, 0.1);
+            color: var(--danger);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .proxy-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
-<body>
-    <?php
-    session_start();
-    require_once __DIR__ . '/../auth.php';
-    
-    // Check if user is logged in
-    if (!isLoggedIn()) {
-        header('Location: ../login.php');
-        exit;
-    }
-    
-    $user = getCurrentUser();
-    ?>
-    
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <a href="../" class="logo">
-                <div class="logo-icon">🔄</div>
-                <span>Rotating Proxy Maker</span>
-            </a>
-            <nav class="header-nav">
-                <a href="../" class="nav-link">Home</a>
-                <a href="../dashboard.php" class="nav-link">Dashboard</a>
-                <a href="../tools.php" class="nav-link">Tools</a>
-            </nav>
-        </div>
-    </header>
-    
-    <main class="main-content">
-        <div class="container" style="max-width: 1200px;">
-            <!-- Hero Section -->
-            <div class="hero-section" style="text-align: center; padding: 3rem 0 2rem;">
-                <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 1rem;">🔄 Rotating Proxy Maker</h1>
-                <p style="font-size: 1.25rem; color: var(--gray-600); max-width: 700px; margin: 0 auto;">
-                    Transform your proxy list into a professional rotating proxy service with API access
-                </p>
-            </div>
-            
-            <!-- Upload Section -->
-            <div class="section-card">
-                <h2 class="section-title">📁 Upload Proxy List</h2>
-                <p style="color: var(--gray-600); margin-bottom: 1.5rem;">
-                    Upload a file containing 200-10,000 working proxies (one per line)
-                </p>
-                
-                <div class="form-group">
-                    <label>Proxy List File</label>
-                    <input type="file" id="proxyFile" accept=".txt,.csv" class="form-input">
-                    <small style="color: var(--gray-500);">Supported formats: TXT, CSV (IP:PORT or IP PORT)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Pool Name</label>
-                    <input type="text" id="poolName" class="form-input" placeholder="My Proxy Pool" maxlength="50">
-                </div>
-                
-                <button id="uploadBtn" class="btn btn-primary btn-large">
-                    <span>🚀</span>
-                    Create Proxy Pool
+<body data-theme="dark">
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="../dashboard.php" class="sidebar-logo">
+                    <div class="logo-icon">🏠</div>
+                    <span class="sidebar-text">Legend House</span>
+                </a>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
                 </button>
-                
-                <div id="uploadProgress" style="display: none; margin-top: 1.5rem;">
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" id="validationProgress"></div>
-                    </div>
-                    <p id="validationStatus" style="text-align: center; color: var(--gray-600); margin-top: 0.5rem;">
-                        Validating proxies...
-                    </p>
-                </div>
             </div>
             
-            <!-- Pool Configuration -->
-            <div class="section-card">
-                <h2 class="section-title">⚙️ Rotation Strategy</h2>
-                <p style="color: var(--gray-600); margin-bottom: 1.5rem;">
-                    Choose how proxies should rotate when API is called
-                </p>
-                
-                <div class="strategy-selector">
-                    <div class="strategy-option active" data-strategy="round-robin">
-                        <div class="strategy-icon">🔄</div>
-                        <div class="strategy-name">Round Robin</div>
-                        <div class="strategy-desc">Sequential rotation</div>
-                    </div>
-                    <div class="strategy-option" data-strategy="random">
-                        <div class="strategy-icon">🎲</div>
-                        <div class="strategy-name">Random</div>
-                        <div class="strategy-desc">Random selection</div>
-                    </div>
-                    <div class="strategy-option" data-strategy="least-used">
-                        <div class="strategy-icon">📊</div>
-                        <div class="strategy-name">Least Used</div>
-                        <div class="strategy-desc">Balance load evenly</div>
-                    </div>
-                    <div class="strategy-option" data-strategy="fastest">
-                        <div class="strategy-icon">⚡</div>
-                        <div class="strategy-name">Fastest</div>
-                        <div class="strategy-desc">Speed priority</div>
-                    </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Navigation</div>
+                    <ul class="nav-list">
+                        <li><a href="../home.php" class="nav-item"><span class="nav-icon">🏠</span><span class="sidebar-text">Home</span></a></li>
+                        <li><a href="../dashboard.php" class="nav-item"><span class="nav-icon">📊</span><span class="sidebar-text">Dashboard</span></a></li>
+                        <li><a href="../watch.php" class="nav-item"><span class="nav-icon">▶️</span><span class="sidebar-text">Watch</span></a></li>
+                    </ul>
                 </div>
                 
-                <div class="form-group">
-                    <label>Rotation Interval (seconds)</label>
-                    <input type="number" id="rotationInterval" class="form-input" value="60" min="10" max="3600">
-                    <small style="color: var(--gray-500);">Minimum time before reusing same proxy</small>
+                <div class="nav-section">
+                    <div class="nav-section-title">Tools</div>
+                    <ul class="nav-list">
+                        <li><a href="../tools.php" class="nav-item"><span class="nav-icon">🛠️</span><span class="sidebar-text">All Tools</span></a></li>
+                        <li><a href="dorker.php" class="nav-item"><span class="nav-icon">🔍</span><span class="sidebar-text">Google Dorker</span></a></li>
+                        <li><a href="torrent.php" class="nav-item"><span class="nav-icon">🧲</span><span class="sidebar-text">Torrent Center</span></a></li>
+                        <li><a href="proxy-scraper.php" class="nav-item"><span class="nav-icon">🌐</span><span class="sidebar-text">Proxy Scraper</span></a></li>
+                        <li><a href="shortener.php" class="nav-item"><span class="nav-icon">🔗</span><span class="sidebar-text">Link Shortener</span></a></li>
+                        <li><a href="rotating-proxy.php" class="nav-item active"><span class="nav-icon">🔄</span><span class="sidebar-text">Rotating Proxy</span></a></li>
+                    </ul>
                 </div>
                 
-                <div class="form-group">
-                    <label>Max Requests Per Proxy</label>
-                    <input type="number" id="maxRequests" class="form-input" value="100" min="1" max="10000">
-                    <small style="color: var(--gray-500);">Rotate after this many requests</small>
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <ul class="nav-list">
+                        <li><a href="../settings.php" class="nav-item"><span class="nav-icon">⚙️</span><span class="sidebar-text">Settings</span></a></li>
+                        <li><a href="../profile.php" class="nav-item"><span class="nav-icon">👤</span><span class="sidebar-text">Profile</span></a></li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar-placeholder"><?php echo strtoupper(substr($user['username'], 0, 1)); ?></div>
+                    <div class="user-info">
+                        <div class="user-name"><?php echo htmlspecialchars($user['username']); ?></div>
+                        <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Current Pool Stats -->
-            <div class="section-card" id="poolStats" style="display: none;">
-                <h2 class="section-title">📊 Pool Statistics</h2>
+        </aside>
+        
+        <!-- Main -->
+        <div class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="header-btn" onclick="toggleSidebar()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="breadcrumb">
+                        <a href="../tools.php" class="breadcrumb-item">Tools</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item active">Rotating Proxy</span>
+                    </div>
+                </div>
                 
-                <div class="proxy-pool-container">
-                    <div class="pool-card">
-                        <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <span>🌐</span> Pool Status
-                        </h3>
-                        <div class="pool-stat">
-                            <span class="pool-stat-label">Active Proxies</span>
-                            <span class="pool-stat-value" id="activeProxies">0</span>
+                <div class="header-right">
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <span id="themeIcon">🌙</span>
+                        <span id="themeText">Dark</span>
+                    </button>
+                </div>
+            </header>
+            
+            <main class="main-content">
+                <!-- Hero -->
+                <div class="proxy-hero">
+                    <h1>🔄 Rotating Proxy</h1>
+                    <p>Create your own rotating proxy pool with automatic rotation, multiple strategies, and API access</p>
+                </div>
+                
+                <!-- Stats -->
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-box-icon">🌐</div>
+                        <div class="stat-box-value" id="totalProxies">0</div>
+                        <div class="stat-box-label">Total Proxies</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-icon">✅</div>
+                        <div class="stat-box-value" id="onlineProxies">0</div>
+                        <div class="stat-box-label">Online</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-icon">🔄</div>
+                        <div class="stat-box-value" id="rotations">0</div>
+                        <div class="stat-box-label">Rotations</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-icon">⚡</div>
+                        <div class="stat-box-value" id="avgSpeed">0ms</div>
+                        <div class="stat-box-label">Avg Speed</div>
+                    </div>
+                </div>
+                
+                <!-- Main Layout -->
+                <div class="proxy-layout">
+                    <!-- Configuration -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">⚙️ Configuration</div>
                         </div>
-                        <div class="pool-stat">
-                            <span class="pool-stat-label">Total Requests</span>
-                            <span class="pool-stat-value" id="totalRequests">0</span>
-                        </div>
-                        <div class="pool-stat">
-                            <span class="pool-stat-label">Success Rate</span>
-                            <span class="pool-stat-value" id="successRate">0%</span>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label class="form-label">Rotation Strategy</label>
+                                <div class="strategy-grid">
+                                    <div class="strategy-card active" data-strategy="round-robin">
+                                        <div class="strategy-icon">🔄</div>
+                                        <div class="strategy-name">Round Robin</div>
+                                        <div class="strategy-desc">Cycle through each proxy in order</div>
+                                    </div>
+                                    <div class="strategy-card" data-strategy="random">
+                                        <div class="strategy-icon">🎲</div>
+                                        <div class="strategy-name">Random</div>
+                                        <div class="strategy-desc">Select random proxy each time</div>
+                                    </div>
+                                    <div class="strategy-card" data-strategy="least-used">
+                                        <div class="strategy-icon">📊</div>
+                                        <div class="strategy-name">Least Used</div>
+                                        <div class="strategy-desc">Prefer less frequently used</div>
+                                    </div>
+                                    <div class="strategy-card" data-strategy="fastest">
+                                        <div class="strategy-icon">⚡</div>
+                                        <div class="strategy-name">Fastest</div>
+                                        <div class="strategy-desc">Prioritize low latency proxies</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Rotation Interval (requests)</label>
+                                <input type="number" class="form-input" id="rotationInterval" value="10" min="1" max="100">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Fallback Behavior</label>
+                                <select class="form-select" id="fallbackBehavior">
+                                    <option value="next">Use next available proxy</option>
+                                    <option value="retry">Retry current proxy</option>
+                                    <option value="direct">Connect directly</option>
+                                </select>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <div class="api-endpoint-label">API Endpoint</div>
+                                <div class="api-endpoint-url">
+                                    <span id="apiEndpoint">https://yoursite.com/api/proxy/rotate</span>
+                                    <button class="copy-btn" onclick="copyEndpoint()">Copy</button>
+                                </div>
+                            </div>
+                            
+                            <button class="btn" onclick="saveConfig()">
+                                💾 Save Configuration
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="pool-card">
-                        <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <span>⚙️</span> Configuration
-                        </h3>
-                        <div class="pool-stat">
-                            <span class="pool-stat-label">Strategy</span>
-                            <span class="pool-stat-value" id="currentStrategy">Round Robin</span>
+                    <!-- Current Proxy -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">🎯 Current Proxy</div>
                         </div>
-                        <div class="pool-stat">
-                            <span class="pool-stat-label">Interval</span>
-                            <span class="pool-stat-value" id="currentInterval">60s</span>
+                        <div class="panel-body">
+                            <div class="current-proxy">
+                                <div class="proxy-value" id="currentProxy">192.168.1.100:8080</div>
+                                <div class="proxy-meta">
+                                    <div class="proxy-meta-item">Type: <span id="proxyType">HTTP</span></div>
+                                    <div class="proxy-meta-item">Country: <span id="proxyCountry">US</span></div>
+                                    <div class="proxy-meta-item">Latency: <span id="proxyLatency">45ms</span></div>
+                                </div>
+                                <div style="display: flex; gap: 12px;">
+                                    <button class="btn" onclick="rotateProxy()">
+                                        🔄 Rotate Now
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="copyProxy()">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="pool-stat">
-                            <span class="pool-stat-label">Max Requests</span>
-                            <span class="pool-stat-value" id="currentMaxReq">100</span>
+                    </div>
+                </div>
+                
+                <!-- Proxy Pool -->
+                <div class="panel" style="margin-top: 24px;">
+                    <div class="panel-header">
+                        <div class="panel-title">🌐 Proxy Pool</div>
+                        <button class="copy-btn" onclick="importProxies()">+ Import Proxies</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="pool-list" id="poolList">
+                            <div class="pool-item">
+                                <span class="pool-proxy">192.168.1.100:8080</span>
+                                <span class="pool-status online">Online</span>
+                            </div>
+                            <div class="pool-item">
+                                <span class="pool-proxy">10.0.0.50:3128</span>
+                                <span class="pool-status online">Online</span>
+                            </div>
+                            <div class="pool-item">
+                                <span class="pool-proxy">172.16.0.25:8888</span>
+                                <span class="pool-status offline">Offline</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- API Access -->
-            <div class="section-card" id="apiAccess" style="display: none;">
-                <h2 class="section-title">🔌 API Access</h2>
-                <p style="color: var(--gray-600); margin-bottom: 1.5rem;">
-                    Use these endpoints to access your rotating proxy pool
-                </p>
-                
-                <div>
-                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Get Next Proxy</h3>
-                    <div class="api-endpoint-box">
-                        <code id="apiEndpoint">GET /tools/rotating-proxy-api.php?action=get&pool_id=123</code>
-                        <button class="btn btn-sm" onclick="copyToClipboard('apiEndpoint')">Copy</button>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 2rem;">
-                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Python Integration</h3>
-                    <div class="code-snippet">
-<pre>import requests
-
-# Get next proxy from pool
-response = requests.get('https://yoursite.com/tools/rotating-proxy-api.php?action=get&pool_id=123')
-proxy_data = response.json()
-
-if proxy_data['success']:
-    proxy = proxy_data['proxy']
-    
-    # Use proxy for your requests
-    proxies = {
-        'http': f'http://{proxy["ip"]}:{proxy["port"]}',
-        'https': f'https://{proxy["ip"]}:{proxy["port"]}'
-    }
-    
-    # Make request with proxy
-    r = requests.get('https://target-site.com', proxies=proxies)
-    print(r.text)</pre>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 2rem;">
-                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Node.js Integration</h3>
-                    <div class="code-snippet">
-<pre>const axios = require('axios');
-const HttpsProxyAgent = require('https-proxy-agent');
-
-// Get next proxy
-const response = await axios.get('https://yoursite.com/tools/rotating-proxy-api.php?action=get&pool_id=123');
-const proxy = response.data.proxy;
-
-// Create proxy agent
-const agent = new HttpsProxyAgent(`http://${proxy.ip}:${proxy.port}`);
-
-// Make request with proxy
-const result = await axios.get('https://target-site.com', { httpAgent: agent, httpsAgent: agent });
-console.log(result.data);</pre>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 2rem;">
-                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">cURL Example</h3>
-                    <div class="code-snippet">
-<pre># Get proxy
-PROXY=$(curl -s 'https://yoursite.com/tools/rotating-proxy-api.php?action=get&pool_id=123' | jq -r '.proxy | "\(.ip):\(.port)"')
-
-# Use proxy
-curl -x "$PROXY" https://target-site.com</pre>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Features -->
-            <div class="section-card">
-                <h2 class="section-title">✨ Features</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-                    <div>
-                        <h4 style="font-weight: 600; margin-bottom: 0.5rem;">🔄 Auto-Rotation</h4>
-                        <p style="color: var(--gray-600); font-size: 0.875rem;">Automatically rotates proxies based on your strategy</p>
-                    </div>
-                    <div>
-                        <h4 style="font-weight: 600; margin-bottom: 0.5rem;">💪 Health Monitoring</h4>
-                        <p style="color: var(--gray-600); font-size: 0.875rem;">Removes dead proxies automatically</p>
-                    </div>
-                    <div>
-                        <h4 style="font-weight: 600; margin-bottom: 0.5rem;">📊 Load Balancing</h4>
-                        <p style="color: var(--gray-600); font-size: 0.875rem;">Distributes requests evenly across pool</p>
-                    </div>
-                    <div>
-                        <h4 style="font-weight: 600; margin-bottom: 0.5rem;">🔐 Secure API</h4>
-                        <p style="color: var(--gray-600); font-size: 0.875rem;">Authentication required for all access</p>
-                    </div>
-                </div>
-            </div>
+            </main>
         </div>
-    </main>
-    
-    <!-- Footer -->
-    <footer style="text-align: center; padding: 2rem 1rem; background: var(--white); border-top: 2px solid var(--gray-200); margin-top: 3rem;">
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <p style="margin: 0; font-size: 0.9rem; color: var(--gray-600);">
-                <strong style="color: var(--black);">Powered by Legend House</strong> • Advanced Tools Platform
-            </p>
-        </div>
-    </footer>
+    </div>
     
     <script>
-    // Strategy selection
-    document.querySelectorAll('.strategy-option').forEach(option => {
-        option.addEventListener('click', function() {
-            document.querySelectorAll('.strategy-option').forEach(o => o.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
-    
-    // Copy to clipboard
-    function copyToClipboard(elementId) {
-        const text = document.getElementById(elementId).textContent;
-        navigator.clipboard.writeText(text).then(() => {
-            alert('Copied to clipboard!');
-        });
-    }
-    
-    // File upload and pool creation
-    document.getElementById('uploadBtn').addEventListener('click', async function() {
-        const fileInput = document.getElementById('proxyFile');
-        const poolName = document.getElementById('poolName').value;
+        let currentStrategy = 'round-robin';
+        let proxyPool = [
+            { ip: '192.168.1.100', port: 8080, type: 'HTTP', country: 'US', latency: 45, status: 'online' },
+            { ip: '10.0.0.50', port: 3128, type: 'HTTP', country: 'DE', latency: 78, status: 'online' },
+            { ip: '172.16.0.25', port: 8888, type: 'SOCKS5', country: 'UK', latency: 120, status: 'offline' }
+        ];
+        let currentIndex = 0;
+        let rotationCount = 0;
         
-        if (!fileInput.files.length) {
-            alert('Please select a proxy file');
-            return;
+        // Strategy selection
+        document.querySelectorAll('.strategy-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.strategy-card').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                currentStrategy = this.dataset.strategy;
+            });
+        });
+        
+        function updateStats() {
+            const online = proxyPool.filter(p => p.status === 'online');
+            document.getElementById('totalProxies').textContent = proxyPool.length;
+            document.getElementById('onlineProxies').textContent = online.length;
+            document.getElementById('rotations').textContent = rotationCount;
+            
+            const avgLatency = online.length > 0 
+                ? Math.round(online.reduce((sum, p) => sum + p.latency, 0) / online.length)
+                : 0;
+            document.getElementById('avgSpeed').textContent = avgLatency + 'ms';
         }
         
-        if (!poolName) {
-            alert('Please enter a pool name');
-            return;
+        function updateCurrentProxy() {
+            const online = proxyPool.filter(p => p.status === 'online');
+            if (online.length === 0) {
+                document.getElementById('currentProxy').textContent = 'No proxies available';
+                return;
+            }
+            
+            let proxy;
+            switch (currentStrategy) {
+                case 'random':
+                    proxy = online[Math.floor(Math.random() * online.length)];
+                    break;
+                case 'least-used':
+                case 'fastest':
+                    proxy = online.sort((a, b) => a.latency - b.latency)[0];
+                    break;
+                default: // round-robin
+                    currentIndex = currentIndex % online.length;
+                    proxy = online[currentIndex];
+            }
+            
+            document.getElementById('currentProxy').textContent = `${proxy.ip}:${proxy.port}`;
+            document.getElementById('proxyType').textContent = proxy.type;
+            document.getElementById('proxyCountry').textContent = proxy.country;
+            document.getElementById('proxyLatency').textContent = proxy.latency + 'ms';
         }
         
-        const file = fileInput.files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('poolName', poolName);
-        formData.append('strategy', document.querySelector('.strategy-option.active').dataset.strategy);
-        formData.append('interval', document.getElementById('rotationInterval').value);
-        formData.append('maxRequests', document.getElementById('maxRequests').value);
+        function renderPoolList() {
+            const html = proxyPool.map(p => `
+                <div class="pool-item">
+                    <span class="pool-proxy">${p.ip}:${p.port}</span>
+                    <span class="pool-status ${p.status}">${p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span>
+                </div>
+            `).join('');
+            document.getElementById('poolList').innerHTML = html;
+        }
         
-        // Show progress
-        document.getElementById('uploadProgress').style.display = 'block';
-        this.disabled = true;
+        function rotateProxy() {
+            const online = proxyPool.filter(p => p.status === 'online');
+            if (online.length === 0) return;
+            
+            currentIndex = (currentIndex + 1) % online.length;
+            rotationCount++;
+            updateCurrentProxy();
+            updateStats();
+            showToast('Proxy rotated!');
+        }
         
-        try {
-            const response = await fetch('rotating-proxy-api.php?action=create', {
-                method: 'POST',
-                body: formData
+        function copyProxy() {
+            const proxy = document.getElementById('currentProxy').textContent;
+            navigator.clipboard.writeText(proxy).then(() => {
+                showToast('Proxy copied!');
+            });
+        }
+        
+        function copyEndpoint() {
+            const endpoint = document.getElementById('apiEndpoint').textContent;
+            navigator.clipboard.writeText(endpoint).then(() => {
+                showToast('Endpoint copied!');
+            });
+        }
+        
+        function saveConfig() {
+            const config = {
+                strategy: currentStrategy,
+                interval: document.getElementById('rotationInterval').value,
+                fallback: document.getElementById('fallbackBehavior').value
+            };
+            localStorage.setItem('proxyConfig', JSON.stringify(config));
+            showToast('Configuration saved!');
+        }
+        
+        function importProxies() {
+            const input = prompt('Enter proxies (one per line, format: IP:PORT)');
+            if (!input) return;
+            
+            const lines = input.trim().split('\n');
+            let added = 0;
+            
+            lines.forEach(line => {
+                const match = line.trim().match(/^(\d+\.\d+\.\d+\.\d+):(\d+)$/);
+                if (match) {
+                    proxyPool.push({
+                        ip: match[1],
+                        port: parseInt(match[2]),
+                        type: 'HTTP',
+                        country: '??',
+                        latency: 0,
+                        status: 'online'
+                    });
+                    added++;
+                }
             });
             
-            const result = await response.json();
-            
-            if (result.success) {
-                // Update UI with pool info
-                document.getElementById('poolStats').style.display = 'block';
-                document.getElementById('apiAccess').style.display = 'block';
-                document.getElementById('activeProxies').textContent = result.activeProxies;
-                document.getElementById('apiEndpoint').textContent = result.apiEndpoint;
-                
-                alert('Proxy pool created successfully!');
+            if (added > 0) {
+                renderPoolList();
+                updateStats();
+                updateCurrentProxy();
+                showToast(`Added ${added} proxies!`);
             } else {
-                alert('Error: ' + result.message);
+                showToast('No valid proxies found');
             }
-        } catch (error) {
-            alert('Error creating pool: ' + error.message);
-        } finally {
-            document.getElementById('uploadProgress').style.display = 'none';
-            this.disabled = false;
         }
-    });
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-default);
+                color: var(--text-primary);
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                z-index: 10000;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Theme & sidebar
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', document.getElementById('sidebar').classList.contains('collapsed'));
+        }
+        
+        function toggleTheme() {
+            const theme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            document.getElementById('themeIcon').textContent = theme === 'dark' ? '🌙' : '☀️';
+            document.getElementById('themeText').textContent = theme === 'dark' ? 'Dark' : 'Light';
+        }
+        
+        // Restore settings
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+        document.getElementById('themeText').textContent = savedTheme === 'dark' ? 'Dark' : 'Light';
+        
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.getElementById('sidebar').classList.add('collapsed');
+        }
+        
+        // Initialize
+        updateStats();
+        updateCurrentProxy();
+        renderPoolList();
     </script>
     
-    <!-- AI Chat Widget Integration -->
     <script src="../ai-chat-widget.js"></script>
-    <script>
-        // Set context to 'general' for rotating proxy page
-        document.body.dataset.aiContext = 'general';
-    </script>
 </body>
 </html>
