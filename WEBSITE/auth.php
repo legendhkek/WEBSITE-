@@ -71,14 +71,22 @@ function initDatabase() {
 
 initDatabase();
 
-// Helper function to get database connection
+// Helper function to get database connection (SQLite3)
 function getDB() {
     return new SQLite3(DB_FILE);
 }
 
-// Alias for compatibility with tools
+// Alias for compatibility with tools - returns PDO for AI chat
 function getDatabase() {
-    return getDB();
+    try {
+        $pdo = new PDO('sqlite:' . DB_FILE);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        return $pdo;
+    } catch (PDOException $e) {
+        error_log("Database connection error: " . $e->getMessage());
+        throw $e;
+    }
 }
 
 // Validate email
@@ -587,13 +595,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// GET endpoint for Google OAuth URL
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'google_auth_url') {
-    header('Content-Type: application/json');
-    if (!isGoogleOAuthEnabled()) {
-        echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
-        exit;
+// GET endpoint for Google OAuth URL and logout
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
+    switch ($_GET['action']) {
+        case 'google_auth_url':
+            header('Content-Type: application/json');
+            if (!isGoogleOAuthEnabled()) {
+                echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
+                exit;
+            }
+            echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
+            exit;
+            
+        case 'logout':
+            // Handle GET logout request
+            logoutUser();
+            header('Location: index.php');
+            exit;
     }
-    echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
-    exit;
 }
