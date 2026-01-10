@@ -1,16 +1,20 @@
 <?php
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * LEGEND HOUSE - Advanced AI Helper with Multiple Providers
+ * LEGEND HOUSE - Advanced AI Helper with Multiple Providers v2.1
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Supports multiple free AI providers with automatic fallback:
+ * Supports multiple AI providers with automatic fallback:
  * 1. Blackbox AI - Primary (with your API key)
- * 2. DuckDuckGo AI - Secondary (free)
+ * 2. DuckDuckGo AI - Secondary (free, GPT-4o-mini)
  * 3. DeepInfra (Llama) - Fallback
  * 4. HuggingFace Inference - Fallback  
- * 5. Local response - Last resort
+ * 5. Local response - Last resort (intelligent keyword matching)
  */
+
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('log_errors', 1);
 
 // Start session if not already started (needed for getUserAIModel)
 if (session_status() === PHP_SESSION_NONE) {
@@ -28,38 +32,55 @@ if (!file_exists(CACHE_DIR)) {
  * Main AI chat function with provider fallback
  */
 function getAIResponse($message, $context = 'general', $conversationHistory = []) {
+    // Validate input
+    if (empty(trim($message))) {
+        return "Please enter a message.";
+    }
+    
     // Providers in order of preference
-    // Blackbox first if API key is configured, then free alternatives
+    // Try multiple providers for reliability
     $providers = [
-        'blackbox' => 'callBlackbox',      // Primary - uses your API key with GPT-4o
-        'duckduckgo' => 'callDuckDuckGoAI', // Fallback - free
-        'deepinfra' => 'callDeepInfra',     // Fallback - free
-        'huggingface' => 'callHuggingFace'  // Fallback - free
+        'blackbox' => 'callBlackbox',       // Primary - uses your API key with GPT-4o
+        'duckduckgo' => 'callDuckDuckGoAI', // Fallback - free GPT-4o-mini
+        'deepinfra' => 'callDeepInfra',     // Fallback - free Llama
+        'huggingface' => 'callHuggingFace'  // Fallback - free Mistral
     ];
     
     $systemPrompt = getSystemPrompt($context);
+    $errors = [];
     
     foreach ($providers as $name => $function) {
         try {
             if (!function_exists($function)) {
+                $errors[$name] = "Function not found";
                 continue;
             }
             
-            error_log("Trying AI provider: $name");
+            error_log("AI Helper - Trying provider: $name");
+            $startTime = microtime(true);
+            
             $response = $function($message, $systemPrompt, $conversationHistory);
             
-            if ($response && strlen($response) > 10) {
-                error_log("AI provider $name succeeded");
+            $duration = round((microtime(true) - $startTime) * 1000);
+            
+            if ($response && strlen(trim($response)) > 10) {
+                error_log("AI Helper - $name succeeded in {$duration}ms (response: " . strlen($response) . " chars)");
                 return $response;
+            } else {
+                $errors[$name] = "Empty or too short response";
+                error_log("AI Helper - $name returned empty/short response in {$duration}ms");
             }
         } catch (Exception $e) {
-            error_log("AI Provider $name failed: " . $e->getMessage());
+            $errors[$name] = $e->getMessage();
+            error_log("AI Helper - $name failed: " . $e->getMessage());
             continue;
         }
     }
     
+    // Log all errors for debugging
+    error_log("AI Helper - All providers failed. Errors: " . json_encode($errors));
+    
     // Fallback to intelligent local responses
-    error_log("All AI providers failed, using local fallback");
     return getLocalResponse($message, $context);
 }
 
@@ -265,9 +286,10 @@ function callBlackbox($message, $systemPrompt, $history = []) {
 
 /**
  * Call DuckDuckGo AI Chat (Free, no API key needed)
+ * Uses GPT-4o-mini model through DuckDuckGo's chat interface
  */
 function callDuckDuckGoAI($message, $systemPrompt, $history = []) {
-    // Get VQD token first
+    // Step 1: Get VQD token
     $tokenUrl = 'https://duckduckgo.com/duckchat/v1/status';
     
     $ch = curl_init($tokenUrl);
@@ -275,38 +297,63 @@ function callDuckDuckGoAI($message, $systemPrompt, $history = []) {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             'x-vqd-accept: 1',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'Accept: application/json',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         ],
         CURLOPT_TIMEOUT => 15,
+        CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HEADER => true
     ]);
     
     $tokenResponse = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-    $headers = substr($tokenResponse, 0, $headerSize);
     curl_close($ch);
     
-    // Extract VQD token from headers
+    if ($curlError) {
+        error_log("DuckDuckGo VQD: CURL error - $curlError");
+        return null;
+    }
+    
+    $headers = substr($tokenResponse, 0, $headerSize);
+    
+    // Extract VQD token from response headers
     $vqd = '';
     if (preg_match('/x-vqd-4:\s*([^\r\n]+)/i', $headers, $matches)) {
         $vqd = trim($matches[1]);
     }
     
     if (empty($vqd)) {
-        error_log("DuckDuckGo: Failed to get VQD token");
+        error_log("DuckDuckGo: Failed to get VQD token. HTTP: $httpCode, Headers: " . substr($headers, 0, 500));
         return null;
     }
     
-    // Make chat request
+    error_log("DuckDuckGo: Got VQD token (length: " . strlen($vqd) . ")");
+    
+    // Step 2: Make chat request
     $chatUrl = 'https://duckduckgo.com/duckchat/v1/chat';
     
-    $messages = [];
-    $messages[] = ['role' => 'user', 'content' => $systemPrompt . "\n\nUser question: " . $message];
+    // Build messages - combine system prompt with user message
+    $combinedMessage = $systemPrompt . "\n\n---\n\nUser: " . $message;
+    
+    // Add conversation history if available
+    if (!empty($history)) {
+        $historyText = "";
+        foreach (array_slice($history, -4) as $msg) { // Last 4 messages
+            $role = ucfirst($msg['role']);
+            $historyText .= "\n$role: " . $msg['content'];
+        }
+        $combinedMessage = $systemPrompt . "\n\nPrevious conversation:" . $historyText . "\n\n---\n\nUser: " . $message;
+    }
     
     $data = [
         'model' => 'gpt-4o-mini',
-        'messages' => $messages
+        'messages' => [
+            ['role' => 'user', 'content' => $combinedMessage]
+        ]
     ];
     
     $ch = curl_init($chatUrl);
@@ -318,38 +365,54 @@ function callDuckDuckGoAI($message, $systemPrompt, $history = []) {
             'Content-Type: application/json',
             'Accept: text/event-stream',
             'x-vqd-4: ' . $vqd,
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'Origin: https://duckduckgo.com',
+            'Referer: https://duckduckgo.com/',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         ],
         CURLOPT_TIMEOUT => 60,
-        CURLOPT_SSL_VERIFYPEER => false
+        CURLOPT_CONNECTTIMEOUT => 15,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_FOLLOWLOCATION => true
     ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
     
-    if ($httpCode === 200 && $response) {
-        // Parse SSE response
-        $fullMessage = '';
-        $lines = explode("\n", $response);
-        
-        foreach ($lines as $line) {
-            if (strpos($line, 'data: ') === 0) {
-                $jsonStr = substr($line, 6);
-                if ($jsonStr === '[DONE]') continue;
-                
-                $data = json_decode($jsonStr, true);
-                if (isset($data['message'])) {
-                    $fullMessage .= $data['message'];
-                }
+    if ($curlError) {
+        error_log("DuckDuckGo Chat: CURL error - $curlError");
+        return null;
+    }
+    
+    if ($httpCode !== 200) {
+        error_log("DuckDuckGo Chat: HTTP $httpCode - " . substr($response, 0, 500));
+        return null;
+    }
+    
+    // Parse SSE response
+    $fullMessage = '';
+    $lines = explode("\n", $response);
+    
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (strpos($line, 'data: ') === 0) {
+            $jsonStr = substr($line, 6);
+            if ($jsonStr === '[DONE]' || empty($jsonStr)) continue;
+            
+            $data = json_decode($jsonStr, true);
+            if ($data && isset($data['message'])) {
+                $fullMessage .= $data['message'];
             }
-        }
-        
-        if (!empty($fullMessage)) {
-            return trim($fullMessage);
         }
     }
     
+    if (!empty($fullMessage)) {
+        error_log("DuckDuckGo: Success - " . strlen($fullMessage) . " chars");
+        return trim($fullMessage);
+    }
+    
+    error_log("DuckDuckGo: Empty message from response");
     return null;
 }
 
