@@ -10,10 +10,9 @@
          crossorigin="anonymous"></script>
     
     <link rel="stylesheet" href="dashboard-style.css">
-    
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
 </head>
-<body>
+<body data-theme="dark">
     <?php
     require_once __DIR__ . '/auth.php';
     
@@ -39,47 +38,152 @@
         $downloadHistory[] = $row;
     }
     $db->close();
+    
+    // Calculate stats
+    $totalDownloads = count($downloadHistory);
+    $thisMonth = count(array_filter($downloadHistory, function($d) { 
+        return strtotime($d['downloaded_at']) > strtotime('-30 days'); 
+    }));
+    $activeHours = number_format((time() - strtotime($user['created_at'])) / 3600, 0);
     ?>
     
-    <!-- Animated Background -->
-    <div class="dashboard-bg">
-        <div class="bg-gradient"></div>
-        <div class="bg-pattern"></div>
-    </div>
-    
-    <!-- Header -->
-    <header class="dashboard-header">
-        <div class="header-container">
-            <a href="/" class="dashboard-logo">
-                <svg width="36" height="36" viewBox="0 0 42 42">
-                    <rect x="6" y="12" width="30" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                    <polygon points="21,6 28,12 14,12" fill="currentColor"/>
-                    <rect x="17" y="22" width="8" height="12" fill="currentColor" opacity="0.7"/>
-                </svg>
-                <span class="logo-text">LEGEND HOUSE</span>
-            </a>
+    <div class="app-layout">
+        <!-- Left Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.php" class="sidebar-logo">
+                    <div class="logo-icon">🏠</div>
+                    <span class="sidebar-text">Legend House</span>
+                </a>
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
             
-            <nav class="header-nav">
-                <a href="home.php" class="nav-link">
-                    <span class="nav-icon">🏠</span>
-                    Home
-                </a>
-                <a href="dashboard.php" class="nav-link" style="border: 2px solid var(--black); font-weight: 600;">
-                    <span class="nav-icon">📊</span>
-                    Dashboard
-                </a>
-                <a href="watch.php" class="nav-link">
-                    <span class="nav-icon">▶️</span>
-                    Watch
-                </a>
-                <a href="tools.php" class="nav-link">
-                    <span class="nav-icon">🛠️</span>
-                    Tools
-                </a>
-                <div class="user-menu">
-                    <button class="user-menu-trigger">
+            <nav class="sidebar-nav">
+                <!-- Main Navigation -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Navigation</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="home.php" class="nav-item">
+                                <span class="nav-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-text">Home</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="dashboard.php" class="nav-item active">
+                                <span class="nav-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-text">Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="watch.php" class="nav-item">
+                                <span class="nav-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-text">Watch</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Tools Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Tools</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="tools.php" class="nav-item">
+                                <span class="nav-icon">🛠️</span>
+                                <span class="sidebar-text">All Tools</span>
+                                <span class="nav-badge success">20+</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tools/dorker.php" class="nav-item">
+                                <span class="nav-icon">🔍</span>
+                                <span class="sidebar-text">Google Dorker</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tools/torrent.php" class="nav-item">
+                                <span class="nav-icon">🧲</span>
+                                <span class="sidebar-text">Torrent Center</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tools/proxy-scraper.php" class="nav-item">
+                                <span class="nav-icon">🌐</span>
+                                <span class="sidebar-text">Proxy Scraper</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tools/shortener.php" class="nav-item">
+                                <span class="nav-icon">🔗</span>
+                                <span class="sidebar-text">Link Shortener</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tools/rotating-proxy.php" class="nav-item">
+                                <span class="nav-icon">🔄</span>
+                                <span class="sidebar-text">Rotating Proxy</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Account Section -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="settings.php" class="nav-item">
+                                <span class="nav-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-text">Settings</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="profile.php" class="nav-item">
+                                <span class="nav-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-text">Profile</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile dropdown" id="userDropdown">
+                    <div class="user-profile" onclick="toggleUserMenu()">
                         <?php 
-                        // Validate profile picture URL is from trusted domain
                         $showProfilePic = false;
                         if ($user['profile_picture']) {
                             $picUrl = $user['profile_picture'];
@@ -97,719 +201,396 @@
                                 <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
                             </div>
                         <?php endif; ?>
-                        <span class="user-name"><?php echo htmlspecialchars($user['username']); ?></span>
-                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="dropdown-menu user-dropdown">
+                        <div class="user-info">
+                            <div class="user-name"><?php echo htmlspecialchars($user['username']); ?></div>
+                            <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
+                        </div>
+                    </div>
+                    <div class="dropdown-menu" id="userMenu">
                         <div class="dropdown-header">
                             <div class="dropdown-header-title"><?php echo htmlspecialchars($user['username']); ?></div>
-                            <div class="dropdown-header-subtitle"><?php echo htmlspecialchars($user['email']); ?></div>
+                            <div class="dropdown-header-subtitle"><?php echo $user['auth_provider'] === 'google' ? 'Google Account' : 'Local Account'; ?></div>
                         </div>
                         <div class="dropdown-divider"></div>
-                        <a href="dashboard.php" class="dropdown-item active">
-                            <span class="dropdown-icon">📊</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Dashboard</div>
-                            </div>
+                        <a href="profile.php" class="dropdown-item">
+                            <span class="dropdown-item-icon">👤</span>
+                            Your Profile
                         </a>
                         <a href="settings.php" class="dropdown-item">
-                            <span class="dropdown-icon">⚙️</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Settings</div>
-                            </div>
+                            <span class="dropdown-item-icon">⚙️</span>
+                            Settings
                         </a>
                         <div class="dropdown-divider"></div>
-                        <button onclick="logoutUser()" class="dropdown-item logout-item">
-                            <span class="dropdown-icon">🚪</span>
-                            <div class="dropdown-item-content">
-                                <div class="dropdown-item-title">Logout</div>
-                            </div>
+                        <button onclick="logoutUser()" class="dropdown-item danger">
+                            <span class="dropdown-item-icon">🚪</span>
+                            Sign Out
                         </button>
                     </div>
-                </div>
-            </nav>
-        </div>
-    </header>
-    
-    <!-- Main Content -->
-    <main class="dashboard-main">
-        <div class="dashboard-container">
-            <!-- Welcome Section -->
-            <section class="welcome-section">
-                <div class="welcome-content">
-                    <div class="welcome-badge">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                            <circle cx="6" cy="6" r="6"/>
-                        </svg>
-                        <span>ONLINE</span>
-                    </div>
-                    <h1 class="welcome-title">
-                        Welcome back, <span class="gradient-text"><?php echo htmlspecialchars($user['username']); ?></span>
-                    </h1>
-                    <p class="welcome-subtitle">
-                        <?php
-                        $hour = date('H');
-                        if ($hour < 12) echo "Good morning! Ready to discover something new?";
-                        elseif ($hour < 18) echo "Good afternoon! What would you like to watch today?";
-                        else echo "Good evening! Time to relax with some entertainment.";
-                        ?>
-                    </p>
-                    <div class="welcome-meta">
-                        <span class="meta-item">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                            <?php echo $user['auth_provider'] === 'google' ? 'Google Account' : 'Local Account'; ?>
-                        </span>
-                        <span class="meta-item">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                <line x1="16" y1="2" x2="16" y2="6"/>
-                                <line x1="8" y1="2" x2="8" y2="6"/>
-                                <line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
-                            Joined <?php echo date('M d, Y', strtotime($user['created_at'])); ?>
-                        </span>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Search Section in Dashboard -->
-            <section class="dashboard-search-section" style="margin-bottom: 3rem;">
-                <div class="search-card" style="background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #000;">
-                        🔍 Search Torrents
-                    </h2>
-                    <form id="searchForm" action="home.php" method="get" style="display: flex; gap: 1rem;">
-                        <input 
-                            type="text" 
-                            name="q" 
-                            id="searchInput" 
-                            placeholder="Search movies, TV shows, games, anime..." 
-                            style="flex: 1; padding: 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem;"
-                            required
-                        >
-                        <select name="category" style="padding: 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; font-size: 1rem; min-width: 150px;">
-                            <option value="all">🔍 All</option>
-                            <option value="movies">🎬 Movies</option>
-                            <option value="tv">📺 TV Shows</option>
-                            <option value="games">🎮 Games</option>
-                            <option value="software">💻 Software</option>
-                            <option value="anime">🎌 Anime</option>
-                            <option value="music">🎵 Music</option>
-                            <option value="ebooks">📚 Ebooks</option>
-                        </select>
-                        <button type="submit" style="padding: 1rem 2rem; background: linear-gradient(135deg, #000, #404040); color: white; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 600; cursor: pointer;">
-                            Search
-                        </button>
-                    </form>
-                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <span style="color: #666; font-size: 0.875rem;">🔥 Trending:</span>
-                        <a href="home.php?q=Avatar+3" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 0.375rem; font-size: 0.875rem; color: #000; text-decoration: none;">Avatar 3</a>
-                        <a href="home.php?q=Dune+2" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 0.375rem; font-size: 0.875rem; color: #000; text-decoration: none;">Dune 2</a>
-                        <a href="home.php?q=GTA+6" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 0.375rem; font-size: 0.875rem; color: #000; text-decoration: none;">GTA 6</a>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Advanced Stats Grid -->
-            <section class="stats-grid-section">
-                <div class="stat-card-advanced">
-                    <div class="stat-card-header">
-                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #000, #404040);">
-                            📥
-                        </div>
-                        <div class="stat-card-trend positive">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                                <polyline points="17 6 23 6 23 12"/>
-                            </svg>
-                            <span>+12%</span>
-                        </div>
-                    </div>
-                    <div class="stat-card-body">
-                        <div class="stat-value-large"><?php echo count($downloadHistory); ?></div>
-                        <div class="stat-label-large">Total Downloads</div>
-                        <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: <?php echo min(count($downloadHistory) * 10, 100); ?>%"></div>
-                        </div>
-                        <div class="stat-footer">This month: <?php echo count(array_filter($downloadHistory, function($d) { return strtotime($d['downloaded_at']) > strtotime('-30 days'); })); ?></div>
-                    </div>
-                </div>
-                
-                <div class="stat-card-advanced">
-                    <div class="stat-card-header">
-                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #171717, #525252);">
-                            🎬
-                        </div>
-                        <div class="stat-card-trend positive">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                                <polyline points="17 6 23 6 23 12"/>
-                            </svg>
-                            <span>+8%</span>
-                        </div>
-                    </div>
-                    <div class="stat-card-body">
-                        <div class="stat-value-large"><?php echo count(array_filter($downloadHistory, function($d) { return stripos($d['torrent_name'], 'movie') !== false || stripos($d['torrent_name'], 'film') !== false; })); ?></div>
-                        <div class="stat-label-large">Movies Watched</div>
-                        <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: 65%; background: linear-gradient(90deg, #171717, #525252);"></div>
-                        </div>
-                        <div class="stat-footer">Avg. 2.3 hours per session</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card-advanced">
-                    <div class="stat-card-header">
-                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #262626, #737373);">
-                            ⚡
-                        </div>
-                        <div class="stat-card-trend positive">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                                <polyline points="17 6 23 6 23 12"/>
-                            </svg>
-                            <span>+15%</span>
-                        </div>
-                    </div>
-                    <div class="stat-card-body">
-                        <div class="stat-value-large"><?php echo number_format((time() - strtotime($user['created_at'])) / 3600, 0); ?></div>
-                        <div class="stat-label-large">Active Hours</div>
-                        <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: 80%; background: linear-gradient(90deg, #262626, #737373);"></div>
-                        </div>
-                        <div class="stat-footer">Last active: Just now</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card-advanced">
-                    <div class="stat-card-header">
-                        <div class="stat-card-icon" style="background: linear-gradient(135deg, #404040, #a3a3a3);">
-                            🔥
-                        </div>
-                        <div class="stat-card-trend positive">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                                <polyline points="17 6 23 6 23 12"/>
-                            </svg>
-                            <span>+22%</span>
-                        </div>
-                    </div>
-                    <div class="stat-card-body">
-                        <div class="stat-value-large"><?php echo max(5, count($downloadHistory) * 3); ?></div>
-                        <div class="stat-label-large">Streak Days</div>
-                        <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: 45%; background: linear-gradient(90deg, #404040, #a3a3a3);"></div>
-                        </div>
-                        <div class="stat-footer">Keep it up! 🎉</div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Two Column Layout -->
-            <div class="dashboard-grid">
-                <!-- Left Column -->
-                <div class="dashboard-col-left">
-                    <!-- Activity Timeline -->
-                    <section class="activity-section">
-                        <div class="section-header">
-                            <h2 class="section-title">Recent Activity</h2>
-                            <button class="section-action">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <div class="activity-timeline">
-                            <div class="activity-item">
-                                <div class="activity-dot"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">Downloaded new content</div>
-                                    <div class="activity-desc">Successfully downloaded "<?php echo !empty($downloadHistory) ? htmlspecialchars(substr($downloadHistory[0]['torrent_name'], 0, 30)) . '...' : 'Sample Content'; ?>"</div>
-                                    <div class="activity-time">2 minutes ago</div>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-dot"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">Watched streaming content</div>
-                                    <div class="activity-desc">Streamed video via WebTorrent Player</div>
-                                    <div class="activity-time">1 hour ago</div>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-dot"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">Used Proxy Scraper</div>
-                                    <div class="activity-desc">Found 250 working proxies from 100+ sources</div>
-                                    <div class="activity-time">3 hours ago</div>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-dot"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">Created short link</div>
-                                    <div class="activity-desc">Generated link with QR code and analytics</div>
-                                    <div class="activity-time">5 hours ago</div>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-dot"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">Account created</div>
-                                    <div class="activity-desc">Welcome to Legend House! 🎉</div>
-                                    <div class="activity-time"><?php echo date('M d, Y', strtotime($user['created_at'])); ?></div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    
-                    <!-- System Status -->
-                    <section class="system-status-section">
-                        <div class="section-header">
-                            <h2 class="section-title">System Status</h2>
-                            <div class="status-indicator">
-                                <span class="status-dot active"></span>
-                                <span>All Systems Operational</span>
-                            </div>
-                        </div>
-                        
-                        <div class="status-grid">
-                            <div class="status-item">
-                                <div class="status-item-header">
-                                    <span class="status-icon">🌐</span>
-                                    <span class="status-name">API Services</span>
-                                </div>
-                                <div class="status-bar">
-                                    <div class="status-bar-fill" style="width: 99%"></div>
-                                </div>
-                                <div class="status-meta">
-                                    <span>99% Uptime</span>
-                                    <span class="status-badge success">Operational</span>
-                                </div>
-                            </div>
-                            
-                            <div class="status-item">
-                                <div class="status-item-header">
-                                    <span class="status-icon">⚡</span>
-                                    <span class="status-name">Torrent Network</span>
-                                </div>
-                                <div class="status-bar">
-                                    <div class="status-bar-fill" style="width: 100%"></div>
-                                </div>
-                                <div class="status-meta">
-                                    <span>100% Online</span>
-                                    <span class="status-badge success">Operational</span>
-                                </div>
-                            </div>
-                            
-                            <div class="status-item">
-                                <div class="status-item-header">
-                                    <span class="status-icon">🔄</span>
-                                    <span class="status-name">Proxy Services</span>
-                                </div>
-                                <div class="status-bar">
-                                    <div class="status-bar-fill" style="width: 98%"></div>
-                                </div>
-                                <div class="status-meta">
-                                    <span>98% Available</span>
-                                    <span class="status-badge success">Operational</span>
-                                </div>
-                            </div>
-                            
-                            <div class="status-item">
-                                <div class="status-item-header">
-                                    <span class="status-icon">🤖</span>
-                                    <span class="status-name">AI Features</span>
-                                </div>
-                                <div class="status-bar">
-                                    <div class="status-bar-fill" style="width: 97%"></div>
-                                </div>
-                                <div class="status-meta">
-                                    <span>97% Online</span>
-                                    <span class="status-badge success">Operational</span>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-                
-                <!-- Right Column -->
-                <div class="dashboard-col-right">
-                    <!-- Quick Actions -->
-                    <section class="quick-actions">
-                        <h2 class="section-title">Quick Actions</h2>
-                        <div class="actions-grid-vertical">
-                            <a href="/" class="action-card-compact">
-                                <div class="action-icon-compact">🔍</div>
-                                <div class="action-content-compact">
-                                    <div class="action-title-compact">Search Content</div>
-                                    <div class="action-desc-compact">Find movies, TV shows & more</div>
-                                </div>
-                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </a>
-                            
-                            <a href="watch.php" class="action-card-compact">
-                                <div class="action-icon-compact">▶️</div>
-                                <div class="action-content-compact">
-                                    <div class="action-title-compact">Watch Now</div>
-                                    <div class="action-desc-compact">Stream directly in browser</div>
-                                </div>
-                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </a>
-                            
-                            <a href="tools/torrent.php" class="action-card-compact">
-                                <div class="action-icon-compact">🧲</div>
-                                <div class="action-content-compact">
-                                    <div class="action-title-compact">Torrent Center</div>
-                                    <div class="action-desc-compact">Download via magnets & files</div>
-                                </div>
-                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </a>
-                            
-                            <a href="tools/dorker.php" class="action-card-compact">
-                                <div class="action-icon-compact">🔍</div>
-                                <div class="action-content-compact">
-                                    <div class="action-title-compact">Google Dorker</div>
-                                    <div class="action-desc-compact">Advanced search with 100+ operators</div>
-                                </div>
-                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </a>
-                            
-                            <a href="tools/proxy-scraper.php" class="action-card-compact">
-                                <div class="action-icon-compact">🌐</div>
-                                <div class="action-content-compact">
-                                    <div class="action-title-compact">Proxy Scraper</div>
-                                    <div class="action-desc-compact">Find proxies from 100+ sources</div>
-                                </div>
-                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </a>
-                            
-                            <a href="tools/shortener.php" class="action-card-compact">
-                                <div class="action-icon-compact">🔗</div>
-                                <div class="action-content-compact">
-                                    <div class="action-title-compact">Link Shortener</div>
-                                    <div class="action-desc-compact">Create short links with analytics</div>
-                                </div>
-                                <svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </a>
-                        </div>
-                    </section>
-                    
-                    <!-- Performance Metrics -->
-                    <section class="metrics-section">
-                        <h2 class="section-title">Performance</h2>
-                        <div class="metrics-grid">
-                            <div class="metric-item">
-                                <div class="metric-label">Response Time</div>
-                                <div class="metric-value">45ms</div>
-                                <div class="metric-chart">
-                                    <div class="metric-chart-bar" style="height: 80%"></div>
-                                    <div class="metric-chart-bar" style="height: 60%"></div>
-                                    <div class="metric-chart-bar" style="height: 90%"></div>
-                                    <div class="metric-chart-bar" style="height: 70%"></div>
-                                    <div class="metric-chart-bar" style="height: 85%"></div>
-                                    <div class="metric-chart-bar" style="height: 95%"></div>
-                                    <div class="metric-chart-bar" style="height: 75%"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="metric-item">
-                                <div class="metric-label">Download Speed</div>
-                                <div class="metric-value">8.5MB/s</div>
-                                <div class="metric-chart">
-                                    <div class="metric-chart-bar" style="height: 70%"></div>
-                                    <div class="metric-chart-bar" style="height: 85%"></div>
-                                    <div class="metric-chart-bar" style="height: 90%"></div>
-                                    <div class="metric-chart-bar" style="height: 75%"></div>
-                                    <div class="metric-chart-bar" style="height: 95%"></div>
-                                    <div class="metric-chart-bar" style="height: 88%"></div>
-                                    <div class="metric-chart-bar" style="height: 92%"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="metric-item">
-                                <div class="metric-label">Uptime</div>
-                                <div class="metric-value">99.9%</div>
-                                <div class="metric-chart">
-                                    <div class="metric-chart-bar" style="height: 100%"></div>
-                                    <div class="metric-chart-bar" style="height: 100%"></div>
-                                    <div class="metric-chart-bar" style="height: 98%"></div>
-                                    <div class="metric-chart-bar" style="height: 100%"></div>
-                                    <div class="metric-chart-bar" style="height: 100%"></div>
-                                    <div class="metric-chart-bar" style="height: 100%"></div>
-                                    <div class="metric-chart-bar" style="height: 100%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
                 </div>
             </div>
-            
-            <!-- Recent Downloads -->
-            <section class="recent-section">
-                <div class="section-header">
-                    <h2 class="section-title">Recent Downloads</h2>
-                    <a href="tools/torrent.php" class="section-link">
-                        View All
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-wrapper">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="header-btn mobile-menu" onclick="toggleSidebar()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
                         </svg>
-                    </a>
+                    </button>
+                    <div class="breadcrumb">
+                        <a href="dashboard.php" class="breadcrumb-item">Dashboard</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item active">Overview</span>
+                    </div>
                 </div>
                 
-                <?php if (empty($downloadHistory)): ?>
-                <div class="empty-state">
-                    <div class="empty-icon">📭</div>
-                    <div class="empty-title">No downloads yet</div>
-                    <div class="empty-desc">Start downloading torrents to see them here</div>
-                    <a href="tools/torrent.php" class="empty-btn">
-                        Go to Torrent Center
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </a>
+                <div class="search-container">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Search torrents, tools, settings..." id="globalSearch">
+                    <span class="search-shortcut">⌘K</span>
                 </div>
-                <?php else: ?>
-                <div class="downloads-list">
-                    <?php foreach ($downloadHistory as $download): ?>
-                    <div class="download-item">
-                        <div class="download-icon">🎬</div>
-                        <div class="download-info">
-                            <div class="download-name"><?php echo htmlspecialchars($download['torrent_name']); ?></div>
-                            <div class="download-meta">
-                                <?php if ($download['size']): ?>
-                                <span class="download-size"><?php echo htmlspecialchars($download['size']); ?></span>
-                                <?php endif; ?>
-                                <span class="download-date"><?php echo date('M d, Y', strtotime($download['downloaded_at'])); ?></span>
+                
+                <div class="header-right">
+                    <button class="header-btn" title="Notifications">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notification-dot"></span>
+                    </button>
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <span id="themeIcon">🌙</span>
+                        <span id="themeText">Dark</span>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- Welcome Section -->
+                <div class="dashboard-header-section">
+                    <h1 class="page-title">
+                        <?php
+                        $hour = date('H');
+                        if ($hour < 12) echo "Good morning";
+                        elseif ($hour < 18) echo "Good afternoon";
+                        else echo "Good evening";
+                        ?>, <?php echo htmlspecialchars($user['username']); ?> 👋
+                    </h1>
+                    <p class="page-subtitle">Welcome back! Here's what's happening with your account.</p>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card fade-in" style="animation-delay: 0.1s">
+                        <div class="stat-header">
+                            <div class="stat-icon">📥</div>
+                            <div class="stat-trend positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                +12%
                             </div>
                         </div>
-                        <?php 
-                        // Validate magnet URL
-                        if ($download['magnet_url'] && strpos($download['magnet_url'], 'magnet:?') === 0): 
-                        ?>
-                        <a href="<?php echo htmlspecialchars($download['magnet_url']); ?>" class="download-action" title="Open magnet link">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7 10 12 15 17 10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                        </a>
-                        <?php endif; ?>
+                        <div class="stat-value"><?php echo $totalDownloads; ?></div>
+                        <div class="stat-label">Total Downloads</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: <?php echo min($totalDownloads * 10, 100); ?>%"></div>
+                        </div>
                     </div>
-                    <?php endforeach; ?>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.2s">
+                        <div class="stat-header">
+                            <div class="stat-icon">📅</div>
+                            <div class="stat-trend positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                +8%
+                            </div>
+                        </div>
+                        <div class="stat-value"><?php echo $thisMonth; ?></div>
+                        <div class="stat-label">This Month</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: <?php echo min($thisMonth * 10, 100); ?>%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.3s">
+                        <div class="stat-header">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-trend positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                +15%
+                            </div>
+                        </div>
+                        <div class="stat-value"><?php echo $activeHours; ?></div>
+                        <div class="stat-label">Active Hours</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: 80%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.4s">
+                        <div class="stat-header">
+                            <div class="stat-icon">🔥</div>
+                            <div class="stat-trend positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                +22%
+                            </div>
+                        </div>
+                        <div class="stat-value"><?php echo max(5, $totalDownloads * 3); ?></div>
+                        <div class="stat-label">Streak Days</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: 45%"></div>
+                        </div>
+                    </div>
                 </div>
-                <?php endif; ?>
-            </section>
-            
-            <!-- Torrent Features Section -->
-            <section class="features-section">
-                <h2 class="section-title">Torrent Features</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🧲</div>
-                        <div class="feature-content">
-                            <h3 class="feature-title">Magnet Links</h3>
-                            <p class="feature-desc">Paste magnet links to instantly download torrents. Automatic hash extraction and validation.</p>
-                            <a href="tools/torrent.php#magnet" class="feature-link">Try it now →</a>
+                
+                <!-- Content Grid -->
+                <div class="content-grid">
+                    <!-- Left Column -->
+                    <div>
+                        <!-- Recent Activity -->
+                        <div class="card fade-in" style="animation-delay: 0.5s; margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">📊</span>
+                                    Recent Activity
+                                </h3>
+                                <div class="card-actions">
+                                    <button class="card-action-btn">View All</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <ul class="activity-list">
+                                    <?php if (!empty($downloadHistory)): ?>
+                                        <?php foreach (array_slice($downloadHistory, 0, 5) as $download): ?>
+                                        <li class="activity-item">
+                                            <div class="activity-icon">📥</div>
+                                            <div class="activity-content">
+                                                <div class="activity-title">Downloaded content</div>
+                                                <div class="activity-desc"><?php echo htmlspecialchars(substr($download['torrent_name'], 0, 50)); ?>...</div>
+                                            </div>
+                                            <div class="activity-time"><?php echo date('M d', strtotime($download['downloaded_at'])); ?></div>
+                                        </li>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <li class="activity-item">
+                                            <div class="activity-icon">👋</div>
+                                            <div class="activity-content">
+                                                <div class="activity-title">Account created</div>
+                                                <div class="activity-desc">Welcome to Legend House!</div>
+                                            </div>
+                                            <div class="activity-time"><?php echo date('M d', strtotime($user['created_at'])); ?></div>
+                                        </li>
+                                        <li class="activity-item">
+                                            <div class="activity-icon">🎯</div>
+                                            <div class="activity-content">
+                                                <div class="activity-title">Getting started</div>
+                                                <div class="activity-desc">Try searching for your favorite content</div>
+                                            </div>
+                                            <div class="activity-time">Now</div>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- System Status -->
+                        <div class="card fade-in" style="animation-delay: 0.6s;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">🟢</span>
+                                    System Status
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="status-grid">
+                                    <div class="status-item">
+                                        <div class="status-indicator online"></div>
+                                        <div class="status-info">
+                                            <div class="status-name">API Services</div>
+                                            <div class="status-detail">99.9% uptime</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-item">
+                                        <div class="status-indicator online"></div>
+                                        <div class="status-info">
+                                            <div class="status-name">Torrent Network</div>
+                                            <div class="status-detail">All trackers online</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-item">
+                                        <div class="status-indicator online"></div>
+                                        <div class="status-info">
+                                            <div class="status-name">Proxy Services</div>
+                                            <div class="status-detail">500+ proxies available</div>
+                                        </div>
+                                    </div>
+                                    <div class="status-item">
+                                        <div class="status-indicator online"></div>
+                                        <div class="status-info">
+                                            <div class="status-name">AI Assistant</div>
+                                            <div class="status-detail">Powered by Blackbox</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="feature-card">
-                        <div class="feature-icon">📁</div>
-                        <div class="feature-content">
-                            <h3 class="feature-title">Torrent Files</h3>
-                            <p class="feature-desc">Upload .torrent files with drag & drop. Content-based hash generation and processing.</p>
-                            <a href="tools/torrent.php#file" class="feature-link">Upload file →</a>
+                    <!-- Right Column -->
+                    <div>
+                        <!-- Quick Actions -->
+                        <div class="card fade-in" style="animation-delay: 0.7s; margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">⚡</span>
+                                    Quick Actions
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="quick-actions">
+                                    <a href="home.php" class="quick-action-item">
+                                        <div class="quick-action-icon">🔍</div>
+                                        <div class="quick-action-text">
+                                            <div class="quick-action-title">Search Content</div>
+                                            <div class="quick-action-desc">Find movies, TV shows & more</div>
+                                        </div>
+                                        <svg class="quick-action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </a>
+                                    <a href="tools/dorker.php" class="quick-action-item">
+                                        <div class="quick-action-icon">🔍</div>
+                                        <div class="quick-action-text">
+                                            <div class="quick-action-title">Google Dorker</div>
+                                            <div class="quick-action-desc">100+ dork operators</div>
+                                        </div>
+                                        <svg class="quick-action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </a>
+                                    <a href="tools/torrent.php" class="quick-action-item">
+                                        <div class="quick-action-icon">🧲</div>
+                                        <div class="quick-action-text">
+                                            <div class="quick-action-title">Torrent Center</div>
+                                            <div class="quick-action-desc">Magnet links & files</div>
+                                        </div>
+                                        <svg class="quick-action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </a>
+                                    <a href="tools/proxy-scraper.php" class="quick-action-item">
+                                        <div class="quick-action-icon">🌐</div>
+                                        <div class="quick-action-text">
+                                            <div class="quick-action-title">Proxy Scraper</div>
+                                            <div class="quick-action-desc">100+ proxy sources</div>
+                                        </div>
+                                        <svg class="quick-action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </a>
+                                    <a href="watch.php" class="quick-action-item">
+                                        <div class="quick-action-icon">▶️</div>
+                                        <div class="quick-action-text">
+                                            <div class="quick-action-title">Watch Now</div>
+                                            <div class="quick-action-desc">Stream in browser</div>
+                                        </div>
+                                        <svg class="quick-action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">🔑</div>
-                        <div class="feature-content">
-                            <h3 class="feature-title">Info Hash</h3>
-                            <p class="feature-desc">Generate magnet links from 40-character info hashes. Perfect for sharing torrents.</p>
-                            <a href="tools/torrent.php#hash" class="feature-link">Generate →</a>
-                        </div>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">▶️</div>
-                        <div class="feature-content">
-                            <h3 class="feature-title">Stream Torrents</h3>
-                            <p class="feature-desc">Watch videos directly in browser using WebTorrent. No download needed.</p>
-                            <a href="watch.php" class="feature-link">Start streaming →</a>
+                        
+                        <!-- Pro Tips -->
+                        <div class="card fade-in" style="animation-delay: 0.8s;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">💡</span>
+                                    Pro Tips
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.6;">
+                                    <p style="margin-bottom: 12px;"><strong style="color: var(--text-primary);">⌘K</strong> - Quick search anywhere</p>
+                                    <p style="margin-bottom: 12px;"><strong style="color: var(--text-primary);">🤖 AI Chat</strong> - Click the chat button for help</p>
+                                    <p style="margin-bottom: 12px;"><strong style="color: var(--text-primary);">🔍 Dorker</strong> - Use site: to filter domains</p>
+                                    <p><strong style="color: var(--text-primary);">🧲 Torrents</strong> - Paste magnet links directly</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
+            </main>
         </div>
-    </main>
+    </div>
     
     <script>
-        // Enhanced Dashboard JavaScript with Real-Time Features
-        document.addEventListener('DOMContentLoaded', () => {
-            // Torrent dropdown
-            const dropdownTrigger = document.querySelector('.dropdown-trigger');
-            const dropdownMenu = dropdownTrigger?.nextElementSibling;
-            
-            dropdownTrigger?.addEventListener('click', (e) => {
-                e.preventDefault();
-                dropdownMenu?.classList.toggle('show');
-            });
-            
-            // User menu
-            const userMenuTrigger = document.querySelector('.user-menu-trigger');
-            const userDropdown = userMenuTrigger?.nextElementSibling;
-            
-            userMenuTrigger?.addEventListener('click', (e) => {
-                e.preventDefault();
-                userDropdown?.classList.toggle('show');
-            });
-            
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.nav-dropdown') && !e.target.closest('.user-menu')) {
-                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                        menu.classList.remove('show');
-                    });
-                }
-            });
-            
-            // Animate stat values on load
-            animateStatValues();
-            
-            // Animate progress bars
-            animateProgressBars();
-            
-            // Real-time clock update
-            updateClock();
-            setInterval(updateClock, 1000);
-            
-            // Add smooth hover effects to cards
-            addCardAnimations();
-            
-            // Initialize tooltips
-            initializeTooltips();
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+        
+        // Restore sidebar state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.getElementById('sidebar').classList.add('collapsed');
+        }
+        
+        // User menu toggle
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('show');
+        }
+        
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('userDropdown');
+            const menu = document.getElementById('userMenu');
+            if (!dropdown.contains(e.target)) {
+                menu.classList.remove('show');
+            }
         });
         
-        // Animate statistics values with counting effect
-        function animateStatValues() {
-            document.querySelectorAll('.stat-value-large, .stat-value, .metric-value').forEach(el => {
-                const target = parseInt(el.textContent) || 0;
-                if (target === 0) return;
-                
-                let current = 0;
-                const increment = target / 50;
-                const timer = setInterval(() => {
-                    current += increment;
-                    if (current >= target) {
-                        el.textContent = target;
-                        clearInterval(timer);
-                    } else {
-                        el.textContent = Math.floor(current);
-                    }
-                }, 20);
-            });
-        }
-        
-        // Animate progress bars
-        function animateProgressBars() {
-            document.querySelectorAll('.stat-progress-bar, .status-bar-fill, .metric-chart-bar').forEach(bar => {
-                const width = bar.style.width;
-                bar.style.width = '0%';
-                setTimeout(() => {
-                    bar.style.transition = 'width 1s ease-in-out';
-                    bar.style.width = width;
-                }, 100);
-            });
-        }
-        
-        // Real-time clock
-        function updateClock() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
+        // Theme toggle
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
-            // Update any clock elements if they exist
-            const clockElements = document.querySelectorAll('.live-clock');
-            clockElements.forEach(el => {
-                el.textContent = timeString;
-            });
-        }
-        
-        // Add smooth animations to cards
-        function addCardAnimations() {
-            const cards = document.querySelectorAll('.stat-card-advanced, .action-card-compact, .tool-card, .feature-card');
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
             
-            cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                
-                setTimeout(() => {
-                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 50);
-            });
+            document.getElementById('themeIcon').textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            document.getElementById('themeText').textContent = newTheme === 'dark' ? 'Dark' : 'Light';
         }
         
-        // Initialize tooltips for better UX
-        function initializeTooltips() {
-            // Add title attributes for better accessibility
-            document.querySelectorAll('.action-card-compact, .tool-card').forEach(el => {
-                el.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateX(4px)';
-                });
-                el.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateX(0)';
-                });
-            });
-        }
-        
-        // Enhanced search functionality
-        const searchForm = document.getElementById('searchForm');
-        if (searchForm) {
-            searchForm.addEventListener('submit', function(e) {
-                const input = document.getElementById('searchInput');
-                if (input && input.value.trim() === '') {
-                    e.preventDefault();
-                    input.focus();
-                    input.style.borderColor = 'red';
-                    setTimeout(() => {
-                        input.style.borderColor = '#e5e7eb';
-                    }, 1000);
-                }
-            });
-        }
+        // Restore theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+        document.getElementById('themeText').textContent = savedTheme === 'dark' ? 'Dark' : 'Light';
         
         // Logout function
         async function logoutUser() {
-            if (!confirm('Are you sure you want to logout?')) {
+            if (!confirm('Are you sure you want to sign out?')) {
                 return;
             }
             
@@ -822,87 +603,59 @@
                     body: formData
                 });
                 
-                // Smooth fade out before redirect
-                document.body.style.transition = 'opacity 0.3s ease';
-                document.body.style.opacity = '0';
-                
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 300);
+                window.location.href = 'login.php';
             } catch (error) {
                 console.error('Logout failed:', error);
-                alert('Logout failed. Please try again.');
+                window.location.href = 'auth.php?action=logout';
             }
         }
         
-        // Add keyboard shortcuts
+        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + K for quick search focus
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            // Cmd/Ctrl + K for search
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
-                }
+                document.getElementById('globalSearch').focus();
             }
             
-            // Escape to close dropdowns
+            // Escape to close menus
             if (e.key === 'Escape') {
-                document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                    menu.classList.remove('show');
-                });
+                document.getElementById('userMenu').classList.remove('show');
             }
         });
         
-        // Add visual feedback for actions
-        document.querySelectorAll('button, a.action-card-compact, a.tool-card').forEach(element => {
-            element.addEventListener('click', function(e) {
-                // Get element position for proper ripple placement
-                const rect = this.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+        // Global search functionality
+        document.getElementById('globalSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                window.location.href = 'home.php?q=' + encodeURIComponent(this.value.trim());
+            }
+        });
+        
+        // Animate stats on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const statValues = document.querySelectorAll('.stat-value');
+            statValues.forEach(el => {
+                const target = parseInt(el.textContent) || 0;
+                if (target === 0) return;
                 
-                // Ripple effect
-                const ripple = document.createElement('span');
-                ripple.style.position = 'absolute';
-                ripple.style.borderRadius = '50%';
-                ripple.style.background = 'rgba(255, 255, 255, 0.6)';
-                ripple.style.width = ripple.style.height = '100px';
-                ripple.style.left = (x - 50) + 'px';
-                ripple.style.top = (y - 50) + 'px';
-                ripple.style.pointerEvents = 'none';
-                ripple.style.animation = 'ripple 0.6s ease-out';
-                
-                this.style.position = 'relative';
-                this.style.overflow = 'hidden';
-                this.appendChild(ripple);
-                
-                setTimeout(() => ripple.remove(), 600);
+                let current = 0;
+                const increment = target / 30;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        el.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        el.textContent = Math.floor(current);
+                    }
+                }, 30);
             });
         });
-        
-        // Add CSS for ripple animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes ripple {
-                from {
-                    opacity: 1;
-                    transform: scale(0);
-                }
-                to {
-                    opacity: 0;
-                    transform: scale(4);
-                }
-            }
-        `;
-        document.head.appendChild(style);
     </script>
     
-    <!-- AI Chat Widget Integration -->
+    <!-- AI Chat Widget -->
     <script src="ai-chat-widget.js"></script>
     <script>
-        // Set context to 'general' for dashboard
         document.body.dataset.aiContext = 'general';
     </script>
 </body>

@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../auth.php';
 
-// Check if user is logged in
 $user = getCurrentUser();
 if (!$user) {
     header('Location: ../login.php');
@@ -11,7 +10,7 @@ if (!$user) {
 // Initialize database
 $db = getDatabase();
 
-// Create short_urls table if not exists
+// Create tables
 $db->exec("CREATE TABLE IF NOT EXISTS short_urls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -25,7 +24,6 @@ $db->exec("CREATE TABLE IF NOT EXISTS short_urls (
     FOREIGN KEY (user_id) REFERENCES users(id)
 )");
 
-// Create url_clicks table if not exists
 $db->exec("CREATE TABLE IF NOT EXISTS url_clicks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     short_url_id INTEGER NOT NULL,
@@ -43,483 +41,625 @@ $db->exec("CREATE TABLE IF NOT EXISTS url_clicks (
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Link Shortener - Legend House</title>
     <link rel="stylesheet" href="../dashboard-style.css">
-    <link rel="stylesheet" href="shortener-style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="shortener-enhanced-features.js"></script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
-     crossorigin="anonymous"></script>
+    
+    <style>
+        .shortener-layout {
+            display: grid;
+            gap: 24px;
+        }
+        
+        .shortener-form-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+        }
+        
+        .shortener-form-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .url-input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .url-input {
+            flex: 1;
+            padding: 14px 18px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .url-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--bg-primary);
+        }
+        
+        .btn-shorten {
+            padding: 14px 28px;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-shorten:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .advanced-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+        }
+        
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .option-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        .option-input {
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .option-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        
+        .result-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: none;
+        }
+        
+        .result-card.active {
+            display: block;
+        }
+        
+        .short-url-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+        }
+        
+        .short-url-text {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--info);
+            word-break: break-all;
+        }
+        
+        .btn-copy {
+            padding: 10px 16px;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-copy:hover {
+            opacity: 0.9;
+        }
+        
+        .qr-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+        }
+        
+        #qrcode {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .qr-info {
+            flex: 1;
+        }
+        
+        .qr-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .qr-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .links-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        
+        .links-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .links-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .links-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .links-table th,
+        .links-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-muted);
+            font-size: 13px;
+        }
+        
+        .links-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .links-table td {
+            color: var(--text-primary);
+        }
+        
+        .links-table tr:hover td {
+            background: var(--bg-tertiary);
+        }
+        
+        .link-url {
+            color: var(--info);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .link-url:hover {
+            text-decoration: underline;
+        }
+        
+        .btn-small {
+            padding: 4px 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-small:hover {
+            background: var(--accent-muted);
+            color: var(--text-primary);
+        }
+        
+        .btn-delete {
+            color: var(--danger);
+        }
+        
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .url-input-group {
+                flex-direction: column;
+            }
+            
+            .btn-shorten {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .qr-section {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .links-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
 </head>
-<body>
-    <div class="dashboard-container">
-<!-- Enhanced Link Shortener UI Elements -->
-<style>
-.pro-banner {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    padding: 2rem;
-    border-radius: 1rem;
-    margin-bottom: 2rem;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(245, 87, 108, 0.3);
-}
-
-.pro-banner h2 {
-    margin: 0;
-    font-size: 2.5rem;
-    font-weight: 900;
-}
-
-.pro-features {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin: 2rem 0;
-}
-
-.pro-feature {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: transform 0.3s;
-}
-
-.pro-feature:hover {
-    transform: translateY(-5px);
-}
-
-.pro-feature-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.pro-feature-title {
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-
-.pro-feature-desc {
-    font-size: 0.875rem;
-    color: #666;
-}
-
-.analytics-container {
-    background: white;
-    border-radius: 1rem;
-    padding: 2rem;
-    margin: 2rem 0;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-
-.chart-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-.bulk-uploader {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 2rem;
-    border-radius: 1rem;
-    color: white;
-    margin: 2rem 0;
-}
-
-.utm-builder {
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    padding: 2rem;
-    border-radius: 1rem;
-    margin: 2rem 0;
-}
-
-.ab-testing {
-    background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
-    padding: 2rem;
-    border-radius: 1rem;
-    color: white;
-    margin: 2rem 0;
-}
-</style>
-
-<!-- Pro Banner -->
-<div class="pro-banner">
-    <h2>🚀 LINK SHORTENER PRO</h2>
-    <p style="font-size: 1.25rem; margin: 0.5rem 0 0;">Advanced URL Management with Analytics & Automation</p>
-    <div class="feature-badges" style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
-        <span class="badge" style="background: rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 2rem;">📊 Advanced Analytics</span>
-        <span class="badge" style="background: rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 2rem;">🌍 Geographic Tracking</span>
-        <span class="badge" style="background: rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 2rem;">🔄 A/B Testing</span>
-        <span class="badge" style="background: rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 2rem;">📦 Bulk Operations</span>
-        <span class="badge" style="background: rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 2rem;">🔐 Advanced Security</span>
-    </div>
-</div>
-
-<!-- Pro Features Grid -->
-<div class="pro-features">
-    <div class="pro-feature">
-        <div class="pro-feature-icon">📊</div>
-        <div class="pro-feature-title">Analytics Dashboard</div>
-        <div class="pro-feature-desc">Real-time charts & insights</div>
-    </div>
-    <div class="pro-feature">
-        <div class="pro-feature-icon">🌐</div>
-        <div class="pro-feature-title">Geo Tracking</div>
-        <div class="pro-feature-desc">Track clicks by location</div>
-    </div>
-    <div class="pro-feature">
-        <div class="pro-feature-icon">📱</div>
-        <div class="pro-feature-title">Device Analytics</div>
-        <div class="pro-feature-desc">Desktop, mobile, tablet stats</div>
-    </div>
-    <div class="pro-feature">
-        <div class="pro-feature-icon">🔄</div>
-        <div class="pro-feature-title">Link Rotation</div>
-        <div class="pro-feature-desc">Split traffic across URLs</div>
-    </div>
-    <div class="pro-feature">
-        <div class="pro-feature-icon">🎯</div>
-        <div class="pro-feature-title">UTM Builder</div>
-        <div class="pro-feature-desc">Campaign tracking made easy</div>
-    </div>
-    <div class="pro-feature">
-        <div class="pro-feature-icon">📦</div>
-        <div class="pro-feature-title">Bulk Shortening</div>
-        <div class="pro-feature-desc">Upload CSV files</div>
-    </div>
-</div>
-
-<!-- Analytics Dashboard -->
-<div class="analytics-container">
-    <h2 style="margin-top: 0;">📊 Advanced Analytics Dashboard</h2>
-    <div id="chartsContainer" class="chart-grid">
-        <div><canvas id="clicksChart"></canvas></div>
-        <div><canvas id="geoChart"></canvas></div>
-        <div><canvas id="deviceChart"></canvas></div>
-        <div><canvas id="browserChart"></canvas></div>
-    </div>
-</div>
-
-<!-- Bulk URL Shortener -->
-<div class="bulk-uploader">
-    <h3 style="margin-top: 0;">📦 Bulk URL Shortener</h3>
-    <p>Upload a CSV file or paste multiple URLs (one per line)</p>
-    <textarea id="bulkUrls" class="form-input" rows="6" placeholder="https://example.com/page1
-https://example.com/page2
-https://example.com/page3" style="margin-top: 1rem;"></textarea>
-    <div style="margin-top: 1rem; display: flex; gap: 1rem;">
-        <input type="file" accept=".csv" id="csvFile" style="flex: 1; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid white;">
-        <button class="dork-btn" style="background: white; color: #667eea;" onclick="processBulkUrls()">⚡ Shorten All</button>
-    </div>
-    <div id="bulkResults" style="margin-top: 1rem; display: none;"></div>
-</div>
-
-<!-- UTM Builder -->
-<div class="utm-builder">
-    <h3 style="margin-top: 0;">🎯 UTM Parameter Builder</h3>
-    <p style="color: #333;">Build trackable campaign URLs with UTM parameters</p>
-    <div style="display: grid; gap: 1rem; margin-top: 1rem;">
-        <input type="text" id="baseUrl" class="form-input" placeholder="Base URL (https://example.com)">
-        <input type="text" id="utmSource" class="form-input" placeholder="Source (e.g., newsletter)">
-        <input type="text" id="utmMedium" class="form-input" placeholder="Medium (e.g., email)">
-        <input type="text" id="utmCampaign" class="form-input" placeholder="Campaign (e.g., summer_sale)">
-        <input type="text" id="utmTerm" class="form-input" placeholder="Term (optional)">
-        <input type="text" id="utmContent" class="form-input" placeholder="Content (optional)">
-        <button class="dork-btn" style="background: #333; color: white;" onclick="buildUTM()">🔗 Build URL</button>
-        <div id="utmResult" style="background: white; padding: 1rem; border-radius: 0.5rem; display: none;"></div>
-    </div>
-</div>
-
-<!-- A/B Testing -->
-<div class="ab-testing">
-    <h3 style="margin-top: 0;">🔄 A/B Testing</h3>
-    <p>Split test multiple destination URLs</p>
-    <textarea id="abUrls" class="form-input" rows="4" placeholder="Enter variant URLs (one per line)
-https://example.com/version-a
-https://example.com/version-b" style="margin-top: 1rem;"></textarea>
-    <button class="dork-btn" style="margin-top: 1rem; background: white; color: #330867;" onclick="createABTest()">🚀 Create A/B Test</button>
-</div>
-
-<script>
-// Initialize Analytics Dashboard
-window.addEventListener('DOMContentLoaded', () => {
-    if (typeof window.linkShortenerPro !== 'undefined') {
-        console.log('Initializing Pro Analytics Dashboard...');
-        // Dashboard will be initialized when data is available
-    }
-});
-
-function processBulkUrls() {
-    const bulkText = document.getElementById('bulkUrls').value;
-    const urls = bulkText.split('\n').filter(u => u.trim().startsWith('http'));
-    
-    if (urls.length === 0) {
-        alert('Please enter at least one valid URL');
-        return;
-    }
-    
-    alert(`Processing ${urls.length} URLs...`);
-    window.linkShortenerPro.bulkShortenUrls(urls).then(results => {
-        document.getElementById('bulkResults').style.display = 'block';
-        document.getElementById('bulkResults').innerHTML = `
-            <h4>✅ Bulk Shortening Complete!</h4>
-            <div style="background: white; padding: 1rem; border-radius: 0.5rem; color: #333; max-height: 300px; overflow-y: auto;">
-                ${results.map(r => `
-                    <div style="padding: 0.5rem; border-bottom: 1px solid #eee;">
-                        <div><strong>Original:</strong> ${r.original}</div>
-                        <div><strong>Short:</strong> ${r.short || r.error}</div>
-                    </div>
-                `).join('')}
+<body data-theme="dark">
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="../dashboard.php" class="sidebar-logo">
+                    <div class="logo-icon">🏠</div>
+                    <span class="sidebar-text">Legend House</span>
+                </a>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
             </div>
-        `;
-    });
-}
-
-function buildUTM() {
-    const baseUrl = document.getElementById('baseUrl').value;
-    const source = document.getElementById('utmSource').value;
-    const medium = document.getElementById('utmMedium').value;
-    const campaign = document.getElementById('utmCampaign').value;
-    const term = document.getElementById('utmTerm').value;
-    const content = document.getElementById('utmContent').value;
-    
-    if (!baseUrl || !source || !medium || !campaign) {
-        alert('Please fill in required fields (URL, Source, Medium, Campaign)');
-        return;
-    }
-    
-    const builder = new window.linkShortenerPro.UTMBuilder();
-    builder.setSource(source)
-           .setMedium(medium)
-           .setCampaign(campaign);
-    
-    if (term) builder.setTerm(term);
-    if (content) builder.setContent(content);
-    
-    const finalUrl = builder.build(baseUrl);
-    
-    document.getElementById('utmResult').style.display = 'block';
-    document.getElementById('utmResult').innerHTML = `
-        <h4 style="margin-top: 0; color: #333;">✅ UTM URL Generated!</h4>
-        <div style="word-break: break-all; color: #333; background: #f0f0f0; padding: 1rem; border-radius: 0.5rem;">
-            ${finalUrl}
-        </div>
-        <button onclick="navigator.clipboard.writeText('${finalUrl}')" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: #fa709a; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">📋 Copy URL</button>
-    `;
-}
-
-function createABTest() {
-    const abText = document.getElementById('abUrls').value;
-    const variants = abText.split('\n').filter(u => u.trim().startsWith('http'));
-    
-    if (variants.length < 2) {
-        alert('Please enter at least 2 variant URLs for A/B testing');
-        return;
-    }
-    
-    const testId = 'test_' + Date.now();
-    const manager = new window.linkShortenerPro.ABTestManager();
-    manager.createTest(testId, variants);
-    
-    alert(`A/B Test created with ${variants.length} variants!\\nTest ID: ${testId}`);
-}
-</script>
-        <!-- Header with Navigation -->
-        <header class="dashboard-header">
-            <div class="header-content">
-                <div class="logo">
-                    <a href="dashboard.php">🎬 Legend House</a>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Navigation</div>
+                    <ul class="nav-list">
+                        <li><a href="../home.php" class="nav-item"><span class="nav-icon">🏠</span><span class="sidebar-text">Home</span></a></li>
+                        <li><a href="../dashboard.php" class="nav-item"><span class="nav-icon">📊</span><span class="sidebar-text">Dashboard</span></a></li>
+                        <li><a href="../watch.php" class="nav-item"><span class="nav-icon">▶️</span><span class="sidebar-text">Watch</span></a></li>
+                    </ul>
                 </div>
                 
-                <nav class="main-nav">
-                    <a href="../index.php">Home</a>
-                    <a href="watch.php">Watch</a>
-                    <div class="dropdown">
-                        <button class="dropbtn">🛠️ Tools ▼</button>
-                        <div class="dropdown-content tools-menu">
-                            <a href="tools.php" class="dropdown-header">🛠️ All Tools</a>
-                            <div class="dropdown-item">
-                                <span class="item-icon">🧲</span>
-                                <div class="item-content">
-                                    <div class="item-title">Torrent</div>
-                                    <div class="item-desc">Download tools</div>
-                                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Tools</div>
+                    <ul class="nav-list">
+                        <li><a href="../tools.php" class="nav-item"><span class="nav-icon">🛠️</span><span class="sidebar-text">All Tools</span></a></li>
+                        <li><a href="dorker.php" class="nav-item"><span class="nav-icon">🔍</span><span class="sidebar-text">Google Dorker</span></a></li>
+                        <li><a href="torrent.php" class="nav-item"><span class="nav-icon">🧲</span><span class="sidebar-text">Torrent Center</span></a></li>
+                        <li><a href="proxy-scraper.php" class="nav-item"><span class="nav-icon">🌐</span><span class="sidebar-text">Proxy Scraper</span></a></li>
+                        <li><a href="shortener.php" class="nav-item active"><span class="nav-icon">🔗</span><span class="sidebar-text">Link Shortener</span></a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <ul class="nav-list">
+                        <li><a href="../settings.php" class="nav-item"><span class="nav-icon">⚙️</span><span class="sidebar-text">Settings</span></a></li>
+                        <li><a href="../profile.php" class="nav-item"><span class="nav-icon">👤</span><span class="sidebar-text">Profile</span></a></li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar-placeholder"><?php echo strtoupper(substr($user['username'], 0, 1)); ?></div>
+                    <div class="user-info">
+                        <div class="user-name"><?php echo htmlspecialchars($user['username']); ?></div>
+                        <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main -->
+        <div class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="header-btn" onclick="toggleSidebar()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="breadcrumb">
+                        <a href="../tools.php" class="breadcrumb-item">Tools</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item active">Link Shortener</span>
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <span id="themeIcon">🌙</span>
+                        <span id="themeText">Dark</span>
+                    </button>
+                </div>
+            </header>
+            
+            <main class="main-content">
+                <div class="dashboard-header-section">
+                    <h1 class="page-title">🔗 Link Shortener</h1>
+                    <p class="page-subtitle">Create short, shareable links with analytics, QR codes, and password protection</p>
+                </div>
+                
+                <div class="shortener-layout">
+                    <!-- Create Link Form -->
+                    <div class="shortener-form-card">
+                        <h3>✨ Create Short Link</h3>
+                        
+                        <div class="url-input-group">
+                            <input type="url" id="originalUrl" class="url-input" placeholder="Enter your long URL here...">
+                            <button onclick="createShortUrl()" class="btn-shorten">
+                                🚀 Shorten
+                            </button>
+                        </div>
+                        
+                        <div class="advanced-options">
+                            <div class="option-group">
+                                <label class="option-label">Custom Code (optional)</label>
+                                <input type="text" id="customCode" class="option-input" placeholder="e.g., my-link">
                             </div>
-                            <div class="dropdown-item">
-                                <span class="item-icon">🎬</span>
-                                <div class="item-content">
-                                    <div class="item-title">Media</div>
-                                    <div class="item-desc">Streaming & conversion</div>
-                                </div>
+                            <div class="option-group">
+                                <label class="option-label">Password (optional)</label>
+                                <input type="password" id="password" class="option-input" placeholder="Protect with password">
                             </div>
-                            <div class="dropdown-item">
-                                <span class="item-icon">🤖</span>
-                                <div class="item-content">
-                                    <div class="item-title">AI</div>
-                                    <div class="item-desc">Smart features</div>
-                                </div>
+                            <div class="option-group">
+                                <label class="option-label">Expires In</label>
+                                <select id="expiresIn" class="option-input">
+                                    <option value="">Never</option>
+                                    <option value="1">1 Hour</option>
+                                    <option value="24">24 Hours</option>
+                                    <option value="168">7 Days</option>
+                                    <option value="720">30 Days</option>
+                                </select>
                             </div>
-                            <div class="dropdown-item active">
-                                <span class="item-icon">⚙️</span>
-                                <div class="item-content">
-                                    <div class="item-title">Utility</div>
-                                    <div class="item-desc">Helpful tools</div>
-                                </div>
+                            <div class="option-group">
+                                <label class="option-label">Click Limit</label>
+                                <input type="number" id="clickLimit" class="option-input" placeholder="Unlimited" min="1">
                             </div>
                         </div>
                     </div>
-                </nav>
-
-                <div class="user-menu">
-                    <div class="dropdown">
-                        <button class="dropbtn user-btn">
-                            <?php if (!empty($user['profile_picture'])): ?>
-                                <img src="<?php echo htmlspecialchars($user['profile_picture']); ?>" alt="Profile" class="user-avatar">
-                            <?php else: ?>
-                                <span class="user-avatar-placeholder">👤</span>
-                            <?php endif; ?>
-                            <span><?php echo htmlspecialchars($user['username']); ?></span>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="dashboard.php">📊 Dashboard</a>
-                            <a href="logout.php">🚪 Logout</a>
+                    
+                    <!-- Result Card -->
+                    <div class="result-card" id="resultCard">
+                        <h3 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 20px;">✅ Link Created!</h3>
+                        
+                        <div class="short-url-display">
+                            <span class="short-url-text" id="shortUrlText">-</span>
+                            <button class="btn-copy" onclick="copyShortUrl()">📋 Copy</button>
+                        </div>
+                        
+                        <div class="qr-section">
+                            <div id="qrcode"></div>
+                            <div class="qr-info">
+                                <h4>📱 QR Code</h4>
+                                <p>Scan to open the short link directly on mobile devices</p>
+                                <button class="btn-small" onclick="downloadQR()" style="margin-top: 10px;">⬇️ Download QR</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Links List -->
+                    <div class="links-section">
+                        <div class="links-header">
+                            <div class="links-title">📊 Your Links</div>
+                        </div>
+                        
+                        <div style="overflow-x: auto;">
+                            <table class="links-table">
+                                <thead>
+                                    <tr>
+                                        <th>Short URL</th>
+                                        <th>Original URL</th>
+                                        <th>Clicks</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="linksTableBody">
+                                    <tr>
+                                        <td colspan="5" class="empty-state">
+                                            <div class="empty-state-icon">🔗</div>
+                                            <div>No links yet. Create your first short link above!</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="dashboard-main shortener-main">
-            <div class="page-header">
-                <h1>🔗 Link Shortener</h1>
-                <p>Create short, shareable links with analytics and QR codes</p>
-            </div>
-
-            <!-- Create Short Link Section -->
-            <div class="shortener-card">
-                <h2>Create Short Link</h2>
-                <form id="createLinkForm" class="shortener-form">
-                    <div class="form-group">
-                        <label for="originalUrl">Long URL *</label>
-                        <input type="url" id="originalUrl" name="original_url" placeholder="https://example.com/very/long/url" required>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="customAlias">Custom Alias (optional)</label>
-                            <input type="text" id="customAlias" name="custom_alias" placeholder="my-link" pattern="[a-zA-Z0-9-_]{3,20}">
-                            <small>3-20 characters (letters, numbers, - and _ only)</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expiresAt">Expiration Date (optional)</label>
-                            <input type="datetime-local" id="expiresAt" name="expires_at">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="password">Password (optional)</label>
-                            <input type="password" id="password" name="password" placeholder="Protect with password">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="clickLimit">Click Limit (optional)</label>
-                            <input type="number" id="clickLimit" name="click_limit" min="1" placeholder="e.g., 100">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-primary">🚀 Create Short Link</button>
-                </form>
-
-                <!-- Result Display -->
-                <div id="linkResult" class="link-result" style="display: none;">
-                    <h3>✅ Link Created Successfully!</h3>
-                    <div class="result-url">
-                        <input type="text" id="shortUrl" readonly>
-                        <button onclick="copyToClipboard()" class="btn-copy">📋 Copy</button>
-                    </div>
-                    <div class="result-qr">
-                        <div id="qrcode"></div>
-                        <button onclick="downloadQR()" class="btn-download">⬇️ Download QR</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Your Links Section -->
-            <div class="shortener-card">
-                <h2>📊 Your Links</h2>
-                <div class="table-container">
-                    <table id="linksTable" class="links-table">
-                        <thead>
-                            <tr>
-                                <th>Short URL</th>
-                                <th>Original URL</th>
-                                <th>Clicks</th>
-                                <th>Created</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="linksTableBody">
-                            <tr>
-                                <td colspan="6" class="loading">Loading your links...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Analytics Section -->
-            <div class="shortener-card">
-                <h2>📈 Analytics Overview</h2>
-                <div class="analytics-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalLinks">0</div>
-                        <div class="stat-label">Total Links</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalClicks">0</div>
-                        <div class="stat-label">Total Clicks</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="avgClicks">0</div>
-                        <div class="stat-label">Avg. Clicks/Link</div>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="clicksChart"></canvas>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Footer -->
-    <footer style="text-align: center; padding: 2rem 1rem; background: var(--white); border-top: 2px solid var(--gray-200); margin-top: 3rem;">
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <p style="margin: 0; font-size: 0.9rem; color: var(--gray-600);">
-                <strong style="color: var(--black);">Powered by Legend House</strong> • Advanced Tools Platform
-            </p>
+            </main>
         </div>
-    </footer>
-
+    </div>
+    
     <script src="shortener-script.js"></script>
     <script>
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadUserLinks();
-            initializeAnalytics();
-        });
+        let currentShortUrl = '';
+        let qrCode = null;
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+        
+        function toggleTheme() {
+            const theme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            document.getElementById('themeIcon').textContent = theme === 'dark' ? '🌙' : '☀️';
+            document.getElementById('themeText').textContent = theme === 'dark' ? 'Dark' : 'Light';
+        }
+        
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+        document.getElementById('themeText').textContent = savedTheme === 'dark' ? 'Dark' : 'Light';
+        
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.getElementById('sidebar').classList.add('collapsed');
+        }
+        
+        async function createShortUrl() {
+            const url = document.getElementById('originalUrl').value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+            
+            try {
+                const response = await fetch('shortener-api.php?action=create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: url,
+                        custom_code: document.getElementById('customCode').value,
+                        password: document.getElementById('password').value,
+                        expires_in: document.getElementById('expiresIn').value,
+                        click_limit: document.getElementById('clickLimit').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentShortUrl = window.location.origin + '/s/' + data.short_code;
+                    document.getElementById('shortUrlText').textContent = currentShortUrl;
+                    document.getElementById('resultCard').classList.add('active');
+                    
+                    // Generate QR Code
+                    const qrContainer = document.getElementById('qrcode');
+                    qrContainer.innerHTML = '';
+                    qrCode = new QRCode(qrContainer, {
+                        text: currentShortUrl,
+                        width: 128,
+                        height: 128
+                    });
+                    
+                    loadLinks();
+                } else {
+                    alert(data.error || 'Failed to create short URL');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function copyShortUrl() {
+            navigator.clipboard.writeText(currentShortUrl).then(() => {
+                alert('URL copied!');
+            });
+        }
+        
+        function downloadQR() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'qr-code.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+        }
+        
+        async function loadLinks() {
+            try {
+                const response = await fetch('shortener-api.php?action=list');
+                const data = await response.json();
+                
+                if (data.success && data.links.length > 0) {
+                    const tbody = document.getElementById('linksTableBody');
+                    tbody.innerHTML = data.links.map(link => `
+                        <tr>
+                            <td><a href="${window.location.origin}/s/${link.short_code}" target="_blank" class="link-url">${link.short_code}</a></td>
+                            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(link.original_url)}</td>
+                            <td>${link.clicks}</td>
+                            <td>${new Date(link.created_at * 1000).toLocaleDateString()}</td>
+                            <td>
+                                <button class="btn-small" onclick="copyLink('${link.short_code}')">📋</button>
+                                <button class="btn-small btn-delete" onclick="deleteLink(${link.id})">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading links:', error);
+            }
+        }
+        
+        function copyLink(code) {
+            navigator.clipboard.writeText(window.location.origin + '/s/' + code).then(() => {
+                alert('URL copied!');
+            });
+        }
+        
+        async function deleteLink(id) {
+            if (!confirm('Delete this link?')) return;
+            
+            try {
+                await fetch('shortener-api.php?action=delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                loadLinks();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Load links on page load
+        loadLinks();
     </script>
     
-    <!-- AI Chat Widget Integration -->
     <script src="../ai-chat-widget.js"></script>
-    <script>
-        // Set context to 'general' for shortener page
-        document.body.dataset.aiContext = 'general';
-    </script>
+    <script>document.body.dataset.aiContext = 'general';</script>
 </body>
 </html>
