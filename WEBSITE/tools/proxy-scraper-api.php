@@ -171,18 +171,17 @@ function validateProxy() {
     
     if ($result['working']) {
         // Save to database
-        $stmt = $db->prepare("INSERT OR REPLACE INTO scraped_proxies (user_id, ip, port, protocol, country, anonymity, speed, tested_at, is_working) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $user['id'],
-            $ip,
-            $port,
-            $protocol,
-            $result['country'],
-            $result['anonymity'],
-            $result['speed'],
-            time(),
-            1
-        ]);
+        $stmt = $db->prepare("INSERT OR REPLACE INTO scraped_proxies (user_id, ip, port, protocol, country, anonymity, speed, tested_at, is_working) VALUES (:user_id, :ip, :port, :protocol, :country, :anonymity, :speed, :tested_at, :is_working)");
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->bindValue(':ip', $ip, SQLITE3_TEXT);
+        $stmt->bindValue(':port', $port, SQLITE3_INTEGER);
+        $stmt->bindValue(':protocol', $protocol, SQLITE3_TEXT);
+        $stmt->bindValue(':country', $result['country'], SQLITE3_TEXT);
+        $stmt->bindValue(':anonymity', $result['anonymity'], SQLITE3_TEXT);
+        $stmt->bindValue(':speed', $result['speed'], SQLITE3_INTEGER);
+        $stmt->bindValue(':tested_at', time(), SQLITE3_INTEGER);
+        $stmt->bindValue(':is_working', 1, SQLITE3_INTEGER);
+        $stmt->execute();
     }
     
     echo json_encode([
@@ -332,7 +331,7 @@ function listAvailableSources() {
 function getProxyStats() {
     global $db, $user;
     
-    // Get statistics
+    // Get statistics by protocol
     $stmt = $db->prepare("SELECT 
         COUNT(*) as total,
         COUNT(CASE WHEN is_working = 1 THEN 1 END) as working,
@@ -340,16 +339,22 @@ function getProxyStats() {
         protocol,
         COUNT(DISTINCT country) as countries
         FROM scraped_proxies 
-        WHERE user_id = ?
+        WHERE user_id = :user_id
         GROUP BY protocol
     ");
-    $stmt->execute([$user['id']]);
-    $stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    
+    $stats = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $stats[] = $row;
+    }
     
     // Get total count
-    $stmtTotal = $db->prepare("SELECT COUNT(*) as total FROM scraped_proxies WHERE user_id = ?");
-    $stmtTotal->execute([$user['id']]);
-    $totalRow = $stmtTotal->fetch(PDO::FETCH_ASSOC);
+    $stmtTotal = $db->prepare("SELECT COUNT(*) as total FROM scraped_proxies WHERE user_id = :user_id");
+    $stmtTotal->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $resultTotal = $stmtTotal->execute();
+    $totalRow = $resultTotal->fetchArray(SQLITE3_ASSOC);
     
     echo json_encode([
         'success' => true,
@@ -367,27 +372,29 @@ function listProxies() {
     $limit = intval($_GET['limit'] ?? 100);
     $offset = intval($_GET['offset'] ?? 0);
     
-    $sql = "SELECT * FROM scraped_proxies WHERE user_id = ?";
-    $params = [$user['id']];
+    $sql = "SELECT * FROM scraped_proxies WHERE user_id = :user_id";
     
     if ($protocol) {
-        $sql .= " AND protocol = ?";
-        $params[] = $protocol;
+        $sql .= " AND protocol = :protocol";
     }
     
     if ($workingOnly) {
         $sql .= " AND is_working = 1";
     }
     
-    $sql .= " ORDER BY speed ASC LIMIT ? OFFSET ?";
-    $params[] = $limit;
-    $params[] = $offset;
+    $sql .= " ORDER BY speed ASC LIMIT :limit OFFSET :offset";
     
     $stmt = $db->prepare($sql);
-    $stmt->execute($params);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    if ($protocol) {
+        $stmt->bindValue(':protocol', $protocol, SQLITE3_TEXT);
+    }
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $stmt->bindValue(':offset', $offset, SQLITE3_INTEGER);
+    $result = $stmt->execute();
     
     $proxies = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $proxies[] = $row;
     }
     
@@ -405,8 +412,10 @@ function deleteProxy() {
     
     $id = $_POST['id'] ?? 0;
     
-    $stmt = $db->prepare("DELETE FROM scraped_proxies WHERE id = ? AND user_id = ?");
-    $stmt->execute([$id, $user['id']]);
+    $stmt = $db->prepare("DELETE FROM scraped_proxies WHERE id = :id AND user_id = :user_id");
+    $stmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $stmt->execute();
     
     echo json_encode(['success' => true]);
 }
@@ -417,19 +426,25 @@ function exportProxies() {
     $format = $_GET['format'] ?? 'txt';
     $protocol = $_GET['protocol'] ?? null;
     
-    $sql = "SELECT * FROM scraped_proxies WHERE user_id = ? AND is_working = 1";
-    $params = [$user['id']];
+    $sql = "SELECT * FROM scraped_proxies WHERE user_id = :user_id AND is_working = 1";
     
     if ($protocol) {
-        $sql .= " AND protocol = ?";
-        $params[] = $protocol;
+        $sql .= " AND protocol = :protocol";
     }
     
     $sql .= " ORDER BY speed ASC";
     
     $stmt = $db->prepare($sql);
-    $stmt->execute($params);
-    $proxies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    if ($protocol) {
+        $stmt->bindValue(':protocol', $protocol, SQLITE3_TEXT);
+    }
+    $result = $stmt->execute();
+    
+    $proxies = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $proxies[] = $row;
+    }
     
     if ($format === 'txt') {
         header('Content-Type: text/plain');

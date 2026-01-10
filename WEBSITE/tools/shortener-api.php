@@ -62,9 +62,10 @@ function createShortUrl() {
     }
     
     // Check if short code already exists
-    $stmt = $db->prepare("SELECT id FROM short_urls WHERE short_code = ?");
-    $stmt->execute([$shortCode]);
-    if ($stmt->fetch()) {
+    $stmt = $db->prepare("SELECT id FROM short_urls WHERE short_code = :short_code");
+    $stmt->bindValue(':short_code', $shortCode, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    if ($result->fetchArray()) {
         echo json_encode(['success' => false, 'error' => 'This alias is already taken']);
         return;
     }
@@ -76,16 +77,15 @@ function createShortUrl() {
     $expiresTimestamp = $expiresAt ? strtotime($expiresAt) : null;
     
     // Insert into database
-    $stmt = $db->prepare("INSERT INTO short_urls (user_id, original_url, short_code, password, expires_at, click_limit, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([
-        $user['id'],
-        $originalUrl,
-        $shortCode,
-        $hashedPassword,
-        $expiresTimestamp,
-        $clickLimit,
-        time()
-    ]);
+    $stmt = $db->prepare("INSERT INTO short_urls (user_id, original_url, short_code, password, expires_at, click_limit, created_at) VALUES (:user_id, :original_url, :short_code, :password, :expires_at, :click_limit, :created_at)");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $stmt->bindValue(':original_url', $originalUrl, SQLITE3_TEXT);
+    $stmt->bindValue(':short_code', $shortCode, SQLITE3_TEXT);
+    $stmt->bindValue(':password', $hashedPassword, SQLITE3_TEXT);
+    $stmt->bindValue(':expires_at', $expiresTimestamp, SQLITE3_INTEGER);
+    $stmt->bindValue(':click_limit', $clickLimit, SQLITE3_INTEGER);
+    $stmt->bindValue(':created_at', time(), SQLITE3_INTEGER);
+    $stmt->execute();
     
     $shortUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . "/s/" . $shortCode;
     
@@ -99,11 +99,12 @@ function createShortUrl() {
 function listUserUrls() {
     global $db, $user;
     
-    $stmt = $db->prepare("SELECT id, original_url, short_code, clicks, created_at, expires_at, click_limit, password FROM short_urls WHERE user_id = ? ORDER BY created_at DESC");
-    $stmt->execute([$user['id']]);
+    $stmt = $db->prepare("SELECT id, original_url, short_code, clicks, created_at, expires_at, click_limit, password FROM short_urls WHERE user_id = :user_id ORDER BY created_at DESC");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
     
     $urls = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $status = 'active';
         if ($row['expires_at'] && $row['expires_at'] < time()) {
             $status = 'expired';
@@ -133,20 +134,24 @@ function deleteUrl() {
     $id = $_POST['id'] ?? 0;
     
     // Verify ownership
-    $stmt = $db->prepare("SELECT id FROM short_urls WHERE id = ? AND user_id = ?");
-    $stmt->execute([$id, $user['id']]);
-    if (!$stmt->fetch()) {
+    $stmt = $db->prepare("SELECT id FROM short_urls WHERE id = :id AND user_id = :user_id");
+    $stmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    if (!$result->fetchArray()) {
         echo json_encode(['success' => false, 'error' => 'URL not found or access denied']);
         return;
     }
     
     // Delete clicks first
-    $stmt = $db->prepare("DELETE FROM url_clicks WHERE short_url_id = ?");
-    $stmt->execute([$id]);
+    $stmt = $db->prepare("DELETE FROM url_clicks WHERE short_url_id = :id");
+    $stmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $stmt->execute();
     
     // Delete URL
-    $stmt = $db->prepare("DELETE FROM short_urls WHERE id = ?");
-    $stmt->execute([$id]);
+    $stmt = $db->prepare("DELETE FROM short_urls WHERE id = :id");
+    $stmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $stmt->execute();
     
     echo json_encode(['success' => true]);
 }
@@ -157,9 +162,11 @@ function getUrlStats() {
     $id = $_GET['id'] ?? 0;
     
     // Verify ownership
-    $stmt = $db->prepare("SELECT * FROM short_urls WHERE id = ? AND user_id = ?");
-    $stmt->execute([$id, $user['id']]);
-    $url = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("SELECT * FROM short_urls WHERE id = :id AND user_id = :user_id");
+    $stmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $url = $result->fetchArray(SQLITE3_ASSOC);
     
     if (!$url) {
         echo json_encode(['success' => false, 'error' => 'URL not found']);
@@ -167,15 +174,20 @@ function getUrlStats() {
     }
     
     // Get click statistics
-    $stmt = $db->prepare("SELECT * FROM url_clicks WHERE short_url_id = ? ORDER BY clicked_at DESC");
-    $stmt->execute([$id]);
-    $clicks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("SELECT * FROM url_clicks WHERE short_url_id = :id ORDER BY clicked_at DESC");
+    $stmt->bindValue(':id', $id, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    
+    $clicks = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $clicks[] = $row;
+    }
     
     // Analyze browsers
     $browsers = [];
     $referrers = [];
     foreach ($clicks as $click) {
-        $ua = $click['user_agent'];
+        $ua = $click['user_agent'] ?? '';
         $browser = 'Other';
         if (strpos($ua, 'Chrome') !== false) $browser = 'Chrome';
         elseif (strpos($ua, 'Firefox') !== false) $browser = 'Firefox';
@@ -203,9 +215,10 @@ function trackClick() {
     $shortCode = $_GET['code'] ?? '';
     
     // Get URL
-    $stmt = $db->prepare("SELECT * FROM short_urls WHERE short_code = ?");
-    $stmt->execute([$shortCode]);
-    $url = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("SELECT * FROM short_urls WHERE short_code = :short_code");
+    $stmt->bindValue(':short_code', $shortCode, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $url = $result->fetchArray(SQLITE3_ASSOC);
     
     if (!$url) {
         echo json_encode(['success' => false, 'error' => 'URL not found']);
@@ -234,18 +247,18 @@ function trackClick() {
     }
     
     // Track click
-    $stmt = $db->prepare("INSERT INTO url_clicks (short_url_id, ip_address, user_agent, referrer, clicked_at) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([
-        $url['id'],
-        $_SERVER['REMOTE_ADDR'] ?? '',
-        $_SERVER['HTTP_USER_AGENT'] ?? '',
-        $_SERVER['HTTP_REFERER'] ?? '',
-        time()
-    ]);
+    $stmt = $db->prepare("INSERT INTO url_clicks (short_url_id, ip_address, user_agent, referrer, clicked_at) VALUES (:short_url_id, :ip_address, :user_agent, :referrer, :clicked_at)");
+    $stmt->bindValue(':short_url_id', $url['id'], SQLITE3_INTEGER);
+    $stmt->bindValue(':ip_address', $_SERVER['REMOTE_ADDR'] ?? '', SQLITE3_TEXT);
+    $stmt->bindValue(':user_agent', $_SERVER['HTTP_USER_AGENT'] ?? '', SQLITE3_TEXT);
+    $stmt->bindValue(':referrer', $_SERVER['HTTP_REFERER'] ?? '', SQLITE3_TEXT);
+    $stmt->bindValue(':clicked_at', time(), SQLITE3_INTEGER);
+    $stmt->execute();
     
     // Increment click count
-    $stmt = $db->prepare("UPDATE short_urls SET clicks = clicks + 1 WHERE id = ?");
-    $stmt->execute([$url['id']]);
+    $stmt = $db->prepare("UPDATE short_urls SET clicks = clicks + 1 WHERE id = :id");
+    $stmt->bindValue(':id', $url['id'], SQLITE3_INTEGER);
+    $stmt->execute();
     
     echo json_encode(['success' => true, 'url' => $url['original_url']]);
 }
@@ -261,9 +274,10 @@ function generateShortCode($length = 6) {
         }
         
         // Check if code exists
-        $stmt = $db->prepare("SELECT id FROM short_urls WHERE short_code = ?");
-        $stmt->execute([$code]);
-    } while ($stmt->fetch());
+        $stmt = $db->prepare("SELECT id FROM short_urls WHERE short_code = :short_code");
+        $stmt->bindValue(':short_code', $code, SQLITE3_TEXT);
+        $result = $stmt->execute();
+    } while ($result->fetchArray());
     
     return $code;
 }

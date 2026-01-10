@@ -22,7 +22,7 @@ if (!$user) {
     exit;
 }
 
-$db = getDatabase();
+$db = getDB();
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 // Create tables if they don't exist
@@ -137,20 +137,19 @@ function scrapeAndCheckProxies() {
                 // Save to database
                 $stmt = $db->prepare("INSERT OR REPLACE INTO checked_proxies 
                     (user_id, ip, port, protocol, is_working, response_time, anonymity, country, tested_at, source) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    VALUES (:user_id, :ip, :port, :protocol, :is_working, :response_time, :anonymity, :country, :tested_at, :source)");
                 
-                $stmt->execute([
-                    $user['id'],
-                    $proxy['ip'],
-                    $proxy['port'],
-                    $proxy['protocol'] ?? 'http',
-                    $result['working'] ? 1 : 0,
-                    $result['response_time'],
-                    $result['anonymity'],
-                    $result['country'],
-                    time(),
-                    $proxy['source'] ?? 'unknown'
-                ]);
+                $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+                $stmt->bindValue(':ip', $proxy['ip'], SQLITE3_TEXT);
+                $stmt->bindValue(':port', $proxy['port'], SQLITE3_INTEGER);
+                $stmt->bindValue(':protocol', $proxy['protocol'] ?? 'http', SQLITE3_TEXT);
+                $stmt->bindValue(':is_working', $result['working'] ? 1 : 0, SQLITE3_INTEGER);
+                $stmt->bindValue(':response_time', $result['response_time'], SQLITE3_INTEGER);
+                $stmt->bindValue(':anonymity', $result['anonymity'], SQLITE3_TEXT);
+                $stmt->bindValue(':country', $result['country'], SQLITE3_TEXT);
+                $stmt->bindValue(':tested_at', time(), SQLITE3_INTEGER);
+                $stmt->bindValue(':source', $proxy['source'] ?? 'unknown', SQLITE3_TEXT);
+                $stmt->execute();
                 
                 if ($result['working']) {
                     $totalWorking++;
@@ -239,11 +238,16 @@ function convertToResidential() {
     if ($source === 'database') {
         // Get working proxies from database
         $stmt = $db->prepare("SELECT * FROM checked_proxies 
-            WHERE user_id = ? AND is_working = 1 
+            WHERE user_id = :user_id AND is_working = 1 
             ORDER BY response_time ASC 
-            LIMIT ?");
-        $stmt->execute([$user['id'], $minProxies]);
-        $proxies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            LIMIT :limit");
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->bindValue(':limit', $minProxies, SQLITE3_INTEGER);
+        $result = $stmt->execute();
+        $proxies = [];
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $proxies[] = $row;
+        }
     } else if ($source === 'upload' && isset($_FILES['proxy_file'])) {
         // Parse uploaded TXT file
         $content = file_get_contents($_FILES['proxy_file']['tmp_name']);
@@ -278,18 +282,17 @@ function convertToResidential() {
     foreach ($proxies as $proxy) {
         $stmt = $db->prepare("INSERT INTO residential_pool 
             (user_id, pool_name, proxy_ip, proxy_port, protocol, is_residential, rotation_enabled, created_at, country, anonymity) 
-            VALUES (?, ?, ?, ?, ?, 1, 1, ?, ?, ?)");
+            VALUES (:user_id, :pool_name, :proxy_ip, :proxy_port, :protocol, 1, 1, :created_at, :country, :anonymity)");
         
-        $stmt->execute([
-            $user['id'],
-            $poolName,
-            $proxy['ip'],
-            $proxy['port'],
-            $proxy['protocol'] ?? 'http',
-            $currentTime,
-            $proxy['country'] ?? 'Unknown',
-            $proxy['anonymity'] ?? 'Elite'
-        ]);
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->bindValue(':pool_name', $poolName, SQLITE3_TEXT);
+        $stmt->bindValue(':proxy_ip', $proxy['ip'], SQLITE3_TEXT);
+        $stmt->bindValue(':proxy_port', $proxy['port'], SQLITE3_INTEGER);
+        $stmt->bindValue(':protocol', $proxy['protocol'] ?? 'http', SQLITE3_TEXT);
+        $stmt->bindValue(':created_at', $currentTime, SQLITE3_INTEGER);
+        $stmt->bindValue(':country', $proxy['country'] ?? 'Unknown', SQLITE3_TEXT);
+        $stmt->bindValue(':anonymity', $proxy['anonymity'] ?? 'Elite', SQLITE3_TEXT);
+        $stmt->execute();
         
         $converted++;
     }
@@ -297,14 +300,13 @@ function convertToResidential() {
     // Save stats
     $stmt = $db->prepare("INSERT INTO conversion_stats 
         (user_id, total_checked, total_working, total_converted, conversion_date) 
-        VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([
-        $user['id'],
-        count($proxies),
-        count($proxies),
-        $converted,
-        $currentTime
-    ]);
+        VALUES (:user_id, :total_checked, :total_working, :total_converted, :conversion_date)");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $stmt->bindValue(':total_checked', count($proxies), SQLITE3_INTEGER);
+    $stmt->bindValue(':total_working', count($proxies), SQLITE3_INTEGER);
+    $stmt->bindValue(':total_converted', $converted, SQLITE3_INTEGER);
+    $stmt->bindValue(':conversion_date', $currentTime, SQLITE3_INTEGER);
+    $stmt->execute();
     
     echo json_encode([
         'success' => true,
@@ -323,9 +325,10 @@ function getGlobalStats() {
     $stmt = $db->prepare("SELECT 
         COUNT(*) as total_proxies,
         SUM(CASE WHEN is_working = 1 THEN 1 ELSE 0 END) as working_proxies
-        FROM checked_proxies WHERE user_id = ?");
-    $stmt->execute([$user['id']]);
-    $userStats = $stmt->fetch(PDO::FETCH_ASSOC);
+        FROM checked_proxies WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $userStats = $result->fetchArray(SQLITE3_ASSOC);
     
     // Residential pool stats
     $stmt = $db->prepare("SELECT 
@@ -334,27 +337,29 @@ function getGlobalStats() {
         SUM(requests_count) as total_requests,
         SUM(success_count) as total_success,
         SUM(fail_count) as total_fails
-        FROM residential_pool WHERE user_id = ?");
-    $stmt->execute([$user['id']]);
-    $residentialStats = $stmt->fetch(PDO::FETCH_ASSOC);
+        FROM residential_pool WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $residentialStats = $result->fetchArray(SQLITE3_ASSOC);
     
     // Conversion history
     $stmt = $db->prepare("SELECT 
         SUM(total_converted) as lifetime_conversions,
         COUNT(*) as total_conversions
-        FROM conversion_stats WHERE user_id = ?");
-    $stmt->execute([$user['id']]);
-    $conversionStats = $stmt->fetch(PDO::FETCH_ASSOC);
+        FROM conversion_stats WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $conversionStats = $result->fetchArray(SQLITE3_ASSOC);
     
     // Global stats (all users)
-    $stmt = $db->query("SELECT 
+    $result = $db->query("SELECT 
         COUNT(*) as global_proxies,
         SUM(CASE WHEN is_working = 1 THEN 1 ELSE 0 END) as global_working
         FROM checked_proxies");
-    $globalStats = $stmt->fetch(PDO::FETCH_ASSOC);
+    $globalStats = $result->fetchArray(SQLITE3_ASSOC);
     
-    $stmt = $db->query("SELECT COUNT(*) as global_residential FROM residential_pool");
-    $globalResidential = $stmt->fetch(PDO::FETCH_ASSOC);
+    $result = $db->query("SELECT COUNT(*) as global_residential FROM residential_pool");
+    $globalResidential = $result->fetchArray(SQLITE3_ASSOC);
     
     echo json_encode([
         'success' => true,
@@ -391,17 +396,18 @@ function downloadProxiesTxt() {
     
     if ($type === 'working') {
         $stmt = $db->prepare("SELECT ip, port FROM checked_proxies 
-            WHERE user_id = ? AND is_working = 1 
+            WHERE user_id = :user_id AND is_working = 1 
             ORDER BY response_time ASC");
-        $stmt->execute([$user['id']]);
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
     } else {
         $stmt = $db->prepare("SELECT proxy_ip as ip, proxy_port as port FROM residential_pool 
-            WHERE user_id = ? 
+            WHERE user_id = :user_id 
             ORDER BY success_count DESC");
-        $stmt->execute([$user['id']]);
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
     }
     
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $result = $stmt->execute();
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         echo $row['ip'] . ':' . $row['port'] . "\n";
     }
     exit;
@@ -426,14 +432,13 @@ function uploadProxiesTxt() {
         if (preg_match('/^(\d+\.\d+\.\d+\.\d+):(\d+)$/', $line, $matches)) {
             $stmt = $db->prepare("INSERT OR IGNORE INTO checked_proxies 
                 (user_id, ip, port, protocol, is_working, tested_at, source) 
-                VALUES (?, ?, ?, 'http', 0, ?, 'upload')");
+                VALUES (:user_id, :ip, :port, 'http', 0, :tested_at, 'upload')");
             
-            $stmt->execute([
-                $user['id'],
-                $matches[1],
-                intval($matches[2]),
-                $currentTime
-            ]);
+            $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+            $stmt->bindValue(':ip', $matches[1], SQLITE3_TEXT);
+            $stmt->bindValue(':port', intval($matches[2]), SQLITE3_INTEGER);
+            $stmt->bindValue(':tested_at', $currentTime, SQLITE3_INTEGER);
+            $stmt->execute();
             
             $imported++;
         }
@@ -452,21 +457,22 @@ function getResidentialPool() {
     $poolName = $_GET['pool_name'] ?? null;
     $limit = intval($_GET['limit'] ?? 100);
     
-    $sql = "SELECT * FROM residential_pool WHERE user_id = ?";
-    $params = [$user['id']];
-    
     if ($poolName) {
-        $sql .= " AND pool_name = ?";
-        $params[] = $poolName;
+        $stmt = $db->prepare("SELECT * FROM residential_pool WHERE user_id = :user_id AND pool_name = :pool_name ORDER BY last_used ASC, success_count DESC LIMIT :limit");
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->bindValue(':pool_name', $poolName, SQLITE3_TEXT);
+        $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    } else {
+        $stmt = $db->prepare("SELECT * FROM residential_pool WHERE user_id = :user_id ORDER BY last_used ASC, success_count DESC LIMIT :limit");
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
     }
     
-    $sql .= " ORDER BY last_used ASC, success_count DESC LIMIT ?";
-    $params[] = $limit;
-    
-    $stmt = $db->prepare($sql);
-    $stmt->execute($params);
-    
-    $proxies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = $stmt->execute();
+    $proxies = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $proxies[] = $row;
+    }
     
     echo json_encode([
         'success' => true,

@@ -1294,6 +1294,108 @@ function debounce(func, wait) {
     };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI ANALYSIS FUNCTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Analyze torrent with AI assistant
+ */
+async function analyzeWithAI(index) {
+    const result = state.results[index];
+    if (!result) {
+        showToast('Result not found', 'error');
+        return;
+    }
+    
+    // Build analysis query
+    const query = `Analyze this torrent: "${result.name}"
+Quality: ${result.quality || 'Unknown'}
+Size: ${result.size || 'Unknown'}
+Seeds: ${result.seeds || 0}
+Source: ${result.source || 'Unknown'}
+
+Please tell me:
+1. What type of content is this?
+2. Is the quality good?
+3. Is it safe to download (based on seeds and source)?
+4. Any recommendations?`;
+    
+    // Try to open AI chat widget with context
+    if (window.legendAI) {
+        // Open the AI chat widget
+        if (typeof window.legendAI.toggleChat === 'function') {
+            const chatWindow = document.getElementById('ai-chat-window');
+            if (chatWindow && chatWindow.style.display === 'none') {
+                window.legendAI.toggleChat();
+            }
+        }
+        
+        // Set the input value
+        const aiInput = document.getElementById('ai-chat-input');
+        if (aiInput) {
+            aiInput.value = query;
+            aiInput.focus();
+            // Simulate enter key press
+            setTimeout(() => {
+                if (typeof window.legendAI.sendMessage === 'function') {
+                    window.legendAI.sendMessage();
+                } else {
+                    // Manual submission
+                    const sendBtn = document.getElementById('ai-send-button');
+                    if (sendBtn) sendBtn.click();
+                }
+            }, 500);
+        }
+        
+        showToast('🤖 AI Analysis started!', 'success');
+    } else {
+        // Fallback: Show basic analysis in a modal
+        const analysisHtml = `
+            <div style="padding: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">🤖 Torrent Analysis</h3>
+                <div style="background: #f9fafb; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                    <h4 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #6b7280;">Content Name:</h4>
+                    <p style="margin: 0; word-break: break-word;">${escapeHtml(result.name)}</p>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div>
+                        <strong>Quality:</strong> ${escapeHtml(result.quality || 'N/A')}
+                    </div>
+                    <div>
+                        <strong>Size:</strong> ${escapeHtml(result.size || 'N/A')}
+                    </div>
+                    <div>
+                        <strong>Seeds:</strong> ${result.seeds || 0} ${result.seeds >= 100 ? '✅ Excellent' : result.seeds >= 30 ? '👍 Good' : result.seeds >= 10 ? '⚠️ Fair' : '❌ Low'}
+                    </div>
+                    <div>
+                        <strong>Source:</strong> ${escapeHtml(result.source || 'Unknown')} ${result.verified ? '✓ Verified' : ''}
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding: 1rem; background: ${result.seeds >= 30 ? '#dcfce7' : result.seeds >= 10 ? '#fef3c7' : '#fee2e2'}; border-radius: 0.5rem;">
+                    <strong>Recommendation:</strong> ${result.seeds >= 30 ? '✅ Safe to download - Well seeded' : result.seeds >= 10 ? '⚠️ Proceed with caution - Limited seeds' : '❌ Not recommended - Very few seeds'}
+                </div>
+            </div>
+        `;
+        
+        const modal = document.getElementById('downloadModal');
+        const content = document.getElementById('downloadModalContent');
+        if (modal && content) {
+            content.innerHTML = `
+                <div class="modal-header">
+                    <h3>🤖 AI Analysis</h3>
+                    <button class="modal-close" onclick="closeDownloadModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    ${analysisHtml}
+                </div>
+            `;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+}
+
 // Expose functions globally
 window.performSearch = performSearch;
 window.goToPage = goToPage;
@@ -1315,6 +1417,8 @@ window.streamTorrent = streamTorrent;
 window.closeStreamModal = closeStreamModal;
 window.toggleFullscreen = toggleFullscreen;
 window.copyStreamLink = copyStreamLink;
+// AI functions
+window.analyzeWithAI = analyzeWithAI;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEBTORRENT STREAMING - LEGEND HOUSE EXCLUSIVE

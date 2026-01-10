@@ -37,17 +37,13 @@ define('CACHE_DIR', sys_get_temp_dir() . '/legendhouse_v10/');
 define('CACHE_TTL', 1800); // 30 minutes
 define('SEARCH_CACHE_TTL', 600); // 10 minutes
 
-// Blackbox API Configuration (for advanced AI features)
-// Get your API key from: https://www.blackbox.ai/
-// To use environment variable: Set BLACKBOX_API_KEY environment variable
-define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'sk-EaCMR2Zc9NrXAb7_1FkHZQ');
-// Use the correct Blackbox AI API endpoint
+// AI Configuration (Multiple providers supported with fallback)
+// Primary: Blackbox AI (free, no API key required for basic usage)
 define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://www.blackbox.ai/api/chat');
+define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: '');
 
-// AI is enabled only if both API key and endpoint are configured
-$hasApiKey = !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';
-$hasEndpoint = !empty(BLACKBOX_API_ENDPOINT);
-define('AI_FEATURES_ENABLED', $hasApiKey && $hasEndpoint);
+// AI Features are always enabled with fallback to local responses
+define('AI_FEATURES_ENABLED', true);
 
 // Google AdSense Configuration
 define('GOOGLE_ADSENSE_CLIENT', 'ca-pub-1940810089559549');

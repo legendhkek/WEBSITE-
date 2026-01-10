@@ -12,25 +12,20 @@ const aiState = {
     analyzing: false
 };
 
-// Check if AI features are available
+// Check if AI features are available - now always available with local fallback
 async function checkAIAvailability() {
     try {
         const response = await fetch('ai-helper.php?action=available');
         const data = await response.json();
-        aiState.enabled = data.success && data.available;
-        
-        if (aiState.enabled) {
-            console.log('🤖 AI Features: ENABLED');
-            initAIFeatures();
-        } else {
-            console.log('💡 AI Features: Disabled (API key not configured)');
-            // Show a one-time notification if user tries to use AI features
-            showAIDisabledNoticeOnce();
-        }
+        // AI is always enabled with local fallback
+        aiState.enabled = true;
+        console.log('🤖 AI Features: ENABLED (with local fallback)');
+        initAIFeatures();
     } catch (error) {
-        console.error('AI check failed:', error);
-        aiState.enabled = false;
-        showAIDisabledNoticeOnce();
+        console.error('AI check failed, using local fallback:', error);
+        // Still enable AI features with local fallback
+        aiState.enabled = true;
+        initAIFeatures();
     }
 }
 

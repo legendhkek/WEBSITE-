@@ -69,9 +69,12 @@ function handleDork($db, $user) {
     // No rate limiting - unlimited dorking for discovery
 
     // Save query
-    $stmt = $db->prepare("INSERT INTO dorker_queries (user_id, dork_query, created_at) VALUES (?, ?, ?)");
-    $stmt->execute([$user['id'], $query, time()]);
-    $queryId = $db->lastInsertId();
+    $stmt = $db->prepare("INSERT INTO dorker_queries (user_id, dork_query, created_at) VALUES (:user_id, :dork_query, :created_at)");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $stmt->bindValue(':dork_query', $query, SQLITE3_TEXT);
+    $stmt->bindValue(':created_at', time(), SQLITE3_INTEGER);
+    $stmt->execute();
+    $queryId = $db->lastInsertRowID();
 
     // Perform advanced dorking with optimized query
     $results = scrapeGoogle($optimizedQuery);
@@ -84,16 +87,15 @@ function handleDork($db, $user) {
         $stmt = $db->prepare("
             INSERT OR IGNORE INTO dorker_results 
             (query_id, title, url, description, cached_url, found_at) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (:query_id, :title, :url, :description, :cached_url, :found_at)
         ");
-        $stmt->execute([
-            $queryId,
-            $result['title'],
-            $result['url'],
-            $result['description'],
-            $result['cached'] ?? null,
-            time()
-        ]);
+        $stmt->bindValue(':query_id', $queryId, SQLITE3_INTEGER);
+        $stmt->bindValue(':title', $result['title'], SQLITE3_TEXT);
+        $stmt->bindValue(':url', $result['url'], SQLITE3_TEXT);
+        $stmt->bindValue(':description', $result['description'], SQLITE3_TEXT);
+        $stmt->bindValue(':cached_url', $result['cached'] ?? null, SQLITE3_TEXT);
+        $stmt->bindValue(':found_at', time(), SQLITE3_INTEGER);
+        $stmt->execute();
     }
 
     // Get stats
@@ -659,19 +661,23 @@ function handleStats($db, $user) {
 
 function getStats($db, $user) {
     // Total dorks run
-    $stmt = $db->prepare("SELECT COUNT(*) as count FROM dorker_queries WHERE user_id = ?");
-    $stmt->execute([$user['id']]);
-    $totalDorks = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+    $stmt = $db->prepare("SELECT COUNT(*) as count FROM dorker_queries WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $totalDorks = $row ? $row['count'] : 0;
 
     // Total results found
     $stmt = $db->prepare("
         SELECT COUNT(DISTINCT dr.id) as count 
         FROM dorker_results dr
         JOIN dorker_queries dq ON dr.query_id = dq.id
-        WHERE dq.user_id = ?
+        WHERE dq.user_id = :user_id
     ");
-    $stmt->execute([$user['id']]);
-    $totalResults = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $totalResults = $row ? $row['count'] : 0;
 
     // Success rate
     $successRate = $totalDorks > 0 ? round(($totalResults / $totalDorks) * 10) : 0;
