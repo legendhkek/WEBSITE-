@@ -1294,6 +1294,60 @@ function debounce(func, wait) {
     };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI ANALYSIS FUNCTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Analyze a torrent result using AI
+ */
+async function analyzeWithAI(index) {
+    const result = state.results[index];
+    if (!result) {
+        showToast('Result not found', 'error');
+        return;
+    }
+    
+    // Check if AI is available
+    try {
+        const availResponse = await fetch('ai-helper.php?action=available');
+        const availData = await availResponse.json();
+        
+        if (!availData.success || !availData.available) {
+            showToast('AI analysis is not available. Please try again later.', 'warning');
+            return;
+        }
+    } catch (e) {
+        showToast('AI service is currently unavailable', 'warning');
+        return;
+    }
+    
+    showToast('🤖 Analyzing with AI...', 'info');
+    
+    try {
+        const response = await fetch(`ai-helper.php?action=analyze&name=${encodeURIComponent(result.name)}`);
+        const data = await response.json();
+        
+        if (data.success && data.analysis) {
+            const analysis = data.analysis;
+            let message = `🤖 AI Analysis:\n`;
+            
+            if (analysis.genre) message += `📽️ Genre: ${analysis.genre}\n`;
+            if (analysis.quality) message += `🎬 Quality: ${analysis.quality}\n`;
+            if (analysis.type) message += `📁 Type: ${analysis.type}\n`;
+            if (analysis.year) message += `📅 Year: ${analysis.year}\n`;
+            
+            // Show in modal or alert
+            alert(message || 'Analysis complete! No additional info found.');
+        } else {
+            showToast('AI analysis returned no results', 'warning');
+        }
+    } catch (error) {
+        console.error('AI analysis error:', error);
+        showToast('AI analysis failed: ' + error.message, 'error');
+    }
+}
+
 // Expose functions globally
 window.performSearch = performSearch;
 window.goToPage = goToPage;
@@ -1310,6 +1364,8 @@ window.clearFilters = clearFilters;
 window.clearRecentSearches = clearRecentSearches;
 window.applyFilters = applyFilters;
 window.applySort = applySort;
+// AI functions
+window.analyzeWithAI = analyzeWithAI;
 // Streaming functions
 window.streamTorrent = streamTorrent;
 window.closeStreamModal = closeStreamModal;

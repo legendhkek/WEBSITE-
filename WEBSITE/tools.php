@@ -804,9 +804,22 @@
         });
         
         // Logout function
-        function logoutUser() {
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = 'auth.php?action=logout';
+        async function logoutUser() {
+            if (!confirm('Are you sure you want to logout?')) return;
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'logout');
+                
+                await fetch('auth.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                window.location.href = 'login.php';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                alert('Logout failed. Please try again.');
             }
         }
     </script>

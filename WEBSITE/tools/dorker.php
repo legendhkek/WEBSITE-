@@ -335,7 +335,7 @@ $db = getDatabase();
                     <button class="nav-dropdown-btn">👤 <?php echo htmlspecialchars($user['username']); ?></button>
                     <div class="nav-dropdown-menu">
                         <a href="../dashboard.php">📊 Dashboard</a>
-                        <a href="../auth.php?action=logout">🚪 Logout</a>
+                        <a href="#" onclick="logoutUser(); return false;">🚪 Logout</a>
                     </div>
                 </div>
             </div>
@@ -1060,6 +1060,20 @@ function processBulk() {
                 console.error('Failed to load stats:', error);
             }
         });
+    </script>
+    
+    <script>
+    // Logout function
+    async function logoutUser() {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'logout');
+            await fetch('../auth.php', { method: 'POST', body: formData });
+            window.location.href = '../login.php';
+        } catch (error) {
+            alert('Logout failed');
+        }
+    }
     </script>
     
     <!-- AI Chat Widget Integration -->

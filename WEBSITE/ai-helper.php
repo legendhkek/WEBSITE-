@@ -16,7 +16,7 @@ if (!file_exists(CACHE_DIR)) {
  * Get smart search suggestions using Blackbox AI
  */
 function getSearchSuggestions($query) {
-    if (empty($query) || !defined('BLACKBOX_API_KEY')) {
+    if (empty($query) || !defined('AI_FEATURES_ENABLED') || !AI_FEATURES_ENABLED) {
         return [];
     }
     
@@ -46,7 +46,7 @@ function getSearchSuggestions($query) {
  * Analyze torrent content and provide insights
  */
 function analyzeTorrentContent($torrentName) {
-    if (empty($torrentName) || !defined('BLACKBOX_API_KEY')) {
+    if (empty($torrentName) || !defined('AI_FEATURES_ENABLED') || !AI_FEATURES_ENABLED) {
         return [];
     }
     
@@ -74,7 +74,7 @@ function getTrendingTopics() {
         }
     }
     
-    if (!defined('BLACKBOX_API_KEY')) {
+    if (!defined('AI_FEATURES_ENABLED') || !AI_FEATURES_ENABLED) {
         return [];
     }
     
@@ -210,7 +210,7 @@ function callBlackboxAPI($prompt) {
  * Check if Blackbox AI is available
  */
 function isBlackboxAvailable() {
-    return defined('BLACKBOX_API_KEY') && !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';
+    return defined('AI_FEATURES_ENABLED') && AI_FEATURES_ENABLED;
 }
 
 /**

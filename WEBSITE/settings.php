@@ -192,7 +192,7 @@
                             <button style="padding: 1rem; background: white; border: 2px solid #dc2626; color: #dc2626; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#dc2626'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#dc2626';">
                                 Clear Download History
                             </button>
-                            <button onclick="if(confirm('Are you sure you want to logout?')) { window.location.href='auth.php?action=logout'; }" style="padding: 1rem; background: white; border: 2px solid #dc2626; color: #dc2626; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#dc2626'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#dc2626';">
+                            <button onclick="logoutUser()" style="padding: 1rem; background: white; border: 2px solid #dc2626; color: #dc2626; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#dc2626'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#dc2626';">
                                 Logout
                             </button>
                         </div>
@@ -222,9 +222,22 @@
             });
         });
         
-        function logoutUser() {
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = 'auth.php?action=logout';
+        async function logoutUser() {
+            if (!confirm('Are you sure you want to logout?')) return;
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'logout');
+                
+                await fetch('auth.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                window.location.href = 'login.php';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                alert('Logout failed. Please try again.');
             }
         }
     </script>

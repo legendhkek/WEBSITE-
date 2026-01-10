@@ -56,16 +56,16 @@ $db->exec("CREATE TABLE IF NOT EXISTS proxy_sources (
         <header class="dashboard-header">
             <div class="header-content">
                 <div class="logo">
-                    <a href="dashboard.php">🎬 Legend House</a>
+                    <a href="../dashboard.php">🎬 Legend House</a>
                 </div>
                 
                 <nav class="main-nav">
                     <a href="../index.php">Home</a>
-                    <a href="watch.php">Watch</a>
+                    <a href="../watch.php">Watch</a>
                     <div class="dropdown">
                         <button class="dropbtn">🛠️ Tools ▼</button>
                         <div class="dropdown-content tools-menu">
-                            <a href="tools.php" class="dropdown-header">🛠️ All Tools</a>
+                            <a href="../tools.php" class="dropdown-header">🛠️ All Tools</a>
                             <div class="dropdown-item active">
                                 <span class="item-icon">⚙️</span>
                                 <div class="item-content">
@@ -88,8 +88,8 @@ $db->exec("CREATE TABLE IF NOT EXISTS proxy_sources (
                             <span><?php echo htmlspecialchars($user['username']); ?></span>
                         </button>
                         <div class="dropdown-content">
-                            <a href="dashboard.php">📊 Dashboard</a>
-                            <a href="logout.php">🚪 Logout</a>
+                            <a href="../dashboard.php">📊 Dashboard</a>
+                            <a href="#" onclick="logoutUser(); return false;">🚪 Logout</a>
                         </div>
                     </div>
                 </div>
@@ -232,6 +232,20 @@ $db->exec("CREATE TABLE IF NOT EXISTS proxy_sources (
     </footer>
 
     <script src="proxy-scraper-script.js"></script>
+    
+    <script>
+    // Logout function
+    async function logoutUser() {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'logout');
+            await fetch('../auth.php', { method: 'POST', body: formData });
+            window.location.href = '../login.php';
+        } catch (error) {
+            alert('Logout failed');
+        }
+    }
+    </script>
     
     <!-- AI Chat Widget Integration -->
     <script src="../ai-chat-widget.js"></script>
