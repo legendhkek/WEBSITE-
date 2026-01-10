@@ -204,27 +204,42 @@ function httpGet($url, $timeout = 8) {
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS => 5,
         CURLOPT_TIMEOUT => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_USERAGENT => getRandomUA(),
         CURLOPT_ENCODING => 'gzip, deflate',
         CURLOPT_HTTPHEADER => [
             'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language: en-US,en;q=0.9'
-        ]
+            'Accept-Language: en-US,en;q=0.9',
+            'Connection: keep-alive',
+            'Cache-Control: no-cache'
+        ],
+        CURLOPT_DNS_CACHE_TIMEOUT => 120,
+        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
     ]);
     
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+    $curlError = curl_error($ch);
+    $curlErrno = curl_errno($ch);
     curl_close($ch);
     
+    // Log connection errors for debugging (only in development)
+    if ($curlErrno !== 0) {
+        $host = parse_url($url, PHP_URL_HOST);
+        // Silently log - don't expose to users
+        @error_log("HTTP GET failed for $host (errno: $curlErrno): $curlError");
+    }
+    
     return [
-        'success' => $code >= 200 && $code < 400 && $body !== false,
+        'success' => $code >= 200 && $code < 400 && $body !== false && !empty($body),
         'body' => $body ?: '',
         'code' => $code,
-        'url' => $finalUrl
+        'url' => $finalUrl,
+        'error' => $curlError,
+        'errno' => $curlErrno
     ];
 }
 
