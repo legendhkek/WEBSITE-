@@ -94,13 +94,14 @@ function getTrendingTopics() {
  * Validate Blackbox API configuration
  */
 function validateBlackboxConfig() {
-    if (!defined('BLACKBOX_API_KEY') || empty(BLACKBOX_API_KEY)) {
-        error_log("Blackbox API: API key not configured");
+    if (!defined('BLACKBOX_API_ENDPOINT')) {
+        error_log("Blackbox API: API endpoint not configured");
         return false;
     }
     
-    if (!defined('BLACKBOX_API_ENDPOINT') || empty(BLACKBOX_API_ENDPOINT)) {
-        error_log("Blackbox API: API endpoint not configured");
+    $endpoint = BLACKBOX_API_ENDPOINT;
+    if (empty($endpoint)) {
+        error_log("Blackbox API: API endpoint is empty");
         return false;
     }
     
@@ -210,7 +211,7 @@ function callBlackboxAPI($prompt) {
  * Check if Blackbox AI is available
  */
 function isBlackboxAvailable() {
-    return defined('BLACKBOX_API_KEY') && !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';
+    return defined('AI_FEATURES_ENABLED') && AI_FEATURES_ENABLED === true;
 }
 
 /**

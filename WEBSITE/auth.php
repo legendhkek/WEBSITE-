@@ -71,11 +71,16 @@ function initDatabase() {
 
 initDatabase();
 
+ cursor/ai-functionality-check-c7f4
 // Helper function to get database connection (SQLite3 for auth)
+
+// Helper function to get database connection (SQLite3)
+ main
 function getDB() {
     return new SQLite3(DB_FILE);
 }
 
+ cursor/ai-functionality-check-c7f4
 // PDO connection for tools that need it (ai-chat, dorker-api, etc.)
 function getDatabase() {
     static $pdo = null;
@@ -84,7 +89,19 @@ function getDatabase() {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     }
-    return $pdo;
+    return
+// Alias for compatibility with tools - returns PDO for AI chat
+function getDatabase() {
+    try {
+        $pdo = new PDO('sqlite:' . DB_FILE);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        return $pdo;
+    } catch (PDOException $e) {
+        error_log("Database connection error: " . $e->getMessage());
+        throw $e;
+    }
+ main
 }
 
 // Validate email
@@ -593,13 +610,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// GET endpoint for Google OAuth URL
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'google_auth_url') {
-    header('Content-Type: application/json');
-    if (!isGoogleOAuthEnabled()) {
-        echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
-        exit;
+// GET endpoint for Google OAuth URL and logout
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
+    switch ($_GET['action']) {
+        case 'google_auth_url':
+            header('Content-Type: application/json');
+            if (!isGoogleOAuthEnabled()) {
+                echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
+                exit;
+            }
+            echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
+            exit;
+            
+        case 'logout':
+            // Handle GET logout request
+            logoutUser();
+            header('Location: index.php');
+            exit;
     }
-    echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
-    exit;
 }

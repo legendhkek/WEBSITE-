@@ -242,7 +242,6 @@
 </head>
 <body>
     <?php
-    session_start();
     require_once __DIR__ . '/auth.php';
     
     // Require login to access tools page

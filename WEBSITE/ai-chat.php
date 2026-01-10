@@ -135,7 +135,7 @@ function handleChat($db, $user) {
  * Get AI response using Blackbox API
  */
 function getAIResponse($message, $history = [], $context = 'general') {
-    if (!validateBlackboxConfig()) {
+    if (!defined('AI_FEATURES_ENABLED') || !AI_FEATURES_ENABLED) {
         return "I apologize, but AI features are currently unavailable. The API service is not configured. Please contact the administrator to enable AI assistance.";
     }
     
