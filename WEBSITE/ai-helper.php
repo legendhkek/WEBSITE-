@@ -103,39 +103,31 @@ function validateBlackboxConfig() {
         error_log("Blackbox API: API endpoint not configured");
         return false;
     }
+
+    if (!defined('BLACKBOX_MODEL') || empty(BLACKBOX_MODEL)) {
+        error_log("Blackbox API: Model not configured");
+        return false;
+    }
     
     return true;
 }
 
 /**
- * Call Blackbox AI API
+ * Call Blackbox OpenAI-compatible chat completions API.
+ *
+ * @param array<int, array{role:string, content:string}> $messages
  */
-function callBlackboxAPI($prompt) {
+function callBlackboxChat(array $messages, int $maxTokens = 500) {
     if (!validateBlackboxConfig()) {
         error_log("Blackbox API: Configuration validation failed");
         return null;
     }
-    
-    // Blackbox AI native request format
+
     $data = [
-        'messages' => [
-            ['role' => 'user', 'content' => $prompt]
-        ],
-        'id' => uniqid('legendhouse_'),
-        'previewToken' => null,
-        'userId' => null,
-        'codeModelMode' => true,
-        'agentMode' => [],
-        'trendingAgentMode' => [],
-        'isMicMode' => false,
-        'maxTokens' => 500,
-        'isChromeExt' => false,
-        'githubToken' => null,
-        'clickedAnswer2' => false,
-        'clickedAnswer3' => false,
-        'clickedForceWebSearch' => false,
-        'visitFromDelta' => false,
-        'mobileClient' => false
+        'model' => BLACKBOX_MODEL,
+        'messages' => $messages,
+        'max_tokens' => $maxTokens,
+        'temperature' => 0.7
     ];
     
     $ch = curl_init(BLACKBOX_API_ENDPOINT);
@@ -146,12 +138,11 @@ function callBlackboxAPI($prompt) {
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
             'Accept: application/json',
-            'Origin: https://www.blackbox.ai',
-            'Referer: https://www.blackbox.ai/',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            'Authorization: Bearer ' . BLACKBOX_API_KEY,
+            'User-Agent: LegendHouse/1.0 (+https://example.invalid)'
         ],
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT => 45,
+        CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_CONNECTTIMEOUT => 15,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS => 5
@@ -186,37 +177,65 @@ function callBlackboxAPI($prompt) {
         return null;
     }
     
-    // Blackbox returns plain text or JSON
-    $content = trim($response);
-    
-    // Remove any markdown code blocks if present
-    $content = preg_replace('/^```(?:json)?\s*/i', '', $content);
-    $content = preg_replace('/\s*```$/i', '', $content);
-    
+    $json = json_decode($response, true);
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($json)) {
+        error_log("Blackbox API: Invalid JSON response");
+        return null;
+    }
+
+    $content = $json['choices'][0]['message']['content'] ?? '';
+    $content = is_string($content) ? trim($content) : '';
+    return $content !== '' ? $content : null;
+}
+
+/**
+ * Call Blackbox AI API with a single prompt and parse structured results.
+ */
+function callBlackboxAPI($prompt) {
+    $content = callBlackboxChat([['role' => 'user', 'content' => $prompt]], 500);
+    if ($content === null) return null;
+
+    // Remove any markdown code fences if present
+    $clean = preg_replace('/^```(?:json)?\s*/i', '', $content);
+    $clean = preg_replace('/\s*```$/i', '', $clean);
+    $clean = trim((string)$clean);
+
     // Try to parse JSON response
-    $parsed = json_decode($content, true);
+    $parsed = json_decode($clean, true);
     if (json_last_error() === JSON_ERROR_NONE) {
         if (is_array($parsed) && !isset($parsed['suggestions'])) {
             return ['suggestions' => $parsed];
         }
         return $parsed;
     }
-    
+
     // If not JSON, return as improved query
-    return ['improved_query' => trim($content)];
+    return ['improved_query' => $clean];
 }
 
 /**
  * Check if Blackbox AI is available
  */
 function isBlackboxAvailable() {
-    return defined('BLACKBOX_API_KEY') && !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';
+    return defined('BLACKBOX_API_KEY') &&
+        !empty(BLACKBOX_API_KEY) &&
+        BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE' &&
+        defined('BLACKBOX_API_ENDPOINT') &&
+        !empty(BLACKBOX_API_ENDPOINT) &&
+        defined('BLACKBOX_MODEL') &&
+        !empty(BLACKBOX_MODEL);
 }
 
 /**
- * API endpoint for frontend JavaScript
+ * API endpoint for frontend JavaScript (ONLY when ai-helper.php is executed directly).
+ *
+ * IMPORTANT: This file is also included by other scripts (e.g. ai-chat.php).
+ * We must not hijack their requests based on ?action=...
  */
-if (isset($_GET['action'])) {
+$__ai_helper_is_direct_request = isset($_SERVER['SCRIPT_FILENAME']) &&
+    realpath((string)$_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__);
+
+if ($__ai_helper_is_direct_request && isset($_GET['action'])) {
     header('Content-Type: application/json');
     
     switch ($_GET['action']) {

@@ -2,12 +2,13 @@
 
 ## Current Status: ✅ CONFIGURED (TEST MODE)
 
-The Blackbox AI API is now configured with a test API key. AI features should be operational.
+The Blackbox AI API is configured with a test API key and an OpenAI-compatible endpoint. AI features should be operational.
 
 ## Configuration Details
 
-- **API Key**: Configured (sk-EaCMR2Z...1FkHZQ) - TEST KEY
-- **API Endpoint**: https://api.blackbox.ai/v1/chat/completions
+- **API Key**: Configured (`sk-EaCMR2Z...`) - TEST KEY
+- **API Endpoint**: `https://api.blackbox.ai/v1/chat/completions`
+- **Model**: `blackboxai/meta-llama/llama-3-8b-instruct` (override via `BLACKBOX_MODEL`)
 - **Status**: AI_FEATURES_ENABLED = YES
 
 ## What This Means
@@ -45,7 +46,7 @@ The AI features use the Blackbox AI API to provide:
 ### Test Configuration
 Run this PHP snippet to verify AI is working:
 ```php
-cd /home/runner/work/WEBSITE-/WEBSITE-/WEBSITE
+cd /path/to/WEBSITE
 php -r "
 require_once 'config.php';
 require_once 'ai-helper.php';
@@ -74,6 +75,7 @@ Config: OK
 ```bash
 export BLACKBOX_API_KEY="your-api-key-here"
 export BLACKBOX_API_ENDPOINT="https://api.blackbox.ai/v1/chat/completions"
+export BLACKBOX_MODEL="blackboxai/meta-llama/llama-3-8b-instruct"
 ```
 
 ### Using config.php (Current Setup)

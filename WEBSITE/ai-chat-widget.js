@@ -14,11 +14,14 @@ class LegendAIChat {
         this.isMinimized = false;
         this.messages = [];
         this.isLoading = false;
-        
-        // Detect base path - check if we're in a subdirectory
+        // Resolve API endpoints relative to where this script is served from.
+        // This makes the widget work from /tools/* pages and subdirectory deployments.
         const scriptTag = document.currentScript || document.querySelector('script[src*="ai-chat-widget.js"]');
-        const scriptSrc = scriptTag ? scriptTag.src : '';
-        this.basePath = scriptSrc.includes('../ai-chat-widget.js') ? '../' : '';
+        const scriptSrc = scriptTag?.src || new URL('ai-chat-widget.js', window.location.href).toString();
+        this.endpoints = {
+            chat: new URL('ai-chat.php', scriptSrc).toString(),
+            helper: new URL('ai-helper.php', scriptSrc).toString()
+        };
         
         this.init();
     }
@@ -35,9 +38,11 @@ class LegendAIChat {
     
     async checkAvailability() {
         try {
-            const response = await fetch(this.basePath + 'ai-chat.php?action=available');
-            const data = await response.json();
-            return data.success && data.available;
+            // Availability is checked via ai-helper.php (public), not ai-chat.php (may require auth).
+            const response = await fetch(`${this.endpoints.helper}?action=available`, { cache: 'no-store' });
+            const text = await response.text();
+            const data = JSON.parse(text);
+            return !!(data && data.success && data.available);
         } catch (error) {
             console.error('AI availability check failed:', error);
             return false;
@@ -491,7 +496,7 @@ class LegendAIChat {
         this.isLoading = true;
         
         try {
-            const response = await fetch(this.basePath + 'ai-chat.php?action=chat', {
+            const response = await fetch(`${this.endpoints.chat}?action=chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -502,8 +507,13 @@ class LegendAIChat {
                     context: this.context
                 })
             });
-            
-            const data = await response.json();
+            const text = await response.text();
+            let data = null;
+            try {
+                data = JSON.parse(text);
+            } catch (_) {
+                data = { success: false, error: 'Invalid server response' };
+            }
             
             this.hideTypingIndicator();
             
@@ -511,7 +521,12 @@ class LegendAIChat {
                 this.conversationId = data.conversation_id;
                 this.addMessage('assistant', data.response);
             } else {
-                this.addMessage('assistant', '❌ Sorry, I encountered an error: ' + (data.error || 'Unknown error'));
+                const err = (data && (data.error || data.message)) || 'Unknown error';
+                if (String(err).toLowerCase().includes('authentication')) {
+                    this.addMessage('assistant', '🔐 Please log in to use the AI assistant (login.php).');
+                } else {
+                    this.addMessage('assistant', '❌ Sorry, I encountered an error: ' + err);
+                }
             }
         } catch (error) {
             this.hideTypingIndicator();

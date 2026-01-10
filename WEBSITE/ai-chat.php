@@ -141,105 +141,31 @@ function getAIResponse($message, $history = [], $context = 'general') {
     
     $systemPrompt = getSystemPrompt($context);
     
-    // Build messages array with system prompt as first user message context
-    $messages = [];
-    
-    // Add conversation history
-    foreach ($history as $msg) {
-        $messages[] = [
-            'role' => $msg['role'],
-            'content' => $msg['content']
-        ];
-    }
-    
-    // Add current message with system context
-    $fullMessage = "Context: " . $systemPrompt . "\n\nUser: " . $message;
-    $messages[] = ['role' => 'user', 'content' => $fullMessage];
-    
-    // Blackbox AI native request format
-    $data = [
-        'messages' => $messages,
-        'id' => uniqid('legendhouse_chat_'),
-        'previewToken' => null,
-        'userId' => null,
-        'codeModelMode' => true,
-        'agentMode' => [],
-        'trendingAgentMode' => [],
-        'isMicMode' => false,
-        'maxTokens' => 2000,
-        'isChromeExt' => false,
-        'githubToken' => null,
-        'clickedAnswer2' => false,
-        'clickedAnswer3' => false,
-        'clickedForceWebSearch' => false,
-        'visitFromDelta' => false,
-        'mobileClient' => false
+    // Build OpenAI-compatible messages
+    $messages = [
+        ['role' => 'system', 'content' => $systemPrompt]
     ];
-    
-    $ch = curl_init(BLACKBOX_API_ENDPOINT);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($data),
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'Origin: https://www.blackbox.ai',
-            'Referer: https://www.blackbox.ai/',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        ],
-        CURLOPT_TIMEOUT => 45,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_CONNECTTIMEOUT => 15,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS => 5
-    ]);
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    $curlErrno = curl_errno($ch);
-    curl_close($ch);
-    
-    if ($curlError) {
-        error_log("Blackbox AI Chat CURL error (errno: $curlErrno): $curlError");
-        
-        // Provide specific error messages based on error type
-        if ($curlErrno === 6) { // CURLE_COULDNT_RESOLVE_HOST
-            return "I apologize, but I cannot reach the AI service right now. This appears to be a network connectivity issue. Please check your internet connection and try again later.";
-        } elseif ($curlErrno === 7) { // CURLE_COULDNT_CONNECT
-            return "I apologize, but the AI service is currently unavailable. The service may be temporarily down. Please try again in a few minutes.";
-        } elseif ($curlErrno === 28) { // CURLE_OPERATION_TIMEDOUT
-            return "I apologize, but the AI service is taking too long to respond. Please try again with a shorter message or wait a moment before retrying.";
-        } elseif ($curlErrno === 35 || $curlErrno === 60) { // SSL errors
-            return "I apologize, but there's a security certificate issue connecting to the AI service. Please contact the administrator to resolve this.";
+
+    foreach ($history as $msg) {
+        $role = $msg['role'] ?? 'user';
+        $content = $msg['content'] ?? '';
+        if (!is_string($role) || !is_string($content) || trim($content) === '') {
+            continue;
         }
-        
-        // Generic error for other cases
-        return "I apologize, but I'm unable to connect to the AI service at the moment. Please try again later. If the problem persists, contact support.";
+        // Only allow roles supported by chat-completions
+        if (!in_array($role, ['user', 'assistant'], true)) {
+            $role = 'user';
+        }
+        $messages[] = ['role' => $role, 'content' => $content];
     }
-    
-    if ($httpCode !== 200) {
-        error_log("Blackbox AI Chat HTTP error: $httpCode - Response: " . substr($response, 0, 500));
-        return "I apologize, but the AI service returned an error (HTTP $httpCode). Please try again later.";
+
+    $messages[] = ['role' => 'user', 'content' => $message];
+
+    $content = callBlackboxChat($messages, 2000);
+    if ($content === null) {
+        return "I apologize, but the AI service is currently unavailable. Please try again later.";
     }
-    
-    if (!$response) {
-        error_log("Blackbox AI Chat: Empty response");
-        return "I apologize, but I received an empty response from the AI service. Please try again.";
-    }
-    
-    // Blackbox returns plain text response
-    $content = trim($response);
-    
-    // Clean up any markdown artifacts
-    $content = preg_replace('/^\$@\$v=undefined-rv1\$@\$/i', '', $content);
-    $content = trim($content);
-    
-    if (empty($content)) {
-        return "I apologize, but I received an empty response. Please try again.";
-    }
-    
+
     return $content;
 }
 

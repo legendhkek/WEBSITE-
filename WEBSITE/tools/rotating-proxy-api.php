@@ -81,7 +81,7 @@ switch ($action) {
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
 }
 
-$db->close();
+$db = null;
 
 function createProxyPool($db, $user) {
     if (!isset($_FILES['file'])) {
@@ -119,15 +119,16 @@ function createProxyPool($db, $user) {
     
     // Create pool
     $stmt = $db->prepare('INSERT INTO proxy_pools (user_id, name, strategy, rotation_interval, max_requests, created_at) VALUES (:user_id, :name, :strategy, :interval, :max_requests, :created_at)');
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $stmt->bindValue(':name', $poolName, SQLITE3_TEXT);
-    $stmt->bindValue(':strategy', $strategy, SQLITE3_TEXT);
-    $stmt->bindValue(':interval', $interval, SQLITE3_INTEGER);
-    $stmt->bindValue(':max_requests', $maxRequests, SQLITE3_INTEGER);
-    $stmt->bindValue(':created_at', time(), SQLITE3_INTEGER);
-    $stmt->execute();
+    $stmt->execute([
+        ':user_id' => $user['id'],
+        ':name' => $poolName,
+        ':strategy' => $strategy,
+        ':interval' => $interval,
+        ':max_requests' => $maxRequests,
+        ':created_at' => time()
+    ]);
     
-    $poolId = $db->lastInsertRowID();
+    $poolId = (int)$db->lastInsertId();
     
     // Add proxies to pool
     $validCount = 0;
@@ -135,11 +136,12 @@ function createProxyPool($db, $user) {
         // Basic validation
         if (filter_var($proxy['ip'], FILTER_VALIDATE_IP) && $proxy['port'] > 0 && $proxy['port'] <= 65535) {
             $stmt = $db->prepare('INSERT INTO pool_proxies (pool_id, ip, port, protocol) VALUES (:pool_id, :ip, :port, :protocol)');
-            $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-            $stmt->bindValue(':ip', $proxy['ip'], SQLITE3_TEXT);
-            $stmt->bindValue(':port', $proxy['port'], SQLITE3_INTEGER);
-            $stmt->bindValue(':protocol', 'http', SQLITE3_TEXT);
-            $stmt->execute();
+            $stmt->execute([
+                ':pool_id' => $poolId,
+                ':ip' => $proxy['ip'],
+                ':port' => $proxy['port'],
+                ':protocol' => 'http'
+            ]);
             $validCount++;
         }
     }
@@ -163,10 +165,11 @@ function getNextProxy($db, $user) {
     
     // Verify pool belongs to user
     $stmt = $db->prepare('SELECT * FROM proxy_pools WHERE id = :pool_id AND user_id = :user_id');
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $pool = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute([
+        ':pool_id' => $poolId,
+        ':user_id' => $user['id']
+    ]);
+    $pool = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$pool) {
         echo json_encode(['success' => false, 'message' => 'Pool not found']);
@@ -194,13 +197,13 @@ function getNextProxy($db, $user) {
         case 'round-robin':
         default:
             $stmt = $db->prepare('SELECT * FROM pool_proxies WHERE pool_id = :pool_id AND is_active = 1 AND (last_used = 0 OR last_used < :threshold) ORDER BY last_used ASC LIMIT 1');
-            $stmt->bindValue(':threshold', $now - $interval, SQLITE3_INTEGER);
+            $stmt->bindValue(':threshold', $now - $interval, PDO::PARAM_INT);
             break;
     }
-    
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $proxy = $result->fetchArray(SQLITE3_ASSOC);
+
+    $stmt->bindValue(':pool_id', $poolId, PDO::PARAM_INT);
+    $stmt->execute();
+    $proxy = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$proxy) {
         echo json_encode(['success' => false, 'message' => 'No available proxies']);
@@ -209,16 +212,18 @@ function getNextProxy($db, $user) {
     
     // Update proxy usage
     $stmt = $db->prepare('UPDATE pool_proxies SET requests_count = requests_count + 1, last_used = :now WHERE id = :id');
-    $stmt->bindValue(':now', $now, SQLITE3_INTEGER);
-    $stmt->bindValue(':id', $proxy['id'], SQLITE3_INTEGER);
-    $stmt->execute();
+    $stmt->execute([
+        ':now' => $now,
+        ':id' => $proxy['id']
+    ]);
     
     // Log request
     $stmt = $db->prepare('INSERT INTO proxy_requests (pool_id, proxy_id, timestamp) VALUES (:pool_id, :proxy_id, :timestamp)');
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $stmt->bindValue(':proxy_id', $proxy['id'], SQLITE3_INTEGER);
-    $stmt->bindValue(':timestamp', $now, SQLITE3_INTEGER);
-    $stmt->execute();
+    $stmt->execute([
+        ':pool_id' => $poolId,
+        ':proxy_id' => $proxy['id'],
+        ':timestamp' => $now
+    ]);
     
     echo json_encode([
         'success' => true,
@@ -244,10 +249,11 @@ function reportProxy($db, $user) {
     
     // Mark proxy as inactive
     $stmt = $db->prepare('UPDATE pool_proxies SET is_active = 0 WHERE pool_id = :pool_id AND ip = :ip AND port = :port');
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $stmt->bindValue(':ip', $proxyIp, SQLITE3_TEXT);
-    $stmt->bindValue(':port', $proxyPort, SQLITE3_INTEGER);
-    $stmt->execute();
+    $stmt->execute([
+        ':pool_id' => $poolId,
+        ':ip' => $proxyIp,
+        ':port' => $proxyPort
+    ]);
     
     echo json_encode(['success' => true, 'message' => 'Proxy reported as dead']);
 }
@@ -262,10 +268,11 @@ function getPoolStats($db, $user) {
     
     // Get pool info
     $stmt = $db->prepare('SELECT * FROM proxy_pools WHERE id = :pool_id AND user_id = :user_id');
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $pool = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute([
+        ':pool_id' => $poolId,
+        ':user_id' => $user['id']
+    ]);
+    $pool = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$pool) {
         echo json_encode(['success' => false, 'message' => 'Pool not found']);
@@ -274,21 +281,18 @@ function getPoolStats($db, $user) {
     
     // Count active proxies
     $stmt = $db->prepare('SELECT COUNT(*) as count FROM pool_proxies WHERE pool_id = :pool_id AND is_active = 1');
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $activeCount = $result->fetchArray(SQLITE3_ASSOC)['count'];
+    $stmt->execute([':pool_id' => $poolId]);
+    $activeCount = (int)($stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
     
     // Count total requests
     $stmt = $db->prepare('SELECT COUNT(*) as count FROM proxy_requests WHERE pool_id = :pool_id');
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $totalRequests = $result->fetchArray(SQLITE3_ASSOC)['count'];
+    $stmt->execute([':pool_id' => $poolId]);
+    $totalRequests = (int)($stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
     
     // Calculate success rate
     $stmt = $db->prepare('SELECT COUNT(*) as count FROM proxy_requests WHERE pool_id = :pool_id AND success = 1');
-    $stmt->bindValue(':pool_id', $poolId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $successCount = $result->fetchArray(SQLITE3_ASSOC)['count'];
+    $stmt->execute([':pool_id' => $poolId]);
+    $successCount = (int)($stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
     
     $successRate = $totalRequests > 0 ? round(($successCount / $totalRequests) * 100, 2) : 0;
     
@@ -308,13 +312,8 @@ function getPoolStats($db, $user) {
 
 function listPools($db, $user) {
     $stmt = $db->prepare('SELECT p.*, COUNT(pp.id) as proxy_count FROM proxy_pools p LEFT JOIN pool_proxies pp ON p.id = pp.pool_id AND pp.is_active = 1 WHERE p.user_id = :user_id GROUP BY p.id ORDER BY p.created_at DESC');
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    
-    $pools = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $pools[] = $row;
-    }
+    $stmt->execute([':user_id' => $user['id']]);
+    $pools = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo json_encode(['success' => true, 'pools' => $pools]);
 }

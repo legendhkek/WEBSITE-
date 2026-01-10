@@ -30,7 +30,13 @@ define('SEARCH_CACHE_TTL', 600); // 10 minutes
 // Blackbox API Configuration (for advanced AI features)
 // Get your API key from: https://www.blackbox.ai/
 define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'YOUR_BLACKBOX_API_KEY_HERE');
-define('BLACKBOX_API_ENDPOINT', 'https://api.blackbox.ai/v1/chat/completions');
+define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://api.blackbox.ai/v1/chat/completions');
+define('BLACKBOX_MODEL', getenv('BLACKBOX_MODEL') ?: 'blackboxai/meta-llama/llama-3-8b-instruct');
+
+// AI is enabled only if both API key and endpoint are configured
+$hasApiKey = !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';
+$hasEndpoint = !empty(BLACKBOX_API_ENDPOINT);
+define('AI_FEATURES_ENABLED', $hasApiKey && $hasEndpoint);
 
 // Google AdSense Configuration
 define('GOOGLE_ADSENSE_CLIENT', 'ca-pub-1940810089559549');

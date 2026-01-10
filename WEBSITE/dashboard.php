@@ -33,13 +33,9 @@
     // Get user's download history
     $db = getDB();
     $stmt = $db->prepare('SELECT * FROM download_history WHERE user_id = :user_id ORDER BY downloaded_at DESC LIMIT 10');
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $downloadHistory = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $downloadHistory[] = $row;
-    }
-    $db->close();
+    $stmt->execute([':user_id' => $user['id']]);
+    $downloadHistory = $stmt->fetchAll();
+    $db = null;
     ?>
     
     <!-- Animated Background -->

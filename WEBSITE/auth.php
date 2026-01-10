@@ -5,14 +5,16 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 // Load configuration
 require_once __DIR__ . '/config.php';
 
 // Initialize database
 function initDatabase() {
-    $db = new SQLite3(DB_FILE);
+    $db = getDB();
     
     // Create users table
     $db->exec('CREATE TABLE IF NOT EXISTS users (
@@ -40,7 +42,7 @@ function initDatabase() {
     // So we add columns without UNIQUE and handle uniqueness in application logic
     $result = $db->query("PRAGMA table_info(users)");
     $columns = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         $columns[] = $row['name'];
     }
     
@@ -65,15 +67,24 @@ function initDatabase() {
         downloaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id)
     )');
-    
-    $db->close();
+
+    // Close connection
+    $db = null;
 }
 
 initDatabase();
 
 // Helper function to get database connection
 function getDB() {
-    return new SQLite3(DB_FILE);
+    $pdo = new PDO('sqlite:' . DB_FILE, null, null, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false
+    ]);
+    // Improve concurrency and correctness
+    $pdo->exec('PRAGMA foreign_keys = ON');
+    $pdo->exec('PRAGMA busy_timeout = 5000');
+    return $pdo;
 }
 
 // Alias for compatibility with tools
@@ -130,47 +141,48 @@ function registerUser($username, $email, $password) {
     
     // Check if username exists
     $stmt = $db->prepare('SELECT id FROM users WHERE username = :username');
-    $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    if ($result->fetchArray()) {
-        $db->close();
+    $stmt->execute([':username' => $username]);
+    if ($stmt->fetch()) {
+        $db = null;
         return ['success' => false, 'error' => 'Username already exists.'];
     }
     
     // Check if email exists
     $stmt = $db->prepare('SELECT id FROM users WHERE email = :email');
-    $stmt->bindValue(':email', $email, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    if ($result->fetchArray()) {
-        $db->close();
+    $stmt->execute([':email' => $email]);
+    if ($stmt->fetch()) {
+        $db = null;
         return ['success' => false, 'error' => 'Email already registered.'];
     }
     
     // Create user
     $hashedPassword = hashPassword($password);
     $stmt = $db->prepare('INSERT INTO users (username, email, password) VALUES (:username, :email, :password)');
-    $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-    $stmt->bindValue(':email', $email, SQLITE3_TEXT);
-    $stmt->bindValue(':password', $hashedPassword, SQLITE3_TEXT);
+    $ok = $stmt->execute([
+        ':username' => $username,
+        ':email' => $email,
+        ':password' => $hashedPassword
+    ]);
     
-    if ($stmt->execute()) {
-        $userId = $db->lastInsertRowID();
+    if ($ok) {
+        $userId = (int)$db->lastInsertId();
         
         // Create session token for auto-login
         $token = generateSessionToken();
         $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 7); // 7 days
         
         $stmt = $db->prepare('INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (:user_id, :token, :expires_at)');
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $stmt->bindValue(':token', $token, SQLITE3_TEXT);
-        $stmt->bindValue(':expires_at', $expiresAt, SQLITE3_TEXT);
+        $ok = $stmt->execute([
+            ':user_id' => $userId,
+            ':token' => $token,
+            ':expires_at' => $expiresAt
+        ]);
         
-        if (!$stmt->execute()) {
-            $db->close();
+        if (!$ok) {
+            $db = null;
             return ['success' => false, 'error' => 'Failed to create session. Please try logging in.'];
         }
-        
-        $db->close();
+        $db = null;
         
         // Set session for auto-login
         // Note: username and email are already validated above (lines 119-129)
@@ -188,7 +200,7 @@ function registerUser($username, $email, $password) {
             'message' => 'Account created successfully!'
         ];
     } else {
-        $db->close();
+        $db = null;
         return ['success' => false, 'error' => 'Failed to create account. Please try again.'];
     }
 }
@@ -199,42 +211,41 @@ function loginUser($usernameOrEmail, $password) {
     
     // Find user by username or email
     $stmt = $db->prepare('SELECT id, username, email, password, is_active FROM users WHERE username = :identifier OR email = :identifier');
-    $stmt->bindValue(':identifier', $usernameOrEmail, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute([':identifier' => $usernameOrEmail]);
+    $user = $stmt->fetch();
     
     if (!$user) {
-        $db->close();
+        $db = null;
         return ['success' => false, 'error' => 'Invalid credentials.'];
     }
     
     if (!$user['is_active']) {
-        $db->close();
+        $db = null;
         return ['success' => false, 'error' => 'Account is inactive.'];
     }
     
     // Verify password
     if (!verifyPassword($password, $user['password'])) {
-        $db->close();
+        $db = null;
         return ['success' => false, 'error' => 'Invalid credentials.'];
     }
     
     // Update last login
     $stmt = $db->prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = :id');
-    $stmt->bindValue(':id', $user['id'], SQLITE3_INTEGER);
-    $stmt->execute();
+    $stmt->execute([':id' => $user['id']]);
     
     // Create session token
     $token = generateSessionToken();
     $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 7); // 7 days
     
     $stmt = $db->prepare('INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (:user_id, :token, :expires_at)');
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $stmt->bindValue(':token', $token, SQLITE3_TEXT);
-    $stmt->bindValue(':expires_at', $expiresAt, SQLITE3_TEXT);
-    $stmt->execute();
+    $stmt->execute([
+        ':user_id' => $user['id'],
+        ':token' => $token,
+        ':expires_at' => $expiresAt
+    ]);
     
-    $db->close();
+    $db = null;
     
     // Set session
     $_SESSION['user_id'] = $user['id'];
@@ -256,9 +267,8 @@ function logoutUser() {
     if (isset($_SESSION['session_token'])) {
         $db = getDB();
         $stmt = $db->prepare('DELETE FROM user_sessions WHERE session_token = :token');
-        $stmt->bindValue(':token', $_SESSION['session_token'], SQLITE3_TEXT);
-        $stmt->execute();
-        $db->close();
+        $stmt->execute([':token' => $_SESSION['session_token']]);
+        $db = null;
     }
     
     session_destroy();
@@ -278,10 +288,9 @@ function getCurrentUser() {
     
     $db = getDB();
     $stmt = $db->prepare('SELECT id, username, email, created_at, last_login, google_id, profile_picture, auth_provider FROM users WHERE id = :id');
-    $stmt->bindValue(':id', $_SESSION['user_id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
-    $db->close();
+    $stmt->execute([':id' => $_SESSION['user_id']]);
+    $user = $stmt->fetch();
+    $db = null;
     
     return $user;
 }
@@ -369,15 +378,13 @@ function loginOrRegisterGoogleUser($googleUser) {
     
     // Check if user exists with this Google ID
     $stmt = $db->prepare('SELECT id, username, email FROM users WHERE google_id = :google_id');
-    $stmt->bindValue(':google_id', $googleUser['id'], SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute([':google_id' => $googleUser['id']]);
+    $user = $stmt->fetch();
     
     if ($user) {
         // Update last login
         $stmt = $db->prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = :id');
-        $stmt->bindValue(':id', $user['id'], SQLITE3_INTEGER);
-        $stmt->execute();
+        $stmt->execute([':id' => $user['id']]);
         
         $userId = $user['id'];
         $username = $user['username'];
@@ -385,25 +392,24 @@ function loginOrRegisterGoogleUser($googleUser) {
     } else {
         // Check if email already exists
         $stmt = $db->prepare('SELECT id FROM users WHERE email = :email');
-        $stmt->bindValue(':email', $googleUser['email'], SQLITE3_TEXT);
-        $result = $stmt->execute();
-        $existingUser = $result->fetchArray();
+        $stmt->execute([':email' => $googleUser['email']]);
+        $existingUser = $stmt->fetch();
         
         if ($existingUser) {
             // Link Google account to existing user
             $stmt = $db->prepare('UPDATE users SET google_id = :google_id, profile_picture = :picture, auth_provider = :provider WHERE email = :email');
-            $stmt->bindValue(':google_id', $googleUser['id'], SQLITE3_TEXT);
-            $stmt->bindValue(':picture', $googleUser['picture'] ?? null, SQLITE3_TEXT);
-            $stmt->bindValue(':provider', 'google', SQLITE3_TEXT);
-            $stmt->bindValue(':email', $googleUser['email'], SQLITE3_TEXT);
-            $stmt->execute();
+            $stmt->execute([
+                ':google_id' => $googleUser['id'],
+                ':picture' => $googleUser['picture'] ?? null,
+                ':provider' => 'google',
+                ':email' => $googleUser['email']
+            ]);
             
             $userId = $existingUser['id'];
             
             $stmt = $db->prepare('SELECT username, email FROM users WHERE id = :id');
-            $stmt->bindValue(':id', $userId, SQLITE3_INTEGER);
-            $result = $stmt->execute();
-            $user = $result->fetchArray(SQLITE3_ASSOC);
+            $stmt->execute([':id' => $userId]);
+            $user = $stmt->fetch();
             $username = $user['username'];
             $email = $user['email'];
         } else {
@@ -415,23 +421,23 @@ function loginOrRegisterGoogleUser($googleUser) {
             $counter = 1;
             while (true) {
                 $stmt = $db->prepare('SELECT id FROM users WHERE username = :username');
-                $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-                $result = $stmt->execute();
-                if (!$result->fetchArray()) break;
+                $stmt->execute([':username' => $username]);
+                if (!$stmt->fetch()) break;
                 $username = $originalUsername . $counter;
                 $counter++;
             }
             
             $stmt = $db->prepare('INSERT INTO users (username, email, password, google_id, profile_picture, auth_provider) VALUES (:username, :email, :password, :google_id, :picture, :provider)');
-            $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-            $stmt->bindValue(':email', $googleUser['email'], SQLITE3_TEXT);
-            $stmt->bindValue(':password', '', SQLITE3_TEXT); // No password for Google users
-            $stmt->bindValue(':google_id', $googleUser['id'], SQLITE3_TEXT);
-            $stmt->bindValue(':picture', $googleUser['picture'] ?? null, SQLITE3_TEXT);
-            $stmt->bindValue(':provider', 'google', SQLITE3_TEXT);
-            $stmt->execute();
+            $stmt->execute([
+                ':username' => $username,
+                ':email' => $googleUser['email'],
+                ':password' => '', // No password for Google users
+                ':google_id' => $googleUser['id'],
+                ':picture' => $googleUser['picture'] ?? null,
+                ':provider' => 'google'
+            ]);
             
-            $userId = $db->lastInsertRowID();
+            $userId = (int)$db->lastInsertId();
             $email = $googleUser['email'];
         }
     }
@@ -441,12 +447,13 @@ function loginOrRegisterGoogleUser($googleUser) {
     $expiresAt = date('Y-m-d H:i:s', time() + 86400 * 7); // 7 days
     
     $stmt = $db->prepare('INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (:user_id, :token, :expires_at)');
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $stmt->bindValue(':token', $token, SQLITE3_TEXT);
-    $stmt->bindValue(':expires_at', $expiresAt, SQLITE3_TEXT);
-    $stmt->execute();
+    $stmt->execute([
+        ':user_id' => $userId,
+        ':token' => $token,
+        ':expires_at' => $expiresAt
+    ]);
     
-    $db->close();
+    $db = null;
     
     // Set session
     $_SESSION['user_id'] = $userId;
@@ -479,13 +486,14 @@ function generateUsernameFromEmail($email) {
 function saveDownload($userId, $torrentName, $torrentHash, $magnetUrl, $size) {
     $db = getDB();
     $stmt = $db->prepare('INSERT INTO download_history (user_id, torrent_name, torrent_hash, magnet_url, size) VALUES (:user_id, :name, :hash, :magnet, :size)');
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $stmt->bindValue(':name', $torrentName, SQLITE3_TEXT);
-    $stmt->bindValue(':hash', $torrentHash, SQLITE3_TEXT);
-    $stmt->bindValue(':magnet', $magnetUrl, SQLITE3_TEXT);
-    $stmt->bindValue(':size', $size, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $db->close();
+    $result = $stmt->execute([
+        ':user_id' => $userId,
+        ':name' => $torrentName,
+        ':hash' => $torrentHash,
+        ':magnet' => $magnetUrl,
+        ':size' => $size
+    ]);
+    $db = null;
     return $result !== false;
 }
 
@@ -493,107 +501,114 @@ function saveDownload($userId, $torrentName, $torrentHash, $magnetUrl, $size) {
 function getDownloadHistory($userId, $limit = 50) {
     $db = getDB();
     $stmt = $db->prepare('SELECT * FROM download_history WHERE user_id = :user_id ORDER BY downloaded_at DESC LIMIT :limit');
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
     
-    $history = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $history[] = $row;
-    }
+    $history = $stmt->fetchAll();
     
-    $db->close();
+    $db = null;
     return $history;
 }
 
-// API endpoint handler
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
-    
-    $action = $_POST['action'] ?? '';
-    
-    switch ($action) {
-        case 'register':
-            $username = trim($_POST['username'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $password = $_POST['password'] ?? '';
-            
-            echo json_encode(registerUser($username, $email, $password));
-            break;
-        
-        case 'login':
-            $identifier = trim($_POST['identifier'] ?? '');
-            $password = $_POST['password'] ?? '';
-            
-            echo json_encode(loginUser($identifier, $password));
-            break;
-        
-        case 'logout':
-            echo json_encode(logoutUser());
-            break;
-        
-        case 'check':
-            if (isLoggedIn()) {
-                $user = getCurrentUser();
-                echo json_encode([
-                    'success' => true,
-                    'loggedIn' => true,
-                    'user' => $user
-                ]);
-            } else {
-                echo json_encode([
-                    'success' => true,
-                    'loggedIn' => false
-                ]);
-            }
-            break;
-        
-        case 'save_download':
-            if (!isLoggedIn()) {
-                echo json_encode(['success' => false, 'error' => 'Not logged in']);
-                break;
-            }
-            
-            $torrentName = $_POST['torrent_name'] ?? '';
-            $torrentHash = $_POST['torrent_hash'] ?? '';
-            $magnetUrl = $_POST['magnet_url'] ?? '';
-            $size = $_POST['size'] ?? '';
-            
-            $result = saveDownload($_SESSION['user_id'], $torrentName, $torrentHash, $magnetUrl, $size);
-            echo json_encode(['success' => $result]);
-            break;
-        
-        case 'get_history':
-            if (!isLoggedIn()) {
-                echo json_encode(['success' => false, 'error' => 'Not logged in']);
-                break;
-            }
-            
-            $history = getDownloadHistory($_SESSION['user_id']);
-            echo json_encode(['success' => true, 'history' => $history]);
-            break;
-        
-        case 'google_auth_url':
-            if (!isGoogleOAuthEnabled()) {
-                echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
-                break;
-            }
-            echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
-            break;
-        
-        default:
-            echo json_encode(['success' => false, 'error' => 'Invalid action']);
-    }
-    exit;
-}
+/**
+ * API endpoint handler (ONLY when auth.php is the executed script).
+ *
+ * IMPORTANT: This file is also included by other endpoints (e.g. ai-chat.php).
+ * We must not hijack POST requests for those files.
+ */
+$__auth_is_direct_request = isset($_SERVER['SCRIPT_FILENAME']) &&
+    realpath((string)$_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__);
 
-// GET endpoint for Google OAuth URL
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'google_auth_url') {
-    header('Content-Type: application/json');
-    if (!isGoogleOAuthEnabled()) {
-        echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
+if ($__auth_is_direct_request) {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+        header('Content-Type: application/json');
+        
+        $action = $_POST['action'] ?? '';
+        
+        switch ($action) {
+            case 'register':
+                $username = trim($_POST['username'] ?? '');
+                $email = trim($_POST['email'] ?? '');
+                $password = $_POST['password'] ?? '';
+                
+                echo json_encode(registerUser($username, $email, $password));
+                break;
+            
+            case 'login':
+                $identifier = trim($_POST['identifier'] ?? '');
+                $password = $_POST['password'] ?? '';
+                
+                echo json_encode(loginUser($identifier, $password));
+                break;
+            
+            case 'logout':
+                echo json_encode(logoutUser());
+                break;
+            
+            case 'check':
+                if (isLoggedIn()) {
+                    $user = getCurrentUser();
+                    echo json_encode([
+                        'success' => true,
+                        'loggedIn' => true,
+                        'user' => $user
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => true,
+                        'loggedIn' => false
+                    ]);
+                }
+                break;
+            
+            case 'save_download':
+                if (!isLoggedIn()) {
+                    echo json_encode(['success' => false, 'error' => 'Not logged in']);
+                    break;
+                }
+                
+                $torrentName = $_POST['torrent_name'] ?? '';
+                $torrentHash = $_POST['torrent_hash'] ?? '';
+                $magnetUrl = $_POST['magnet_url'] ?? '';
+                $size = $_POST['size'] ?? '';
+                
+                $result = saveDownload($_SESSION['user_id'], $torrentName, $torrentHash, $magnetUrl, $size);
+                echo json_encode(['success' => $result]);
+                break;
+            
+            case 'get_history':
+                if (!isLoggedIn()) {
+                    echo json_encode(['success' => false, 'error' => 'Not logged in']);
+                    break;
+                }
+                
+                $history = getDownloadHistory($_SESSION['user_id']);
+                echo json_encode(['success' => true, 'history' => $history]);
+                break;
+            
+            case 'google_auth_url':
+                if (!isGoogleOAuthEnabled()) {
+                    echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
+                    break;
+                }
+                echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
+                break;
+            
+            default:
+                echo json_encode(['success' => false, 'error' => 'Invalid action']);
+        }
         exit;
     }
-    echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
-    exit;
+
+    // GET endpoint for Google OAuth URL
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' && isset($_GET['action']) && $_GET['action'] === 'google_auth_url') {
+        header('Content-Type: application/json');
+        if (!isGoogleOAuthEnabled()) {
+            echo json_encode(['success' => false, 'error' => 'Google OAuth is not configured. Please set up Google OAuth credentials in config.php or contact the administrator.']);
+            exit;
+        }
+        echo json_encode(['success' => true, 'url' => getGoogleAuthUrl()]);
+        exit;
+    }
 }

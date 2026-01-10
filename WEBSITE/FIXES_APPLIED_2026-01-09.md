@@ -7,9 +7,9 @@
 **Problem:** Cannot connect to AI API (api.blackbox.ai)
 
 **Solution Applied:**
-- Updated `config.php` to use the correct Blackbox AI endpoint: `https://www.blackbox.ai/api/chat`
-- Updated `ai-helper.php` with the correct Blackbox AI native request format
-- Updated `ai-chat.php` with proper request headers and response handling
+- Updated `config.php` to use the Blackbox OpenAI-compatible endpoint: `https://api.blackbox.ai/v1/chat/completions`
+- Updated `ai-helper.php` to call the OpenAI-compatible chat completions API (Authorization: Bearer)
+- Updated `ai-chat.php` to use chat-completions messages (system/user/assistant)
 - Added proper error handling for various connection issues (DNS, timeout, SSL)
 
 **Files Modified:**
@@ -73,7 +73,8 @@ The watch page (`watch.php`) uses WebTorrent for browser-based streaming:
 ```php
 // In config.php
 define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'your-api-key');
-define('BLACKBOX_API_ENDPOINT', 'https://www.blackbox.ai/api/chat');
+define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://api.blackbox.ai/v1/chat/completions');
+define('BLACKBOX_MODEL', getenv('BLACKBOX_MODEL') ?: 'blackboxai/meta-llama/llama-3-8b-instruct');
 ```
 
 ### AI Features
@@ -85,7 +86,7 @@ define('BLACKBOX_API_ENDPOINT', 'https://www.blackbox.ai/api/chat');
 
 ### If AI is not working:
 1. Check that `BLACKBOX_API_KEY` is set correctly
-2. Verify network connectivity to `www.blackbox.ai`
+2. Verify network connectivity to `api.blackbox.ai`
 3. Check PHP error logs for specific error messages
 
 ### If torrent search returns no results:
