@@ -1,7 +1,7 @@
 <?php
 /**
- * AI Test Script - Test if AI providers are working
- * Access this file directly in your browser: yourdomain.com/test-ai.php
+ * AI Test Script v3.0 - Test if AI providers are working
+ * Access: legendbl.tech/test-ai.php
  */
 
 header('Content-Type: text/html; charset=utf-8');
@@ -11,133 +11,183 @@ ini_set('display_errors', 1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/ai-helper.php';
 
-echo "<html><head><title>AI Test - Legend House</title>";
-echo "<style>
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #0d1117; color: #e6edf3; }
-h1 { color: #58a6ff; }
-h2 { color: #7ee787; margin-top: 30px; }
-.success { background: #238636; padding: 15px; border-radius: 8px; margin: 10px 0; }
-.error { background: #da3633; padding: 15px; border-radius: 8px; margin: 10px 0; }
-.info { background: #1f6feb; padding: 15px; border-radius: 8px; margin: 10px 0; }
-.warning { background: #9e6a03; padding: 15px; border-radius: 8px; margin: 10px 0; }
-pre { background: #161b22; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
-code { background: #30363d; padding: 2px 6px; border-radius: 4px; }
-.response-box { background: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin: 15px 0; }
-</style></head><body>";
-
-echo "<h1>🤖 Legend House AI Test</h1>";
-
-// Check config
-echo "<h2>📋 Configuration Check</h2>";
-
-$apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : 'not defined';
-$endpoint = defined('BLACKBOX_API_ENDPOINT') ? BLACKBOX_API_ENDPOINT : 'not defined';
-$model = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'not defined';
-$aiEnabled = defined('AI_FEATURES_ENABLED') ? (AI_FEATURES_ENABLED ? 'Yes' : 'No') : 'not defined';
-
-echo "<div class='info'>";
-echo "<strong>AI Features Enabled:</strong> " . $aiEnabled . "<br>";
-echo "<strong>Blackbox API Key:</strong> " . ($apiKey === 'free' || empty($apiKey) ? '<code>free</code> (no custom key)' : '<code>✅ Custom key set (' . strlen($apiKey) . ' chars)</code>') . "<br>";
-echo "<strong>Blackbox Endpoint:</strong> <code>" . htmlspecialchars($endpoint) . "</code><br>";
-echo "<strong>Blackbox Model:</strong> <code>" . htmlspecialchars($model) . "</code><br>";
-echo "</div>";
-
-if ($apiKey === 'free' || empty($apiKey)) {
-    echo "<div class='warning'>";
-    echo "⚠️ <strong>No custom API key detected!</strong><br>";
-    echo "You're using the free mode. To use your Blackbox API key, edit <code>config.php</code> and change:<br>";
-    echo "<pre>define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'YOUR_API_KEY_HERE');</pre>";
-    echo "</div>";
-} else {
-    echo "<div class='success'>";
-    echo "✅ <strong>API Key configured!</strong> Using model: <code>" . htmlspecialchars($model) . "</code>";
-    echo "</div>";
+// Simple test mode for AJAX
+if (isset($_GET['test'])) {
+    header('Content-Type: application/json');
+    $testMessage = $_GET['message'] ?? 'Hello, how are you?';
+    $response = getAIResponse($testMessage, 'general', []);
+    echo json_encode([
+        'success' => true,
+        'message' => $testMessage,
+        'response' => $response,
+        'length' => strlen($response)
+    ]);
+    exit;
 }
 
-// Test message
-$testMessage = "Say hello in one sentence.";
-
-echo "<h2>🧪 Testing AI Providers</h2>";
-echo "<p>Test message: <code>" . htmlspecialchars($testMessage) . "</code></p>";
-
-// Test each provider individually
-$providers = [
-    'DuckDuckGo AI' => 'callDuckDuckGoAI',
-    'Blackbox AI' => 'callBlackbox',
-    'DeepInfra' => 'callDeepInfra',
-    'HuggingFace' => 'callHuggingFace'
-];
-
-$systemPrompt = "You are a helpful assistant. Be brief.";
-$workingProviders = [];
-
-foreach ($providers as $name => $function) {
-    echo "<h3>Testing: $name</h3>";
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>AI Test v3.0 - Legend House</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0d1117;
+            color: #e6edf3;
+        }
+        h1 { color: #58a6ff; }
+        h2 { color: #7ee787; margin-top: 30px; }
+        .success { background: #238636; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .error { background: #da3633; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .info { background: #1f6feb; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .warning { background: #9e6a03; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        pre { background: #161b22; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
+        code { background: #30363d; padding: 2px 6px; border-radius: 4px; }
+        .response-box {
+            background: #21262d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+        .test-btn {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+            font-size: 14px;
+        }
+        .test-btn:hover { background: #2ea043; }
+        .test-btn:disabled { background: #484f58; cursor: not-allowed; }
+        input[type="text"] {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            color: #e6edf3;
+            width: 100%;
+            max-width: 500px;
+            margin: 10px 0;
+        }
+        #testResult {
+            margin-top: 20px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Legend House AI Test v3.0</h1>
     
-    if (!function_exists($function)) {
-        echo "<div class='error'>❌ Function <code>$function</code> not found!</div>";
-        continue;
-    }
+    <h2>📋 Configuration</h2>
+    <div class="info">
+        <strong>AI Features:</strong> <?php echo defined('AI_FEATURES_ENABLED') && AI_FEATURES_ENABLED ? '✅ Enabled' : '⚠️ Disabled'; ?><br>
+        <strong>Blackbox API Key:</strong> <?php 
+            $apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : '';
+            echo empty($apiKey) || $apiKey === 'free' ? '⚠️ Not configured' : '✅ Configured (' . strlen($apiKey) . ' chars)';
+        ?><br>
+        <strong>Model:</strong> <code><?php echo defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'default'; ?></code>
+    </div>
     
-    $startTime = microtime(true);
+    <h2>🧪 Interactive Test</h2>
+    <p>Test the AI with any message:</p>
     
-    try {
-        $response = $function($testMessage, $systemPrompt, []);
+    <input type="text" id="testMessage" placeholder="Type a message to test..." value="Hello, what can you help me with?">
+    <br>
+    <button class="test-btn" onclick="runTest()">🚀 Test AI Response</button>
+    <button class="test-btn" onclick="runTest('How do I search for movies?')">🎬 Movies</button>
+    <button class="test-btn" onclick="runTest('Help me with Google dorking')">🔍 Dorking</button>
+    <button class="test-btn" onclick="runTest('How to download torrents?')">🧲 Torrents</button>
+    
+    <div id="testResult"></div>
+    
+    <h2>⚡ Quick Tests</h2>
+    <?php
+    $tests = [
+        ['message' => 'Hello!', 'desc' => 'Greeting test'],
+        ['message' => 'How do I use Google Dorker?', 'desc' => 'Dorking help'],
+        ['message' => 'Help me download a movie', 'desc' => 'Download help'],
+    ];
+    
+    foreach ($tests as $test) {
+        echo "<h3>{$test['desc']}</h3>";
+        echo "<p>Input: <code>{$test['message']}</code></p>";
+        
+        $startTime = microtime(true);
+        $response = getAIResponse($test['message'], 'general', []);
         $duration = round((microtime(true) - $startTime) * 1000);
         
-        if ($response && strlen($response) > 5) {
-            echo "<div class='success'>✅ <strong>$name is WORKING!</strong> (Response time: {$duration}ms)</div>";
-            echo "<div class='response-box'><strong>Response:</strong><br>" . nl2br(htmlspecialchars($response)) . "</div>";
-            $workingProviders[] = $name;
+        if ($response && strlen($response) > 10) {
+            echo "<div class='success'>✅ Success! ({$duration}ms)</div>";
+            echo "<div class='response-box'>" . htmlspecialchars($response) . "</div>";
         } else {
-            echo "<div class='error'>❌ <strong>$name returned empty response</strong> (Time: {$duration}ms)</div>";
+            echo "<div class='error'>❌ Failed or empty response ({$duration}ms)</div>";
         }
-    } catch (Exception $e) {
-        $duration = round((microtime(true) - $startTime) * 1000);
-        echo "<div class='error'>❌ <strong>$name failed:</strong> " . htmlspecialchars($e->getMessage()) . " (Time: {$duration}ms)</div>";
     }
-}
-
-// Test the main function
-echo "<h2>🔄 Testing Main AI Function (with fallback)</h2>";
-echo "<p>This uses all providers with automatic fallback.</p>";
-
-$startTime = microtime(true);
-$mainResponse = getAIResponse("What is 2+2? Answer in one word.", 'general', []);
-$duration = round((microtime(true) - $startTime) * 1000);
-
-if ($mainResponse && strlen($mainResponse) > 3) {
-    echo "<div class='success'>✅ <strong>Main AI function is WORKING!</strong> (Response time: {$duration}ms)</div>";
-    echo "<div class='response-box'><strong>Response:</strong><br>" . nl2br(htmlspecialchars($mainResponse)) . "</div>";
-} else {
-    echo "<div class='error'>❌ <strong>Main AI function failed to get response</strong></div>";
-}
-
-// Summary
-echo "<h2>📊 Summary</h2>";
-
-if (count($workingProviders) > 0) {
-    echo "<div class='success'>";
-    echo "✅ <strong>" . count($workingProviders) . " provider(s) working:</strong> " . implode(', ', $workingProviders);
-    echo "</div>";
-    echo "<p>Your AI chat should be functional! The system will automatically use the first working provider.</p>";
-} else {
-    echo "<div class='error'>";
-    echo "❌ <strong>No providers are working!</strong><br>";
-    echo "This could be due to:<br>";
-    echo "• Network/firewall blocking outgoing requests<br>";
-    echo "• API rate limits<br>";
-    echo "• Server doesn't have <code>curl</code> extension enabled<br>";
-    echo "</div>";
-}
-
-// Check curl
-echo "<h2>🔧 Server Info</h2>";
-echo "<div class='info'>";
-echo "<strong>PHP Version:</strong> " . PHP_VERSION . "<br>";
-echo "<strong>cURL Enabled:</strong> " . (function_exists('curl_init') ? '✅ Yes' : '❌ No') . "<br>";
-echo "<strong>JSON Enabled:</strong> " . (function_exists('json_encode') ? '✅ Yes' : '❌ No') . "<br>";
-echo "</div>";
-
-echo "<p style='margin-top: 40px; color: #8b949e;'><a href='dashboard.php' style='color: #58a6ff;'>← Back to Dashboard</a> | Generated at " . date('Y-m-d H:i:s') . "</p>";
-echo "</body></html>";
+    ?>
+    
+    <h2>🔧 System Info</h2>
+    <div class="info">
+        <strong>PHP Version:</strong> <?php echo PHP_VERSION; ?><br>
+        <strong>cURL:</strong> <?php echo function_exists('curl_init') ? '✅ Available' : '❌ Not available'; ?><br>
+        <strong>JSON:</strong> <?php echo function_exists('json_encode') ? '✅ Available' : '❌ Not available'; ?><br>
+        <strong>SQLite3:</strong> <?php echo class_exists('SQLite3') ? '✅ Available' : '❌ Not available'; ?>
+    </div>
+    
+    <p style="margin-top: 40px; color: #8b949e;">
+        <a href="dashboard.php" style="color: #58a6ff;">← Back to Dashboard</a> | 
+        Generated: <?php echo date('Y-m-d H:i:s'); ?>
+    </p>
+    
+    <script>
+    async function runTest(message) {
+        const input = document.getElementById('testMessage');
+        const result = document.getElementById('testResult');
+        
+        if (message) {
+            input.value = message;
+        }
+        
+        const testMsg = input.value.trim();
+        if (!testMsg) {
+            result.innerHTML = '<div class="warning">Please enter a message</div>';
+            return;
+        }
+        
+        result.innerHTML = '<div class="info">⏳ Testing...</div>';
+        
+        try {
+            const response = await fetch('test-ai.php?test=1&message=' + encodeURIComponent(testMsg));
+            const data = await response.json();
+            
+            if (data.success && data.response) {
+                result.innerHTML = `
+                    <div class="success">✅ AI Response (${data.length} chars)</div>
+                    <div class="response-box">${escapeHtml(data.response)}</div>
+                `;
+            } else {
+                result.innerHTML = '<div class="error">❌ No response received</div>';
+            }
+        } catch (error) {
+            result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+        }
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML.replace(/\n/g, '<br>');
+    }
+    </script>
+</body>
+</html>

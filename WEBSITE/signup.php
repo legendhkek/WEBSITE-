@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Legend House</title>
-    <link rel="stylesheet" href="auth-style.css">
     
+    <?php
+    // SEO Configuration for Signup Page
+    $seo_title = 'Sign Up - Create Free Account | Legend House - LegendBL.tech';
+    $seo_description = 'Create a free Legend House account. Join the #1 downloading platform. Stream movies, download torrents, access 20+ free tools including Google Dorker, Proxy Scraper, and AI Assistant.';
+    $seo_keywords = 'legend house signup, legendbl register, create account, free account, downloading platform signup';
+    $seo_url = 'https://legendbl.tech/signup.php';
+    $seo_canonical = 'https://legendbl.tech/signup.php';
+    include 'seo-head.php';
+    ?>
+    
+    <title><?php echo htmlspecialchars($seo_title); ?></title>
+    <link rel="stylesheet" href="auth-style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
 </head>
 <body>
     <div class="auth-container">

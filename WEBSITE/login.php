@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Legend House</title>
-    <link rel="stylesheet" href="auth-style.css">
     
+    <?php
+    // SEO Configuration for Login Page
+    $seo_title = 'Login - Legend House | LegendBL.tech';
+    $seo_description = 'Sign in to Legend House (LegendBL.tech) - Access the ultimate downloading platform. Stream movies, download torrents, use proxy tools, and more.';
+    $seo_keywords = 'legend house login, legendbl login, downloading platform login, torrent site login';
+    $seo_url = 'https://legendbl.tech/login.php';
+    $seo_canonical = 'https://legendbl.tech/login.php';
+    include 'seo-head.php';
+    ?>
+    
+    <title><?php echo htmlspecialchars($seo_title); ?></title>
+    <link rel="stylesheet" href="auth-style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
 </head>
 <body>
     <div class="auth-container">

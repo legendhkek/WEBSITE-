@@ -1,30 +1,58 @@
-# robots.txt for Legend House
+# robots.txt for Legend House - LegendBL.tech
+# The Ultimate Downloading Platform
 
 # Allow all search engines to crawl the site
 User-agent: *
 Allow: /
 
+# Main pages - explicitly allow
+Allow: /home.php
+Allow: /login.php
+Allow: /signup.php
+Allow: /dashboard.php
+Allow: /watch.php
+Allow: /tools.php
+Allow: /tools/
+
 # Disallow sensitive directories
 Disallow: /admin/
-Disallow: /config/
+Disallow: /config.php
+Disallow: /auth.php
+Disallow: /api.php
+Disallow: /ai-chat.php
+Disallow: /ai-helper.php
 Disallow: /cache/
 Disallow: /tmp/
 Disallow: /sessions/
 Disallow: /uploads/private/
+Disallow: /*.db$
 
 # Allow public assets
 Allow: /css/
 Allow: /js/
 Allow: /images/
-Allow: /tools/
+Allow: /style.css
+Allow: /script.js
 
-# Sitemap location (create this later if needed)
-# Sitemap: https://yourdomain.com/sitemap.xml
+# Google specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
 
-# ads.txt location for advertisers
-# ads.txt is available at: https://yourdomain.com/ads.txt
-
-# Crawl-delay for polite bots
+# Bing specific  
+User-agent: Bingbot
+Allow: /
 Crawl-delay: 1
 
-# Last updated: 2026-01-08
+# Sitemap location - IMPORTANT for SEO
+Sitemap: https://legendbl.tech/sitemap.xml
+
+# ads.txt for advertisers
+# Available at: https://legendbl.tech/ads.txt
+
+# Site Information
+# Name: Legend House
+# Domain: legendbl.tech
+# Keywords: downloading platform, stream movies, torrent search, magnet links
+
+# Last updated: 2026-01-10

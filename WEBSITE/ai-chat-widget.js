@@ -1,7 +1,7 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * LEGEND HOUSE - AI Chat Widget v2.0
- * Professional Dark Theme with Enhanced Features
+ * LEGEND HOUSE - AI Chat Widget v2.1
+ * Professional Dark Theme with Enhanced Features & Better Error Handling
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -13,13 +13,39 @@ class LegendAIChat {
         this.isMinimized = false;
         this.messages = [];
         this.isLoading = false;
+        this.isAvailable = true;
+        this.retryCount = 0;
+        this.maxRetries = 2;
         
-        // Detect base path
-        const scriptTag = document.currentScript || document.querySelector('script[src*="ai-chat-widget.js"]');
-        const scriptSrc = scriptTag ? scriptTag.src : '';
-        this.basePath = scriptSrc.includes('../ai-chat-widget.js') ? '../' : '';
+        // Detect base path intelligently
+        this.basePath = this.detectBasePath();
         
         this.init();
+    }
+    
+    detectBasePath() {
+        // Method 1: Check current script
+        const scriptTag = document.currentScript || document.querySelector('script[src*="ai-chat-widget.js"]');
+        if (scriptTag && scriptTag.src) {
+            const scriptSrc = scriptTag.src;
+            // If script is loaded from parent directory
+            if (scriptSrc.includes('../ai-chat-widget.js')) {
+                return '../';
+            }
+            // If script is loaded from tools subdirectory
+            if (scriptSrc.includes('/tools/') || window.location.pathname.includes('/tools/')) {
+                return '../';
+            }
+        }
+        
+        // Method 2: Check current URL path
+        const path = window.location.pathname;
+        if (path.includes('/tools/')) {
+            return '../';
+        }
+        
+        // Default: same directory
+        return '';
     }
     
     init() {
@@ -30,13 +56,26 @@ class LegendAIChat {
     
     async checkAvailability() {
         try {
-            const response = await fetch(this.basePath + 'ai-chat.php?action=available');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const response = await fetch(this.basePath + 'ai-chat.php?action=available', {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
             const data = await response.json();
-            if (!data.success || !data.available) {
-                console.log('AI features disabled');
+            this.isAvailable = data.success && data.available;
+            
+            if (this.isAvailable) {
+                console.log('✅ Legend AI Chat ready (v' + (data.version || '2.1') + ')');
+            } else {
+                console.log('⚠️ AI features disabled');
             }
         } catch (error) {
-            console.log('AI availability check failed, using fallback');
+            console.log('⚠️ AI availability check failed:', error.message);
+            // Still allow usage - will use fallback responses
+            this.isAvailable = true;
         }
     }
     
@@ -656,52 +695,118 @@ class LegendAIChat {
         });
     }
     
-    async sendMessage() {
+    async sendMessage(retryAttempt = 0) {
         const input = document.getElementById('ai-chat-input');
         const message = input.value.trim();
         
         if (!message || this.isLoading) return;
         
-        // Clear input
+        // Clear input immediately
+        const originalMessage = message;
         input.value = '';
         input.style.height = 'auto';
         
         // Get user initial for avatar
         const userInitial = 'U';
         
-        // Add user message
-        this.addMessage('user', message, userInitial);
+        // Add user message (only on first attempt)
+        if (retryAttempt === 0) {
+            this.addMessage('user', originalMessage, userInitial);
+        }
         
         // Show typing indicator
         this.showTypingIndicator();
         this.isLoading = true;
         
         try {
+            // Create abort controller for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+            
+            console.log('Sending AI request to:', this.basePath + 'ai-chat.php?action=chat');
+            
             const response = await fetch(this.basePath + 'ai-chat.php?action=chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify({
-                    message: message,
+                    message: originalMessage,
                     conversation_id: this.conversationId,
                     context: this.context
-                })
+                }),
+                signal: controller.signal
             });
             
-            const data = await response.json();
+            clearTimeout(timeoutId);
+            
+            // Try to parse response
+            let data;
+            const responseText = await response.text();
+            
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError, 'Response:', responseText);
+                throw new Error('Invalid server response');
+            }
+            
             this.hideTypingIndicator();
             
-            if (data.success) {
+            if (data.success && data.response) {
                 this.conversationId = data.conversation_id;
                 this.addMessage('assistant', data.response);
+                this.retryCount = 0;
+            } else if (data.error) {
+                // Show error but try to be helpful
+                if (data.error.includes('Authentication')) {
+                    this.addMessage('assistant', '🔐 Please **log in** to use the AI assistant.\n\n[👉 Click here to Login](login.php)\n\nOr [Sign Up](signup.php) for a free account!');
+                } else {
+                    this.addMessage('assistant', this.getLocalFallback(originalMessage));
+                }
             } else {
-                this.addMessage('assistant', '❌ ' + (data.error || 'Something went wrong. Please try again.'));
+                this.addMessage('assistant', this.getLocalFallback(originalMessage));
             }
         } catch (error) {
             this.hideTypingIndicator();
-            this.addMessage('assistant', '❌ Network error. Please check your connection and try again.');
+            console.error('AI Chat error:', error);
+            
+            // Always provide a helpful response
+            if (error.name === 'AbortError') {
+                this.addMessage('assistant', '⏱️ The request took too long.\n\n' + this.getLocalFallback(originalMessage));
+            } else if (error.message.includes('Authentication') || error.message.includes('401')) {
+                this.addMessage('assistant', '🔐 Please **log in** to use the AI assistant.\n\n[👉 Click here to Login](login.php)');
+            } else {
+                // Show local fallback response instead of error
+                this.addMessage('assistant', this.getLocalFallback(originalMessage));
+            }
         } finally {
             this.isLoading = false;
         }
+    }
+    
+    // Local fallback responses for when API fails
+    getLocalFallback(message) {
+        const msg = message.toLowerCase();
+        
+        if (msg.match(/(hi|hello|hey)/)) {
+            return "Hello! 👋 I'm Legend AI.\n\nI can help you with:\n• 🔍 Searching for content\n• 🧲 Torrent downloads\n• 🛠️ Using our tools\n\nWhat do you need help with?";
+        }
+        
+        if (msg.match(/(dork|search|google)/)) {
+            return "🔍 **Google Dorking Help**\n\nTry our **[Google Dorker](tools/dorker.php)** tool!\n\nCommon operators:\n• `site:example.com` - Search specific site\n• `intitle:keyword` - Search in titles\n• `filetype:pdf` - Find file types";
+        }
+        
+        if (msg.match(/(torrent|download|magnet|stream)/)) {
+            return "🧲 **Download Help**\n\n1. Search on [Home](home.php)\n2. Click a result\n3. Copy magnet link or click Stream\n\n**Tools:**\n• [Torrent Center](tools/torrent.php)\n• [Watch/Stream](watch.php)";
+        }
+        
+        if (msg.match(/(proxy|proxies)/)) {
+            return "🌐 **Proxy Tools**\n\n• [Proxy Scraper](tools/proxy-scraper.php) - 100+ sources\n• [Rotating Proxy](tools/rotating-proxy.php) - Auto-rotation\n\nNeed help with a specific tool?";
+        }
+        
+        return "I can help you with:\n\n• 🔍 **Search** - [Home](home.php)\n• 🛠️ **Tools** - [All Tools](tools.php)\n• 📊 **Dashboard** - [Dashboard](dashboard.php)\n\nWhat would you like to do?";
     }
     
     addMessage(role, content, userInitial = 'U') {

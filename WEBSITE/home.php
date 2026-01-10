@@ -3,8 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Legend House - Stream & Download Movies, TV Shows, Games</title>
-    <meta name="description" content="Legend House - The ultimate destination to stream and download movies, TV shows, games, software, and more. Watch instantly or download via magnet links.">
+    
+    <?php
+    // SEO Configuration for Home Page
+    $seo_title = 'Legend House - Stream & Download Movies, TV Shows, Games | LegendBL.tech';
+    $seo_description = 'Legend House (LegendBL.tech) - The ultimate downloading platform. Stream movies directly in browser or download via magnet links. Search 10+ sources for movies, TV shows, games, anime, software and more. Free, fast, no registration required.';
+    $seo_keywords = 'legend house, legendbl, legendbltech, legendbl.tech, downloading platform, stream movies online, download movies free, torrent search engine, magnet links, watch movies online free, download games, tv shows download, anime download, webtorrent streaming, free movie streaming, torrent finder';
+    $seo_url = 'https://legendbl.tech/home.php';
+    $seo_canonical = 'https://legendbl.tech/home.php';
+    include 'seo-head.php';
+    ?>
+    
+    <title><?php echo htmlspecialchars($seo_title); ?></title>
     
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
@@ -12,9 +22,47 @@
     
     <link rel="stylesheet" href="style.css">
     
-    
-    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+    
+    <!-- Page-specific structured data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Legend House - Stream & Download",
+        "description": "Stream and download movies, TV shows, games, software, and more from 10+ sources.",
+        "url": "https://legendbl.tech/home.php",
+        "mainEntity": {
+            "@type": "WebApplication",
+            "name": "Legend House Search",
+            "applicationCategory": "SearchApplication",
+            "operatingSystem": "Web Browser",
+            "offers": {
+                "@type": "Offer",
+                "price": "0"
+            }
+        },
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://legendbl.tech/"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Search",
+                    "item": "https://legendbl.tech/home.php"
+                }
+            ]
+        }
+    }
+    </script>
 </head>
 <body>
     <!-- Wallpaper Rotation System -->

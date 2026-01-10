@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Legend House</title>
+    
+    <?php
+    // SEO Configuration for Dashboard
+    $seo_title = 'Dashboard - Legend House | LegendBL.tech';
+    $seo_description = 'Your Legend House dashboard. View stats, access tools, manage downloads. The ultimate downloading platform with Google Dorker, Proxy Scraper, Torrent Center, and AI Assistant.';
+    $seo_keywords = 'legend house dashboard, legendbl tools, downloading platform, torrent center, google dorker, proxy scraper, ai assistant';
+    $seo_url = 'https://legendbl.tech/dashboard.php';
+    $seo_canonical = 'https://legendbl.tech/dashboard.php';
+    include 'seo-head.php';
+    ?>
+    
+    <title><?php echo htmlspecialchars($seo_title); ?></title>
     
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
