@@ -701,7 +701,8 @@ class LegendAIChat {
         
         if (!message || this.isLoading) return;
         
-        // Clear input
+        // Clear input immediately
+        const originalMessage = message;
         input.value = '';
         input.style.height = 'auto';
         
@@ -710,7 +711,7 @@ class LegendAIChat {
         
         // Add user message (only on first attempt)
         if (retryAttempt === 0) {
-            this.addMessage('user', message, userInitial);
+            this.addMessage('user', originalMessage, userInitial);
         }
         
         // Show typing indicator
@@ -720,7 +721,9 @@ class LegendAIChat {
         try {
             // Create abort controller for timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+            
+            console.log('Sending AI request to:', this.basePath + 'ai-chat.php?action=chat');
             
             const response = await fetch(this.basePath + 'ai-chat.php?action=chat', {
                 method: 'POST',
@@ -729,7 +732,7 @@ class LegendAIChat {
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    message: message,
+                    message: originalMessage,
                     conversation_id: this.conversationId,
                     context: this.context
                 }),
@@ -738,51 +741,72 @@ class LegendAIChat {
             
             clearTimeout(timeoutId);
             
-            // Check if response is OK
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Try to parse response
+            let data;
+            const responseText = await response.text();
+            
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError, 'Response:', responseText);
+                throw new Error('Invalid server response');
             }
             
-            const data = await response.json();
             this.hideTypingIndicator();
             
-            if (data.success) {
+            if (data.success && data.response) {
                 this.conversationId = data.conversation_id;
                 this.addMessage('assistant', data.response);
-                this.retryCount = 0; // Reset retry count on success
-            } else {
-                // Check if we should retry
-                if (retryAttempt < this.maxRetries) {
-                    console.log(`AI request failed, retrying (${retryAttempt + 1}/${this.maxRetries})...`);
-                    this.isLoading = false;
-                    input.value = message; // Restore message for retry
-                    setTimeout(() => this.sendMessage(retryAttempt + 1), 1000);
-                    return;
+                this.retryCount = 0;
+            } else if (data.error) {
+                // Show error but try to be helpful
+                if (data.error.includes('Authentication')) {
+                    this.addMessage('assistant', '🔐 Please **log in** to use the AI assistant.\n\n[👉 Click here to Login](login.php)\n\nOr [Sign Up](signup.php) for a free account!');
+                } else {
+                    this.addMessage('assistant', this.getLocalFallback(originalMessage));
                 }
-                this.addMessage('assistant', '❌ ' + (data.error || 'Something went wrong. Please try again.'));
+            } else {
+                this.addMessage('assistant', this.getLocalFallback(originalMessage));
             }
         } catch (error) {
             this.hideTypingIndicator();
             console.error('AI Chat error:', error);
             
-            // Handle specific errors
+            // Always provide a helpful response
             if (error.name === 'AbortError') {
-                this.addMessage('assistant', '⏱️ Request timed out. The AI is taking longer than expected. Please try again.');
-            } else if (error.message.includes('401') || error.message.includes('Authentication')) {
-                this.addMessage('assistant', '🔐 Please log in to use the AI assistant. [Login](login.php)');
-            } else if (retryAttempt < this.maxRetries) {
-                // Retry on network errors
-                console.log(`Network error, retrying (${retryAttempt + 1}/${this.maxRetries})...`);
-                this.isLoading = false;
-                input.value = message;
-                setTimeout(() => this.sendMessage(retryAttempt + 1), 2000);
-                return;
+                this.addMessage('assistant', '⏱️ The request took too long.\n\n' + this.getLocalFallback(originalMessage));
+            } else if (error.message.includes('Authentication') || error.message.includes('401')) {
+                this.addMessage('assistant', '🔐 Please **log in** to use the AI assistant.\n\n[👉 Click here to Login](login.php)');
             } else {
-                this.addMessage('assistant', '❌ Network error. Please check your connection and try again.\n\nTip: You can still browse our tools:\n• [Google Dorker](tools/dorker.php)\n• [Torrent Center](tools/torrent.php)\n• [Proxy Scraper](tools/proxy-scraper.php)');
+                // Show local fallback response instead of error
+                this.addMessage('assistant', this.getLocalFallback(originalMessage));
             }
         } finally {
             this.isLoading = false;
         }
+    }
+    
+    // Local fallback responses for when API fails
+    getLocalFallback(message) {
+        const msg = message.toLowerCase();
+        
+        if (msg.match(/(hi|hello|hey)/)) {
+            return "Hello! 👋 I'm Legend AI.\n\nI can help you with:\n• 🔍 Searching for content\n• 🧲 Torrent downloads\n• 🛠️ Using our tools\n\nWhat do you need help with?";
+        }
+        
+        if (msg.match(/(dork|search|google)/)) {
+            return "🔍 **Google Dorking Help**\n\nTry our **[Google Dorker](tools/dorker.php)** tool!\n\nCommon operators:\n• `site:example.com` - Search specific site\n• `intitle:keyword` - Search in titles\n• `filetype:pdf` - Find file types";
+        }
+        
+        if (msg.match(/(torrent|download|magnet|stream)/)) {
+            return "🧲 **Download Help**\n\n1. Search on [Home](home.php)\n2. Click a result\n3. Copy magnet link or click Stream\n\n**Tools:**\n• [Torrent Center](tools/torrent.php)\n• [Watch/Stream](watch.php)";
+        }
+        
+        if (msg.match(/(proxy|proxies)/)) {
+            return "🌐 **Proxy Tools**\n\n• [Proxy Scraper](tools/proxy-scraper.php) - 100+ sources\n• [Rotating Proxy](tools/rotating-proxy.php) - Auto-rotation\n\nNeed help with a specific tool?";
+        }
+        
+        return "I can help you with:\n\n• 🔍 **Search** - [Home](home.php)\n• 🛠️ **Tools** - [All Tools](tools.php)\n• 📊 **Dashboard** - [Dashboard](dashboard.php)\n\nWhat would you like to do?";
     }
     
     addMessage(role, content, userInitial = 'U') {
