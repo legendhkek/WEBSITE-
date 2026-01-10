@@ -1,0 +1,16 @@
+No syntax errors detected in /workspace/WEBSITE/ai-chat.php
+No syntax errors detected in /workspace/WEBSITE/ai-helper.php
+No syntax errors detected in /workspace/WEBSITE/api.php
+No syntax errors detected in /workspace/WEBSITE/auth.php
+No syntax errors detected in /workspace/WEBSITE/cleanup.php
+No syntax errors detected in /workspace/WEBSITE/config.example.php
+No syntax errors detected in /workspace/WEBSITE/config.php
+No syntax errors detected in /workspace/WEBSITE/dashboard.php
+No syntax errors detected in /workspace/WEBSITE/google-callback.php
+No syntax errors detected in /workspace/WEBSITE/home.php
+No syntax errors detected in /workspace/WEBSITE/index.php
+No syntax errors detected in /workspace/WEBSITE/login.php
+No syntax errors detected in /workspace/WEBSITE/settings.php
+No syntax errors detected in /workspace/WEBSITE/signup.php
+No syntax errors detected in /workspace/WEBSITE/tools.php
+No syntax errors detected in /workspace/WEBSITE/watch.php

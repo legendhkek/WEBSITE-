@@ -41,8 +41,13 @@ define('SEARCH_CACHE_TTL', 600); // 10 minutes
 // Get your API key from: https://www.blackbox.ai/
 // To use environment variable: Set BLACKBOX_API_KEY environment variable
 define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'sk-EaCMR2Zc9NrXAb7_1FkHZQ');
-// Use the correct Blackbox AI API endpoint
-define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://www.blackbox.ai/api/chat');
+// Blackbox provides an OpenAI-compatible endpoint; prefer it by default.
+// You can override via env var BLACKBOX_API_ENDPOINT if needed.
+define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://api.blackbox.ai/v1/chat/completions');
+
+// Blackbox model to use with /v1/chat/completions.
+// You can list available models via: GET https://api.blackbox.ai/v1/models
+define('BLACKBOX_MODEL', getenv('BLACKBOX_MODEL') ?: 'blackboxai/mistralai/mistral-7b-instruct:free');
 
 // AI is enabled only if both API key and endpoint are configured
 $hasApiKey = !empty(BLACKBOX_API_KEY) && BLACKBOX_API_KEY !== 'YOUR_BLACKBOX_API_KEY_HERE';

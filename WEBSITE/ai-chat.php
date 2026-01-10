@@ -11,17 +11,28 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/ai-helper.php'; // For shared validation function
 
-// Check if user is logged in
+header('Content-Type: application/json');
+
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+
+// Allow availability checks without requiring login so the widget can render.
+if ($action === 'available') {
+    echo json_encode([
+        'success' => true,
+        'available' => AI_FEATURES_ENABLED,
+        'auth_required' => true
+    ]);
+    exit;
+}
+
+// Other actions require authentication
 $user = getCurrentUser();
 if (!$user) {
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'error' => 'Authentication required']);
     exit;
 }
 
-header('Content-Type: application/json');
-
-// Get database connection
+// Get database connection (SQLite3)
 $db = getDatabase();
 
 // Initialize AI chat tables
@@ -47,8 +58,6 @@ $db->exec("
     )
 ");
 
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-
 switch ($action) {
     case 'chat':
         handleChat($db, $user);
@@ -61,9 +70,6 @@ switch ($action) {
         break;
     case 'delete':
         deleteConversation($db, $user);
-        break;
-    case 'available':
-        echo json_encode(['success' => true, 'available' => AI_FEATURES_ENABLED]);
         break;
     default:
         echo json_encode(['success' => false, 'error' => 'Invalid action']);
@@ -93,18 +99,29 @@ function handleChat($db, $user) {
     // Create new conversation if needed
     if (!$conversationId) {
         $title = substr($message, 0, 50) . (strlen($message) > 50 ? '...' : '');
-        $stmt = $db->prepare("INSERT INTO ai_conversations (user_id, title, created_at, updated_at) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$user['id'], $title, time(), time()]);
-        $conversationId = $db->lastInsertId();
+        $stmt = $db->prepare("INSERT INTO ai_conversations (user_id, title, created_at, updated_at) VALUES (:user_id, :title, :created_at, :updated_at)");
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->bindValue(':title', $title, SQLITE3_TEXT);
+        $stmt->bindValue(':created_at', time(), SQLITE3_INTEGER);
+        $stmt->bindValue(':updated_at', time(), SQLITE3_INTEGER);
+        $stmt->execute();
+        $conversationId = $db->lastInsertRowID();
     } else {
         // Update conversation timestamp
-        $stmt = $db->prepare("UPDATE ai_conversations SET updated_at = ? WHERE id = ? AND user_id = ?");
-        $stmt->execute([time(), $conversationId, $user['id']]);
+        $stmt = $db->prepare("UPDATE ai_conversations SET updated_at = :updated_at WHERE id = :id AND user_id = :user_id");
+        $stmt->bindValue(':updated_at', time(), SQLITE3_INTEGER);
+        $stmt->bindValue(':id', (int)$conversationId, SQLITE3_INTEGER);
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->execute();
     }
     
     // Save user message
-    $stmt = $db->prepare("INSERT INTO ai_messages (conversation_id, role, content, created_at) VALUES (?, 'user', ?, ?)");
-    $stmt->execute([$conversationId, $message, time()]);
+    $stmt = $db->prepare("INSERT INTO ai_messages (conversation_id, role, content, created_at) VALUES (:conversation_id, :role, :content, :created_at)");
+    $stmt->bindValue(':conversation_id', (int)$conversationId, SQLITE3_INTEGER);
+    $stmt->bindValue(':role', 'user', SQLITE3_TEXT);
+    $stmt->bindValue(':content', $message, SQLITE3_TEXT);
+    $stmt->bindValue(':created_at', time(), SQLITE3_INTEGER);
+    $stmt->execute();
     
     // Get conversation history for context
     $history = getConversationHistory($db, $conversationId, 10);
@@ -115,8 +132,12 @@ function handleChat($db, $user) {
     // Always save and return the AI response (even if it's an error message)
     if ($aiResponse) {
         // Save AI response
-        $stmt = $db->prepare("INSERT INTO ai_messages (conversation_id, role, content, created_at) VALUES (?, 'assistant', ?, ?)");
-        $stmt->execute([$conversationId, $aiResponse, time()]);
+        $stmt = $db->prepare("INSERT INTO ai_messages (conversation_id, role, content, created_at) VALUES (:conversation_id, :role, :content, :created_at)");
+        $stmt->bindValue(':conversation_id', (int)$conversationId, SQLITE3_INTEGER);
+        $stmt->bindValue(':role', 'assistant', SQLITE3_TEXT);
+        $stmt->bindValue(':content', $aiResponse, SQLITE3_TEXT);
+        $stmt->bindValue(':created_at', time(), SQLITE3_INTEGER);
+        $stmt->execute();
         
         echo json_encode([
             'success' => true,
@@ -141,8 +162,9 @@ function getAIResponse($message, $history = [], $context = 'general') {
     
     $systemPrompt = getSystemPrompt($context);
     
-    // Build messages array with system prompt as first user message context
+    // Build messages array
     $messages = [];
+    $messages[] = ['role' => 'system', 'content' => $systemPrompt];
     
     // Add conversation history
     foreach ($history as $msg) {
@@ -152,94 +174,14 @@ function getAIResponse($message, $history = [], $context = 'general') {
         ];
     }
     
-    // Add current message with system context
-    $fullMessage = "Context: " . $systemPrompt . "\n\nUser: " . $message;
-    $messages[] = ['role' => 'user', 'content' => $fullMessage];
-    
-    // Blackbox AI native request format
-    $data = [
-        'messages' => $messages,
-        'id' => uniqid('legendhouse_chat_'),
-        'previewToken' => null,
-        'userId' => null,
-        'codeModelMode' => true,
-        'agentMode' => [],
-        'trendingAgentMode' => [],
-        'isMicMode' => false,
-        'maxTokens' => 2000,
-        'isChromeExt' => false,
-        'githubToken' => null,
-        'clickedAnswer2' => false,
-        'clickedAnswer3' => false,
-        'clickedForceWebSearch' => false,
-        'visitFromDelta' => false,
-        'mobileClient' => false
-    ];
-    
-    $ch = curl_init(BLACKBOX_API_ENDPOINT);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($data),
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'Origin: https://www.blackbox.ai',
-            'Referer: https://www.blackbox.ai/',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        ],
-        CURLOPT_TIMEOUT => 45,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_CONNECTTIMEOUT => 15,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS => 5
-    ]);
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    $curlErrno = curl_errno($ch);
-    curl_close($ch);
-    
-    if ($curlError) {
-        error_log("Blackbox AI Chat CURL error (errno: $curlErrno): $curlError");
-        
-        // Provide specific error messages based on error type
-        if ($curlErrno === 6) { // CURLE_COULDNT_RESOLVE_HOST
-            return "I apologize, but I cannot reach the AI service right now. This appears to be a network connectivity issue. Please check your internet connection and try again later.";
-        } elseif ($curlErrno === 7) { // CURLE_COULDNT_CONNECT
-            return "I apologize, but the AI service is currently unavailable. The service may be temporarily down. Please try again in a few minutes.";
-        } elseif ($curlErrno === 28) { // CURLE_OPERATION_TIMEDOUT
-            return "I apologize, but the AI service is taking too long to respond. Please try again with a shorter message or wait a moment before retrying.";
-        } elseif ($curlErrno === 35 || $curlErrno === 60) { // SSL errors
-            return "I apologize, but there's a security certificate issue connecting to the AI service. Please contact the administrator to resolve this.";
-        }
-        
-        // Generic error for other cases
-        return "I apologize, but I'm unable to connect to the AI service at the moment. Please try again later. If the problem persists, contact support.";
+    // Add current message
+    $messages[] = ['role' => 'user', 'content' => $message];
+
+    $content = callBlackboxChatMessages($messages, 2000);
+    if ($content === null) {
+        return "I apologize, but the AI service is currently unavailable. Please try again later.";
     }
-    
-    if ($httpCode !== 200) {
-        error_log("Blackbox AI Chat HTTP error: $httpCode - Response: " . substr($response, 0, 500));
-        return "I apologize, but the AI service returned an error (HTTP $httpCode). Please try again later.";
-    }
-    
-    if (!$response) {
-        error_log("Blackbox AI Chat: Empty response");
-        return "I apologize, but I received an empty response from the AI service. Please try again.";
-    }
-    
-    // Blackbox returns plain text response
-    $content = trim($response);
-    
-    // Clean up any markdown artifacts
-    $content = preg_replace('/^\$@\$v=undefined-rv1\$@\$/i', '', $content);
-    $content = trim($content);
-    
-    if (empty($content)) {
-        return "I apologize, but I received an empty response. Please try again.";
-    }
-    
+
     return $content;
 }
 
@@ -267,17 +209,19 @@ function getSystemPrompt($context) {
  */
 function getConversationHistory($db, $conversationId, $limit = 10) {
     $stmt = $db->prepare("
-        SELECT role, content 
-        FROM ai_messages 
-        WHERE conversation_id = ? 
-        ORDER BY created_at DESC 
-        LIMIT ?
+        SELECT role, content
+        FROM ai_messages
+        WHERE conversation_id = :conversation_id
+        ORDER BY created_at DESC
+        LIMIT :limit
     ");
-    $stmt->execute([$conversationId, $limit]);
-    
+    $stmt->bindValue(':conversation_id', (int)$conversationId, SQLITE3_INTEGER);
+    $stmt->bindValue(':limit', (int)$limit, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
     $messages = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $messages[] = $row;
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
+        $messages[] = ['role' => $row['role'], 'content' => $row['content']];
     }
     
     return array_reverse($messages);
@@ -291,14 +235,16 @@ function getConversations($db, $user) {
         SELECT id, title, created_at, updated_at,
                (SELECT COUNT(*) FROM ai_messages WHERE conversation_id = ai_conversations.id) as message_count
         FROM ai_conversations 
-        WHERE user_id = ? 
+        WHERE user_id = :user_id
         ORDER BY updated_at DESC 
-        LIMIT 50
+        LIMIT :limit
     ");
-    $stmt->execute([$user['id']]);
-    
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $stmt->bindValue(':limit', 50, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
     $conversations = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
         $conversations[] = $row;
     }
     
@@ -317,9 +263,11 @@ function getConversation($db, $user) {
     }
     
     // Verify ownership
-    $stmt = $db->prepare("SELECT * FROM ai_conversations WHERE id = ? AND user_id = ?");
-    $stmt->execute([$conversationId, $user['id']]);
-    $conversation = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("SELECT * FROM ai_conversations WHERE id = :id AND user_id = :user_id");
+    $stmt->bindValue(':id', (int)$conversationId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $conversation = $result ? $result->fetchArray(SQLITE3_ASSOC) : null;
     
     if (!$conversation) {
         echo json_encode(['success' => false, 'error' => 'Conversation not found']);
@@ -327,11 +275,12 @@ function getConversation($db, $user) {
     }
     
     // Get messages
-    $stmt = $db->prepare("SELECT * FROM ai_messages WHERE conversation_id = ? ORDER BY created_at ASC");
-    $stmt->execute([$conversationId]);
+    $stmt = $db->prepare("SELECT * FROM ai_messages WHERE conversation_id = :conversation_id ORDER BY created_at ASC");
+    $stmt->bindValue(':conversation_id', (int)$conversationId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
     
     $messages = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    while ($result && ($row = $result->fetchArray(SQLITE3_ASSOC))) {
         $messages[] = $row;
     }
     
@@ -352,13 +301,16 @@ function deleteConversation($db, $user) {
     }
     
     // Verify ownership and delete
-    $stmt = $db->prepare("DELETE FROM ai_conversations WHERE id = ? AND user_id = ?");
-    $stmt->execute([$conversationId, $user['id']]);
-    
-    if ($stmt->rowCount() > 0) {
+    $stmt = $db->prepare("DELETE FROM ai_conversations WHERE id = :id AND user_id = :user_id");
+    $stmt->bindValue(':id', (int)$conversationId, SQLITE3_INTEGER);
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $stmt->execute();
+
+    if ($db->changes() > 0) {
         // Delete associated messages
-        $stmt = $db->prepare("DELETE FROM ai_messages WHERE conversation_id = ?");
-        $stmt->execute([$conversationId]);
+        $stmt = $db->prepare("DELETE FROM ai_messages WHERE conversation_id = :conversation_id");
+        $stmt->bindValue(':conversation_id', (int)$conversationId, SQLITE3_INTEGER);
+        $stmt->execute();
         
         echo json_encode(['success' => true]);
     } else {

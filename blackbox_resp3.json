@@ -1,0 +1,1 @@
+{"error":{"message":"litellm.NotFoundError: NotFoundError: OpenrouterException - {\"error\":{\"message\":\"No endpoints found for deepseek/deepseek-r1:free.\",\"code\":404},\"user_id\":\"user_2dvySw1JqTZzABYD4OncxXptEmq\"}. Received Model Group=blackboxai/deepseek/deepseek-r1:free\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"404"}}

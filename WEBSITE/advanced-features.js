@@ -119,8 +119,14 @@ async function getAISuggestions(query) {
         const response = await fetch(`ai-helper.php?action=suggestions&query=${encodeURIComponent(query)}`);
         const data = await response.json();
         
-        if (data.success && data.suggestions && data.suggestions.suggestions) {
-            aiState.suggestions = data.suggestions.suggestions;
+        // Expected shape: { success: true, suggestions: string[] }
+        // Backward compatible with older shape: { suggestions: { suggestions: string[] } }
+        const suggestions = Array.isArray(data.suggestions)
+            ? data.suggestions
+            : (data.suggestions && Array.isArray(data.suggestions.suggestions) ? data.suggestions.suggestions : []);
+
+        if (data.success && suggestions.length > 0) {
+            aiState.suggestions = suggestions;
             displayAISuggestions(aiState.suggestions);
         }
     } catch (error) {
