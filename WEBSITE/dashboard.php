@@ -1,18 +1,60 @@
+<?php
+// IMPORTANT: All PHP session/auth code must be at the TOP before any HTML output
+require_once __DIR__ . '/auth.php';
+
+// Check if user is logged in
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$user = getCurrentUser();
+if (!$user) {
+    header('Location: login.php');
+    exit;
+}
+
+// Get user's download history
+$db = getDB();
+$stmt = $db->prepare('SELECT * FROM download_history WHERE user_id = :user_id ORDER BY downloaded_at DESC LIMIT 10');
+$stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+$result = $stmt->execute();
+$downloadHistory = [];
+while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    $downloadHistory[] = $row;
+}
+$db->close();
+
+// Calculate user stats
+$userDownloads = count($downloadHistory);
+$userDownloadsMonth = count(array_filter($downloadHistory, function($d) { 
+    return strtotime($d['downloaded_at']) > strtotime('-30 days'); 
+}));
+$daysActive = floor((time() - strtotime($user['created_at'])) / 86400);
+
+// Get platform-wide statistics
+$platformStats = getPlatformStats();
+$searchStats = getSearchStats();
+$recentActivity = getRecentActivity(10);
+
+// Calculate growth percentages (mock for now, but based on real data)
+$userGrowth = $platformStats['new_users_week'] > 0 ? '+' . $platformStats['new_users_week'] : '0';
+$downloadGrowth = $platformStats['downloads_week'] > 0 ? '+' . $platformStats['downloads_week'] : '0';
+
+// SEO Configuration for Dashboard
+$seo_title = 'Dashboard - Legend House | LegendBL.tech';
+$seo_description = 'Your Legend House dashboard. View stats, access tools, manage downloads. The ultimate downloading platform with Google Dorker, Proxy Scraper, Torrent Center, and AI Assistant.';
+$seo_keywords = 'legend house dashboard, legendbl tools, downloading platform, torrent center, google dorker, proxy scraper, ai assistant';
+$seo_url = 'https://legendbl.tech/dashboard.php';
+$seo_canonical = 'https://legendbl.tech/dashboard.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <?php
-    // SEO Configuration for Dashboard
-    $seo_title = 'Dashboard - Legend House | LegendBL.tech';
-    $seo_description = 'Your Legend House dashboard. View stats, access tools, manage downloads. The ultimate downloading platform with Google Dorker, Proxy Scraper, Torrent Center, and AI Assistant.';
-    $seo_keywords = 'legend house dashboard, legendbl tools, downloading platform, torrent center, google dorker, proxy scraper, ai assistant';
-    $seo_url = 'https://legendbl.tech/dashboard.php';
-    $seo_canonical = 'https://legendbl.tech/dashboard.php';
-    include 'seo-head.php';
-    ?>
+    <?php include 'seo-head.php'; ?>
     
     <title><?php echo htmlspecialchars($seo_title); ?></title>
     
@@ -24,48 +66,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
 </head>
 <body data-theme="dark">
-    <?php
-    require_once __DIR__ . '/auth.php';
-    
-    // Check if user is logged in
-    if (!isLoggedIn()) {
-        header('Location: login.php');
-        exit;
-    }
-    
-    $user = getCurrentUser();
-    if (!$user) {
-        header('Location: login.php');
-        exit;
-    }
-    
-    // Get user's download history
-    $db = getDB();
-    $stmt = $db->prepare('SELECT * FROM download_history WHERE user_id = :user_id ORDER BY downloaded_at DESC LIMIT 10');
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $downloadHistory = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $downloadHistory[] = $row;
-    }
-    $db->close();
-    
-    // Calculate user stats
-    $userDownloads = count($downloadHistory);
-    $userDownloadsMonth = count(array_filter($downloadHistory, function($d) { 
-        return strtotime($d['downloaded_at']) > strtotime('-30 days'); 
-    }));
-    $daysActive = floor((time() - strtotime($user['created_at'])) / 86400);
-    
-    // Get platform-wide statistics
-    $platformStats = getPlatformStats();
-    $searchStats = getSearchStats();
-    $recentActivity = getRecentActivity(10);
-    
-    // Calculate growth percentages (mock for now, but based on real data)
-    $userGrowth = $platformStats['new_users_week'] > 0 ? '+' . $platformStats['new_users_week'] : '0';
-    $downloadGrowth = $platformStats['downloads_week'] > 0 ? '+' . $platformStats['downloads_week'] : '0';
-    ?>
     
     <div class="app-layout">
         <!-- Left Sidebar -->
