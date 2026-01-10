@@ -149,9 +149,12 @@ function callHuggingFace($message, $systemPrompt, $history = []) {
 
 /**
  * Call Blackbox AI API (Updated for 2024+ API format)
+ * Uses API key from config.php if provided
  */
 function callBlackbox($message, $systemPrompt, $history = []) {
-    $endpoint = 'https://www.blackbox.ai/api/chat';
+    // Get API key and endpoint from config
+    $apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : 'free';
+    $endpoint = defined('BLACKBOX_API_ENDPOINT') ? BLACKBOX_API_ENDPOINT : 'https://www.blackbox.ai/api/chat';
     
     $messages = [];
     
@@ -170,7 +173,7 @@ function callBlackbox($message, $systemPrompt, $history = []) {
     $data = [
         'messages' => $messages,
         'id' => uniqid('lh_'),
-        'previewToken' => null,
+        'previewToken' => ($apiKey !== 'free') ? $apiKey : null,
         'userId' => null,
         'codeModelMode' => false,
         'agentMode' => [],
@@ -188,22 +191,30 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         'mobileClient' => false
     ];
     
+    // Build headers - include API key if provided
+    $headers = [
+        'Content-Type: application/json',
+        'Accept: */*',
+        'Accept-Language: en-US,en;q=0.9',
+        'Origin: https://www.blackbox.ai',
+        'Referer: https://www.blackbox.ai/',
+        'Sec-Fetch-Dest: empty',
+        'Sec-Fetch-Mode: cors',
+        'Sec-Fetch-Site: same-origin',
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ];
+    
+    // Add Authorization header if API key is provided
+    if ($apiKey && $apiKey !== 'free') {
+        $headers[] = 'Authorization: Bearer ' . $apiKey;
+    }
+    
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($data),
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: */*',
-            'Accept-Language: en-US,en;q=0.9',
-            'Origin: https://www.blackbox.ai',
-            'Referer: https://www.blackbox.ai/',
-            'Sec-Fetch-Dest: empty',
-            'Sec-Fetch-Mode: cors',
-            'Sec-Fetch-Site: same-origin',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        ],
+        CURLOPT_HTTPHEADER => $headers,
         CURLOPT_TIMEOUT => 60,
         CURLOPT_CONNECTTIMEOUT => 15,
         CURLOPT_SSL_VERIFYPEER => false,
@@ -236,7 +247,7 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         }
     }
     
-    error_log("Blackbox API failed with HTTP $httpCode");
+    error_log("Blackbox API failed with HTTP $httpCode - Key used: " . ($apiKey !== 'free' ? 'Custom' : 'Free'));
     return null;
 }
 
