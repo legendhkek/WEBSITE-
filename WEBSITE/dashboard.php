@@ -39,12 +39,21 @@
     }
     $db->close();
     
-    // Calculate stats
-    $totalDownloads = count($downloadHistory);
-    $thisMonth = count(array_filter($downloadHistory, function($d) { 
+    // Calculate user stats
+    $userDownloads = count($downloadHistory);
+    $userDownloadsMonth = count(array_filter($downloadHistory, function($d) { 
         return strtotime($d['downloaded_at']) > strtotime('-30 days'); 
     }));
-    $activeHours = number_format((time() - strtotime($user['created_at'])) / 3600, 0);
+    $daysActive = floor((time() - strtotime($user['created_at'])) / 86400);
+    
+    // Get platform-wide statistics
+    $platformStats = getPlatformStats();
+    $searchStats = getSearchStats();
+    $recentActivity = getRecentActivity(10);
+    
+    // Calculate growth percentages (mock for now, but based on real data)
+    $userGrowth = $platformStats['new_users_week'] > 0 ? '+' . $platformStats['new_users_week'] : '0';
+    $downloadGrowth = $platformStats['downloads_week'] > 0 ? '+' . $platformStats['downloads_week'] : '0';
     ?>
     
     <div class="app-layout">
@@ -288,74 +297,117 @@
                     <p class="page-subtitle">Welcome back! Here's what's happening with your account.</p>
                 </div>
                 
-                <!-- Stats Grid -->
+                <!-- Platform Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card fade-in" style="animation-delay: 0.1s">
+                        <div class="stat-header">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-trend positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                <?php echo $userGrowth; ?> this week
+                            </div>
+                        </div>
+                        <div class="stat-value"><?php echo number_format($platformStats['total_users']); ?></div>
+                        <div class="stat-label">Total Users</div>
+                        <div class="stat-progress">
+                            <div class="stat-progress-bar" style="width: <?php echo min($platformStats['total_users'] * 5, 100); ?>%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.2s">
                         <div class="stat-header">
                             <div class="stat-icon">📥</div>
                             <div class="stat-trend positive">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
                                 </svg>
-                                +12%
+                                <?php echo $downloadGrowth; ?> this week
                             </div>
                         </div>
-                        <div class="stat-value"><?php echo $totalDownloads; ?></div>
+                        <div class="stat-value"><?php echo number_format($platformStats['total_downloads']); ?></div>
                         <div class="stat-label">Total Downloads</div>
                         <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: <?php echo min($totalDownloads * 10, 100); ?>%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card fade-in" style="animation-delay: 0.2s">
-                        <div class="stat-header">
-                            <div class="stat-icon">📅</div>
-                            <div class="stat-trend positive">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                                </svg>
-                                +8%
-                            </div>
-                        </div>
-                        <div class="stat-value"><?php echo $thisMonth; ?></div>
-                        <div class="stat-label">This Month</div>
-                        <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: <?php echo min($thisMonth * 10, 100); ?>%"></div>
+                            <div class="stat-progress-bar" style="width: <?php echo min($platformStats['total_downloads'] * 2, 100); ?>%"></div>
                         </div>
                     </div>
                     
                     <div class="stat-card fade-in" style="animation-delay: 0.3s">
                         <div class="stat-header">
-                            <div class="stat-icon">⚡</div>
+                            <div class="stat-icon">🔍</div>
                             <div class="stat-trend positive">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
                                 </svg>
-                                +15%
+                                +<?php echo $searchStats['searches_today']; ?> today
                             </div>
                         </div>
-                        <div class="stat-value"><?php echo $activeHours; ?></div>
-                        <div class="stat-label">Active Hours</div>
+                        <div class="stat-value"><?php echo number_format($searchStats['total_searches']); ?></div>
+                        <div class="stat-label">Total Searches</div>
                         <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: 80%"></div>
+                            <div class="stat-progress-bar" style="width: <?php echo min($searchStats['total_searches'], 100); ?>%"></div>
                         </div>
                     </div>
                     
                     <div class="stat-card fade-in" style="animation-delay: 0.4s">
                         <div class="stat-header">
-                            <div class="stat-icon">🔥</div>
+                            <div class="stat-icon">🟢</div>
                             <div class="stat-trend positive">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
                                 </svg>
-                                +22%
+                                Active
                             </div>
                         </div>
-                        <div class="stat-value"><?php echo max(5, $totalDownloads * 3); ?></div>
-                        <div class="stat-label">Streak Days</div>
+                        <div class="stat-value"><?php echo $platformStats['active_users']; ?></div>
+                        <div class="stat-label">Active Users (7d)</div>
                         <div class="stat-progress">
-                            <div class="stat-progress-bar" style="width: 45%"></div>
+                            <div class="stat-progress-bar" style="width: <?php echo $platformStats['total_users'] > 0 ? round(($platformStats['active_users'] / $platformStats['total_users']) * 100) : 0; ?>%"></div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Your Personal Stats -->
+                <h3 style="font-size: 16px; color: var(--text-secondary); margin: 24px 0 16px; font-weight: 500;">📊 Your Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card fade-in" style="animation-delay: 0.5s">
+                        <div class="stat-header">
+                            <div class="stat-icon">📥</div>
+                        </div>
+                        <div class="stat-value"><?php echo $userDownloads; ?></div>
+                        <div class="stat-label">Your Downloads</div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.6s">
+                        <div class="stat-header">
+                            <div class="stat-icon">📅</div>
+                        </div>
+                        <div class="stat-value"><?php echo $userDownloadsMonth; ?></div>
+                        <div class="stat-label">This Month</div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.7s">
+                        <div class="stat-header">
+                            <div class="stat-icon">⏱️</div>
+                        </div>
+                        <div class="stat-value"><?php echo $daysActive; ?></div>
+                        <div class="stat-label">Days Active</div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.8s">
+                        <div class="stat-header">
+                            <div class="stat-icon">🏆</div>
+                        </div>
+                        <div class="stat-value"><?php 
+                            // Rank calculation
+                            if ($userDownloads >= 100) echo 'Pro';
+                            elseif ($userDownloads >= 50) echo 'Expert';
+                            elseif ($userDownloads >= 10) echo 'Regular';
+                            elseif ($userDownloads >= 1) echo 'Starter';
+                            else echo 'New';
+                        ?></div>
+                        <div class="stat-label">Your Rank</div>
                     </div>
                 </div>
                 
@@ -363,16 +415,64 @@
                 <div class="content-grid">
                     <!-- Left Column -->
                     <div>
-                        <!-- Recent Activity -->
+                        <!-- Platform Activity (Real-time) -->
                         <div class="card fade-in" style="animation-delay: 0.5s; margin-bottom: 24px;">
                             <div class="card-header">
                                 <h3 class="card-title">
-                                    <span class="card-title-icon">📊</span>
-                                    Recent Activity
+                                    <span class="card-title-icon">🌐</span>
+                                    Platform Activity
                                 </h3>
                                 <div class="card-actions">
-                                    <button class="card-action-btn">View All</button>
+                                    <span style="font-size: 11px; color: var(--text-muted);">Live Feed</span>
                                 </div>
+                            </div>
+                            <div class="card-body">
+                                <ul class="activity-list">
+                                    <?php if (!empty($recentActivity)): ?>
+                                        <?php foreach (array_slice($recentActivity, 0, 6) as $activity): ?>
+                                        <li class="activity-item">
+                                            <div class="activity-icon"><?php echo $activity['icon']; ?></div>
+                                            <div class="activity-content">
+                                                <div class="activity-title">
+                                                    <?php if ($activity['type'] === 'signup'): ?>
+                                                        New user joined
+                                                    <?php else: ?>
+                                                        Content downloaded
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="activity-desc"><?php echo htmlspecialchars($activity['description']); ?></div>
+                                            </div>
+                                            <div class="activity-time"><?php 
+                                                $timestamp = strtotime($activity['timestamp']);
+                                                $diff = time() - $timestamp;
+                                                if ($diff < 60) echo 'Just now';
+                                                elseif ($diff < 3600) echo floor($diff / 60) . 'm ago';
+                                                elseif ($diff < 86400) echo floor($diff / 3600) . 'h ago';
+                                                else echo date('M d', $timestamp);
+                                            ?></div>
+                                        </li>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <li class="activity-item">
+                                            <div class="activity-icon">🎉</div>
+                                            <div class="activity-content">
+                                                <div class="activity-title">Welcome!</div>
+                                                <div class="activity-desc">Be the first to explore Legend House</div>
+                                            </div>
+                                            <div class="activity-time">Now</div>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Your Recent Activity -->
+                        <div class="card fade-in" style="animation-delay: 0.6s; margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">📊</span>
+                                    Your Activity
+                                </h3>
                             </div>
                             <div class="card-body">
                                 <ul class="activity-list">
@@ -382,27 +482,19 @@
                                             <div class="activity-icon">📥</div>
                                             <div class="activity-content">
                                                 <div class="activity-title">Downloaded content</div>
-                                                <div class="activity-desc"><?php echo htmlspecialchars(substr($download['torrent_name'], 0, 50)); ?>...</div>
+                                                <div class="activity-desc"><?php echo htmlspecialchars(substr($download['torrent_name'], 0, 40)); ?>...</div>
                                             </div>
                                             <div class="activity-time"><?php echo date('M d', strtotime($download['downloaded_at'])); ?></div>
                                         </li>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <li class="activity-item">
-                                            <div class="activity-icon">👋</div>
-                                            <div class="activity-content">
-                                                <div class="activity-title">Account created</div>
-                                                <div class="activity-desc">Welcome to Legend House!</div>
-                                            </div>
-                                            <div class="activity-time"><?php echo date('M d', strtotime($user['created_at'])); ?></div>
-                                        </li>
-                                        <li class="activity-item">
                                             <div class="activity-icon">🎯</div>
                                             <div class="activity-content">
-                                                <div class="activity-title">Getting started</div>
-                                                <div class="activity-desc">Try searching for your favorite content</div>
+                                                <div class="activity-title">No downloads yet</div>
+                                                <div class="activity-desc">Search for content to get started</div>
                                             </div>
-                                            <div class="activity-time">Now</div>
+                                            <div class="activity-time">-</div>
                                         </li>
                                     <?php endif; ?>
                                 </ul>
@@ -410,7 +502,7 @@
                         </div>
                         
                         <!-- System Status -->
-                        <div class="card fade-in" style="animation-delay: 0.6s;">
+                        <div class="card fade-in" style="animation-delay: 0.7s;">
                             <div class="card-header">
                                 <h3 class="card-title">
                                     <span class="card-title-icon">🟢</span>
@@ -422,31 +514,71 @@
                                     <div class="status-item">
                                         <div class="status-indicator online"></div>
                                         <div class="status-info">
-                                            <div class="status-name">API Services</div>
-                                            <div class="status-detail">99.9% uptime</div>
+                                            <div class="status-name">Search API</div>
+                                            <div class="status-detail">10+ sources active</div>
                                         </div>
                                     </div>
                                     <div class="status-item">
                                         <div class="status-indicator online"></div>
                                         <div class="status-info">
-                                            <div class="status-name">Torrent Network</div>
-                                            <div class="status-detail">All trackers online</div>
+                                            <div class="status-name">WebTorrent</div>
+                                            <div class="status-detail">Streaming ready</div>
                                         </div>
                                     </div>
                                     <div class="status-item">
                                         <div class="status-indicator online"></div>
                                         <div class="status-info">
-                                            <div class="status-name">Proxy Services</div>
-                                            <div class="status-detail">500+ proxies available</div>
+                                            <div class="status-name">Proxy Tools</div>
+                                            <div class="status-detail">100+ sources</div>
                                         </div>
                                     </div>
                                     <div class="status-item">
                                         <div class="status-indicator online"></div>
                                         <div class="status-info">
                                             <div class="status-name">AI Assistant</div>
-                                            <div class="status-detail">Powered by Blackbox</div>
+                                            <div class="status-detail">Multi-provider (DuckDuckGo + Blackbox)</div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Distribution -->
+                        <div class="card fade-in" style="animation-delay: 0.8s; margin-top: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">📈</span>
+                                    User Overview
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: grid; gap: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                                        <span style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
+                                            <span style="font-size: 16px;">🔵</span> Google Users
+                                        </span>
+                                        <span style="font-weight: 600; color: var(--text-primary);"><?php echo $platformStats['google_users']; ?></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                                        <span style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
+                                            <span style="font-size: 16px;">🟢</span> Local Users
+                                        </span>
+                                        <span style="font-weight: 600; color: var(--text-primary);"><?php echo $platformStats['local_users']; ?></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                                        <span style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
+                                            <span style="font-size: 16px;">🆕</span> New Today
+                                        </span>
+                                        <span style="font-weight: 600; color: var(--success);"><?php echo $platformStats['new_users_today']; ?></span>
+                                    </div>
+                                    <?php if ($platformStats['top_user']): ?>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary)); border-radius: 8px; border: 1px solid var(--border-default);">
+                                        <span style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary);">
+                                            <span style="font-size: 16px;">🏆</span> Top User
+                                        </span>
+                                        <span style="font-weight: 600; color: var(--primary);"><?php echo htmlspecialchars($platformStats['top_user']); ?> (<?php echo $platformStats['top_user_downloads']; ?> downloads)</span>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -518,8 +650,31 @@
                             </div>
                         </div>
                         
+                        <!-- Popular Searches -->
+                        <?php if (!empty($searchStats['popular_searches'])): ?>
+                        <div class="card fade-in" style="animation-delay: 0.9s; margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">🔥</span>
+                                    Trending Searches
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    <?php foreach ($searchStats['popular_searches'] as $search): ?>
+                                    <a href="home.php?q=<?php echo urlencode($search['query']); ?>" 
+                                       style="padding: 8px 14px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 20px; font-size: 13px; color: var(--text-primary); text-decoration: none; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                                        🔍 <?php echo htmlspecialchars($search['query']); ?>
+                                        <span style="font-size: 11px; color: var(--text-muted);">(<?php echo $search['count']; ?>)</span>
+                                    </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
                         <!-- Pro Tips -->
-                        <div class="card fade-in" style="animation-delay: 0.8s;">
+                        <div class="card fade-in" style="animation-delay: 1.0s;">
                             <div class="card-header">
                                 <h3 class="card-title">
                                     <span class="card-title-icon">💡</span>

@@ -1089,6 +1089,25 @@ if (rand(1, 100) === 1) {
     clearOldCache();
 }
 
+// Include auth for search tracking (optional, won't break if not available)
+@session_start();
+$loggedInUserId = $_SESSION['user_id'] ?? null;
+
+// Track search function
+function trackSearch($query, $category, $resultsCount) {
+    global $loggedInUserId;
+    try {
+        if (file_exists(__DIR__ . '/auth.php')) {
+            require_once __DIR__ . '/auth.php';
+            if (function_exists('saveSearchQuery')) {
+                saveSearchQuery($loggedInUserId, $query, $category, $resultsCount);
+            }
+        }
+    } catch (Exception $e) {
+        // Silently fail - don't break search if tracking fails
+    }
+}
+
 switch ($action) {
     case 'search':
         if (empty($query)) {
@@ -1127,6 +1146,9 @@ switch ($action) {
             $fullCacheKey = getCacheKey('fullsearch8', ['q' => $query, 'c' => $category]);
             saveToCache($fullCacheKey, $data['allResults']);
             
+            // Track search (for stats)
+            trackSearch($query, $category, $data['pagination']['totalResults']);
+            
             sendResults([
                 'success' => true,
                 'query' => $query,
@@ -1143,6 +1165,9 @@ switch ($action) {
             // Regular JSON response
             $cachedResult = performSearchCached($query, $category, $page, $perPage);
             if ($cachedResult) {
+                // Track cached search too
+                trackSearch($query, $category, $cachedResult['pagination']['totalResults']);
+                
                 echo json_encode([
                     'success' => true,
                     'query' => $query,
@@ -1161,6 +1186,9 @@ switch ($action) {
             
             $fullCacheKey = getCacheKey('fullsearch8', ['q' => $query, 'c' => $category]);
             saveToCache($fullCacheKey, $data['allResults']);
+            
+            // Track search (for stats)
+            trackSearch($query, $category, $data['pagination']['totalResults']);
             
             echo json_encode([
                 'success' => true,
