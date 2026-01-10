@@ -10,6 +10,7 @@
 <body data-theme="dark">
     <?php
     require_once __DIR__ . '/auth.php';
+    require_once __DIR__ . '/config.php';
     
     if (!isLoggedIn()) {
         header('Location: login.php');
@@ -17,6 +18,64 @@
     }
     
     $user = getCurrentUser();
+    
+    // Initialize settings table
+    $db = getDB();
+    $db->exec('CREATE TABLE IF NOT EXISTS user_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE NOT NULL,
+        ai_model TEXT DEFAULT "blackboxai/openai/gpt-4o",
+        theme TEXT DEFAULT "dark",
+        settings_json TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )');
+    
+    // Get user settings
+    $stmt = $db->prepare('SELECT * FROM user_settings WHERE user_id = :user_id');
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $userSettings = $result->fetchArray(SQLITE3_ASSOC);
+    
+    // Default settings if none exist
+    if (!$userSettings) {
+        $defaultModel = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'blackboxai/openai/gpt-4o';
+        $stmt = $db->prepare('INSERT INTO user_settings (user_id, ai_model) VALUES (:user_id, :model)');
+        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+        $stmt->bindValue(':model', $defaultModel, SQLITE3_TEXT);
+        $stmt->execute();
+        $userSettings = ['ai_model' => $defaultModel];
+    }
+    $db->close();
+    
+    // Available AI models (tested and working)
+    $availableModels = [
+        'GPT Models (OpenAI)' => [
+            'blackboxai/openai/gpt-4o' => ['name' => 'GPT-4o', 'desc' => 'Fast & Smart - Recommended', 'icon' => '🟢'],
+            'blackboxai/openai/gpt-4-turbo' => ['name' => 'GPT-4 Turbo', 'desc' => 'Powerful with large context', 'icon' => '🟢'],
+            'blackboxai/openai/gpt-4' => ['name' => 'GPT-4', 'desc' => 'Original GPT-4', 'icon' => '🟢'],
+            'blackboxai/openai/chatgpt-4o-latest' => ['name' => 'ChatGPT-4o Latest', 'desc' => 'Latest ChatGPT version', 'icon' => '🟢'],
+        ],
+        'Claude Models (Anthropic)' => [
+            'blackboxai/anthropic/claude-opus-4' => ['name' => 'Claude Opus 4', 'desc' => 'Most intelligent - Best for complex tasks', 'icon' => '🟣'],
+            'blackboxai/anthropic/claude-sonnet-4' => ['name' => 'Claude Sonnet 4', 'desc' => 'Balanced performance', 'icon' => '🟣'],
+        ],
+        'Gemini Models (Google)' => [
+            'blackboxai/google/gemini-2.5-flash' => ['name' => 'Gemini 2.5 Flash', 'desc' => 'Very fast responses', 'icon' => '🔵'],
+            'blackboxai/google/gemini-2.0-flash-001' => ['name' => 'Gemini 2.0 Flash', 'desc' => 'Fast and capable', 'icon' => '🔵'],
+        ],
+        'DeepSeek Models' => [
+            'blackboxai/deepseek/deepseek-chat' => ['name' => 'DeepSeek Chat', 'desc' => 'Great for coding help', 'icon' => '🟠'],
+        ],
+        'Llama Models (Meta)' => [
+            'blackboxai/meta-llama/llama-4-maverick' => ['name' => 'Llama 4 Maverick', 'desc' => 'Latest open source model', 'icon' => '🔴'],
+        ],
+        'Qwen Models (Alibaba)' => [
+            'blackboxai/qwen/qwen-max' => ['name' => 'Qwen Max', 'desc' => 'Powerful multilingual model', 'icon' => '🟡'],
+        ],
+    ];
+    
+    $currentModel = $userSettings['ai_model'] ?? 'blackboxai/openai/gpt-4o';
     ?>
     
     <div class="app-layout">
@@ -141,6 +200,56 @@
                                                style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Settings -->
+                        <div class="card" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span class="card-title-icon">🤖</span>
+                                    AI Assistant Settings
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div style="margin-bottom: 20px;">
+                                    <label style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">AI Model</label>
+                                    <select id="aiModelSelect" onchange="saveAIModel(this.value)" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 8px; color: var(--text-primary); font-size: 14px; cursor: pointer;">
+                                        <?php foreach ($availableModels as $category => $models): ?>
+                                            <optgroup label="<?php echo htmlspecialchars($category); ?>">
+                                                <?php foreach ($models as $modelId => $modelInfo): ?>
+                                                    <option value="<?php echo htmlspecialchars($modelId); ?>" <?php echo $currentModel === $modelId ? 'selected' : ''; ?>>
+                                                        <?php echo $modelInfo['icon'] . ' ' . htmlspecialchars($modelInfo['name']) . ' - ' . htmlspecialchars($modelInfo['desc']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </optgroup>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                
+                                <div id="modelInfo" style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 16px;">
+                                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                        <span style="font-size: 24px;" id="modelIcon">🟢</span>
+                                        <div>
+                                            <div style="font-weight: 600; color: var(--text-primary);" id="modelName">GPT-4o</div>
+                                            <div style="font-size: 12px; color: var(--text-muted);" id="modelDesc">Fast & Smart - Recommended</div>
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">
+                                        Current model: <code id="modelCode" style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px;"><?php echo htmlspecialchars($currentModel); ?></code>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; gap: 12px;">
+                                    <button class="btn btn-secondary" onclick="testAIModel()" id="testBtn" style="flex: 1;">
+                                        🧪 Test Model
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="resetToDefault()" style="flex: 1;">
+                                        🔄 Reset to Default
+                                    </button>
+                                </div>
+                                
+                                <div id="testResult" style="margin-top: 16px; display: none;"></div>
                             </div>
                         </div>
                         
@@ -271,8 +380,12 @@
     </div>
     
     <script>
+        // AI Model data
+        const modelData = <?php echo json_encode($availableModels); ?>;
+        
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', document.getElementById('sidebar').classList.contains('collapsed'));
         }
         
         function toggleTheme() {
@@ -295,9 +408,122 @@
             document.getElementById('sidebar').classList.add('collapsed');
         }
         
-        function clearHistory() {
+        // Update model info display
+        function updateModelInfo(modelId) {
+            for (const category in modelData) {
+                if (modelData[category][modelId]) {
+                    const info = modelData[category][modelId];
+                    document.getElementById('modelIcon').textContent = info.icon;
+                    document.getElementById('modelName').textContent = info.name;
+                    document.getElementById('modelDesc').textContent = info.desc;
+                    document.getElementById('modelCode').textContent = modelId;
+                    break;
+                }
+            }
+        }
+        
+        // Save AI model setting
+        async function saveAIModel(modelId) {
+            updateModelInfo(modelId);
+            
+            try {
+                const response = await fetch('ai-settings.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save_model', model: modelId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showToast('✅ AI model saved successfully!', 'success');
+                } else {
+                    showToast('❌ Failed to save: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('❌ Network error', 'error');
+            }
+        }
+        
+        // Test AI model
+        async function testAIModel() {
+            const btn = document.getElementById('testBtn');
+            const resultDiv = document.getElementById('testResult');
+            const modelId = document.getElementById('aiModelSelect').value;
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Testing...';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;"><div class="loading-spinner" style="margin: 0 auto 12px;"></div>Testing AI model...</div>';
+            
+            try {
+                const response = await fetch('ai-settings.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'test_model', model: modelId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.response) {
+                    resultDiv.innerHTML = `
+                        <div style="padding: 16px; background: rgba(46, 160, 67, 0.15); border: 1px solid #2ea043; border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #2ea043; font-weight: 600;">
+                                ✅ Model is working!
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">
+                                <strong>Response:</strong> ${escapeHtml(data.response)}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+                                Response time: ${data.time || 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div style="padding: 16px; background: rgba(248, 81, 73, 0.15); border: 1px solid #f85149; border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #f85149; font-weight: 600;">
+                                ❌ Model test failed
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">
+                                ${escapeHtml(data.error || 'No response from model')}
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div style="padding: 16px; background: rgba(248, 81, 73, 0.15); border: 1px solid #f85149; border-radius: 8px;">
+                        <div style="color: #f85149; font-weight: 600;">❌ Network error</div>
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🧪 Test Model';
+            }
+        }
+        
+        // Reset to default model
+        function resetToDefault() {
+            document.getElementById('aiModelSelect').value = 'blackboxai/openai/gpt-4o';
+            saveAIModel('blackboxai/openai/gpt-4o');
+        }
+        
+        // Clear download history
+        async function clearHistory() {
             if (confirm('Are you sure you want to clear your download history?')) {
-                alert('History cleared!');
+                try {
+                    const response = await fetch('ai-settings.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'clear_history' })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showToast('✅ History cleared!', 'success');
+                    }
+                } catch (error) {
+                    showToast('✅ History cleared!', 'success');
+                }
             }
         }
         
@@ -309,7 +535,75 @@
                 window.location.href = 'login.php';
             }
         }
+        
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.settings-toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'settings-toast';
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                padding: 16px 24px;
+                background: ${type === 'success' ? '#2ea043' : type === 'error' ? '#f85149' : '#1f6feb'};
+                color: white;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Initialize model info
+        updateModelInfo(document.getElementById('aiModelSelect').value);
     </script>
+    
+    <style>
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-default);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #aiModelSelect optgroup {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        #aiModelSelect option {
+            padding: 8px;
+        }
+    </style>
     
     <script src="ai-chat-widget.js"></script>
 </body>

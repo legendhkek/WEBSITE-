@@ -5,11 +5,17 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Supports multiple free AI providers with automatic fallback:
- * 1. DeepInfra (Mistral/Llama) - Primary
- * 2. HuggingFace Inference - Secondary  
- * 3. Blackbox AI - Fallback
- * 4. Local response - Last resort
+ * 1. Blackbox AI - Primary (with your API key)
+ * 2. DuckDuckGo AI - Secondary (free)
+ * 3. DeepInfra (Llama) - Fallback
+ * 4. HuggingFace Inference - Fallback  
+ * 5. Local response - Last resort
  */
+
+// Start session if not already started (needed for getUserAIModel)
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 
 require_once __DIR__ . '/config.php';
 
@@ -149,14 +155,44 @@ function callHuggingFace($message, $systemPrompt, $history = []) {
 }
 
 /**
+ * Get user's preferred AI model from database
+ */
+function getUserAIModel($userId = null) {
+    $defaultModel = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'blackboxai/openai/gpt-4o';
+    
+    if (!$userId && isset($_SESSION['user_id'])) {
+        $userId = $_SESSION['user_id'];
+    }
+    
+    if (!$userId) {
+        return $defaultModel;
+    }
+    
+    try {
+        $db = new SQLite3(DB_FILE);
+        $stmt = $db->prepare('SELECT ai_model FROM user_settings WHERE user_id = :user_id');
+        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $result = $stmt->execute();
+        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $db->close();
+        
+        return $row['ai_model'] ?? $defaultModel;
+    } catch (Exception $e) {
+        return $defaultModel;
+    }
+}
+
+/**
  * Call Blackbox AI API (OpenAI-compatible format)
- * Uses API key and endpoint from config.php
+ * Uses API key from config.php and user's selected model
  */
 function callBlackbox($message, $systemPrompt, $history = []) {
     // Get API key and endpoint from config
     $apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : '';
     $endpoint = defined('BLACKBOX_API_ENDPOINT') ? BLACKBOX_API_ENDPOINT : 'https://api.blackbox.ai/v1/chat/completions';
-    $model = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'blackboxai/openai/gpt-4o';
+    
+    // Get user's preferred model or default
+    $model = getUserAIModel();
     
     // Skip if no API key
     if (empty($apiKey) || $apiKey === 'free') {
