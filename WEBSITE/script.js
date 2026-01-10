@@ -1294,6 +1294,199 @@ function debounce(func, wait) {
     };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI ANALYSIS - Legend House AI Integration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Analyze a torrent result using AI
+ */
+async function analyzeWithAI(index) {
+    const result = state.results[index];
+    if (!result) {
+        showToast('Result not found', 'error');
+        return;
+    }
+    
+    // Check if AI chat widget exists and is initialized
+    if (window.legendAI) {
+        // Open the AI chat if not already open
+        if (!window.legendAI.isOpen) {
+            window.legendAI.toggleChat();
+        }
+        
+        // Send the analysis request
+        const analysisPrompt = `Please analyze this torrent for me:\n\nName: ${result.name}\nSize: ${result.size || 'Unknown'}\nQuality: ${result.quality || 'Unknown'}\nSeeds: ${result.seeds || 0}\nPeers: ${result.peers || 0}\nSource: ${result.source || 'Unknown'}\nType: ${result.contentType || 'Unknown'}\n\nPlease tell me:\n1. Is this a good quality release?\n2. Any potential concerns?\n3. Recommendations for similar content`;
+        
+        // Set the message in the input
+        const inputEl = document.getElementById('ai-chat-input');
+        if (inputEl) {
+            inputEl.value = analysisPrompt;
+            inputEl.dispatchEvent(new Event('input'));
+            
+            // Trigger send after a short delay
+            setTimeout(() => {
+                window.legendAI.sendMessage();
+            }, 100);
+        }
+        
+        showToast('🤖 Analyzing with AI...', 'info');
+    } else {
+        // AI not available - show fallback analysis
+        showFallbackAnalysis(result);
+    }
+}
+
+/**
+ * Show fallback analysis when AI is not available
+ */
+function showFallbackAnalysis(result) {
+    const modal = document.getElementById('downloadModal');
+    const content = document.getElementById('downloadModalContent');
+    
+    if (!modal || !content) {
+        showToast('AI analysis not available. Please login to use AI features.', 'warning');
+        return;
+    }
+    
+    // Quality assessment
+    const qualityScore = assessQuality(result);
+    const healthInfo = getHealthInfo(result);
+    
+    content.innerHTML = `
+        <div class="modal-header">
+            <h3>🤖 Quick Analysis</h3>
+            <button class="modal-close" onclick="closeDownloadModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="analysis-title">
+                <h4>${escapeHtml(result.name)}</h4>
+            </div>
+            
+            <div class="analysis-section">
+                <h5>📊 Quality Assessment</h5>
+                <div class="analysis-score">
+                    <span class="score-label">Overall Score:</span>
+                    <span class="score-value" style="color: ${qualityScore.color}">${qualityScore.score}/100</span>
+                </div>
+                <p>${qualityScore.message}</p>
+            </div>
+            
+            <div class="analysis-section">
+                <h5>🏥 Health Status</h5>
+                <p>${healthInfo}</p>
+            </div>
+            
+            <div class="analysis-section">
+                <h5>📦 File Details</h5>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li><strong>Size:</strong> ${result.size || 'Unknown'}</li>
+                    <li><strong>Quality:</strong> ${result.quality || 'Unknown'}</li>
+                    <li><strong>Type:</strong> ${result.contentType || 'Unknown'}</li>
+                    <li><strong>Source:</strong> ${result.source || 'Unknown'}</li>
+                </ul>
+            </div>
+            
+            <div class="analysis-section" style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <p style="margin: 0; font-size: 0.9rem;">
+                    💡 <strong>Tip:</strong> Login to access full AI-powered analysis with recommendations, 
+                    safety checks, and similar content suggestions.
+                </p>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Assess quality of a torrent
+ */
+function assessQuality(result) {
+    let score = 50;
+    let messages = [];
+    
+    // Seeds assessment
+    const seeds = result.seeds || 0;
+    if (seeds >= 100) {
+        score += 20;
+        messages.push('Excellent seed count');
+    } else if (seeds >= 30) {
+        score += 15;
+        messages.push('Good seed count');
+    } else if (seeds >= 10) {
+        score += 10;
+        messages.push('Moderate seed count');
+    } else if (seeds >= 1) {
+        score += 5;
+        messages.push('Low seed count - may be slow');
+    } else {
+        score -= 10;
+        messages.push('No seeds - download may not work');
+    }
+    
+    // Quality assessment
+    const quality = (result.quality || '').toUpperCase();
+    if (quality.includes('4K') || quality.includes('2160')) {
+        score += 15;
+        messages.push('Excellent 4K quality');
+    } else if (quality.includes('1080')) {
+        score += 12;
+        messages.push('Full HD quality');
+    } else if (quality.includes('720')) {
+        score += 8;
+        messages.push('HD quality');
+    } else if (quality.includes('BLURAY')) {
+        score += 12;
+        messages.push('BluRay source');
+    }
+    
+    // Verified status
+    if (result.verified) {
+        score += 10;
+        messages.push('Verified uploader');
+    }
+    
+    // Cap score
+    score = Math.min(100, Math.max(0, score));
+    
+    // Determine color
+    let color = '#10b981'; // green
+    if (score < 50) color = '#ef4444'; // red
+    else if (score < 70) color = '#f59e0b'; // yellow
+    
+    return {
+        score: score,
+        color: color,
+        message: messages.join('. ') + '.'
+    };
+}
+
+/**
+ * Get health information for a torrent
+ */
+function getHealthInfo(result) {
+    const seeds = result.seeds || 0;
+    const peers = result.peers || 0;
+    const ratio = seeds > 0 ? (seeds / Math.max(1, peers)).toFixed(2) : 0;
+    
+    let status = '';
+    if (seeds >= 100) {
+        status = '🟢 Excellent - Very fast download expected';
+    } else if (seeds >= 30) {
+        status = '🟢 Good - Fast download expected';
+    } else if (seeds >= 10) {
+        status = '🟡 Fair - Moderate download speed expected';
+    } else if (seeds >= 1) {
+        status = '🟠 Low - Slow download, may take time';
+    } else {
+        status = '🔴 Dead - No seeders, download unlikely to complete';
+    }
+    
+    return `${status}<br><small>Seeds: ${seeds} | Peers: ${peers} | Ratio: ${ratio}</small>`;
+}
+
 // Expose functions globally
 window.performSearch = performSearch;
 window.goToPage = goToPage;
@@ -1315,6 +1508,8 @@ window.streamTorrent = streamTorrent;
 window.closeStreamModal = closeStreamModal;
 window.toggleFullscreen = toggleFullscreen;
 window.copyStreamLink = copyStreamLink;
+// AI Analysis function
+window.analyzeWithAI = analyzeWithAI;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEBTORRENT STREAMING - LEGEND HOUSE EXCLUSIVE

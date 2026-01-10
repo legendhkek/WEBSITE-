@@ -71,14 +71,20 @@ function initDatabase() {
 
 initDatabase();
 
-// Helper function to get database connection
+// Helper function to get database connection (SQLite3 for auth)
 function getDB() {
     return new SQLite3(DB_FILE);
 }
 
-// Alias for compatibility with tools
+// PDO connection for tools that need it (ai-chat, dorker-api, etc.)
 function getDatabase() {
-    return getDB();
+    static $pdo = null;
+    if ($pdo === null) {
+        $pdo = new PDO('sqlite:' . DB_FILE);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    }
+    return $pdo;
 }
 
 // Validate email
