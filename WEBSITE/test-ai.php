@@ -1,28 +1,33 @@
 <?php
 /**
- * AI Test Script - Test if AI providers are working
- * Access this file directly in your browser: yourdomain.com/test-ai.php
+ * AI Test Script v2.1 - Test if AI providers are working
+ * Access this file directly in your browser: legendbl.tech/test-ai.php
  */
 
 header('Content-Type: text/html; charset=utf-8');
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+ini_set('log_errors', 1);
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/ai-helper.php';
 
-echo "<html><head><title>AI Test - Legend House</title>";
+echo "<html><head><title>AI Test v2.1 - Legend House</title>";
+echo "<meta name='robots' content='noindex, nofollow'>";
 echo "<style>
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #0d1117; color: #e6edf3; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #0d1117; color: #e6edf3; }
 h1 { color: #58a6ff; }
 h2 { color: #7ee787; margin-top: 30px; }
+h3 { color: #f0f6fc; margin-top: 20px; }
 .success { background: #238636; padding: 15px; border-radius: 8px; margin: 10px 0; }
 .error { background: #da3633; padding: 15px; border-radius: 8px; margin: 10px 0; }
 .info { background: #1f6feb; padding: 15px; border-radius: 8px; margin: 10px 0; }
 .warning { background: #9e6a03; padding: 15px; border-radius: 8px; margin: 10px 0; }
-pre { background: #161b22; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
+pre { background: #161b22; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
 code { background: #30363d; padding: 2px 6px; border-radius: 4px; }
 .response-box { background: #21262d; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin: 15px 0; }
+.test-btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 10px 5px 10px 0; }
+.test-btn:hover { background: #2ea043; }
 </style></head><body>";
 
 echo "<h1>🤖 Legend House AI Test</h1>";

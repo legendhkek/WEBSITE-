@@ -221,15 +221,19 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         return null;
     }
     
+    error_log("Blackbox: Using model $model with API key (length: " . strlen($apiKey) . ")");
+    
     // Build messages array in OpenAI format
     $messages = [];
     
     // Add system message
     $messages[] = ['role' => 'system', 'content' => $systemPrompt];
     
-    // Add conversation history
-    foreach ($history as $msg) {
-        $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+    // Add conversation history (limited)
+    foreach (array_slice($history, -6) as $msg) {
+        if (isset($msg['role']) && isset($msg['content'])) {
+            $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+        }
     }
     
     // Add current user message
@@ -240,7 +244,8 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         'model' => $model,
         'messages' => $messages,
         'max_tokens' => 1024,
-        'temperature' => 0.7
+        'temperature' => 0.7,
+        'stream' => false
     ];
     
     $ch = curl_init($endpoint);
@@ -250,37 +255,52 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         CURLOPT_POSTFIELDS => json_encode($data),
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
+            'Accept: application/json',
             'Authorization: Bearer ' . $apiKey
         ],
-        CURLOPT_TIMEOUT => 60,
-        CURLOPT_CONNECTTIMEOUT => 15,
+        CURLOPT_TIMEOUT => 90, // Increased timeout
+        CURLOPT_CONNECTTIMEOUT => 20,
         CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_FOLLOWLOCATION => true
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 3,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_USERAGENT => 'LegendHouse/2.1'
     ]);
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
+    $curlErrno = curl_errno($ch);
     curl_close($ch);
     
     if ($curlError) {
-        error_log("Blackbox CURL error: $curlError");
+        error_log("Blackbox CURL error ($curlErrno): $curlError");
         return null;
     }
     
     if ($httpCode === 200 && $response) {
         $data = json_decode($response, true);
         
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("Blackbox: JSON decode error - " . json_last_error_msg());
+            return null;
+        }
+        
         // Extract response from OpenAI format
         if (isset($data['choices'][0]['message']['content'])) {
             $content = trim($data['choices'][0]['message']['content']);
             if (strlen($content) > 5) {
+                error_log("Blackbox: Success - " . strlen($content) . " chars");
                 return $content;
             }
         }
+        
+        error_log("Blackbox: Unexpected response format - " . substr($response, 0, 500));
+    } else {
+        error_log("Blackbox API failed with HTTP $httpCode - " . substr($response, 0, 500));
     }
     
-    error_log("Blackbox API failed with HTTP $httpCode");
     return null;
 }
 

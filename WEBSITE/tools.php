@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tools Hub - Legend House</title>
+    
+    <?php
+    // SEO Configuration for Tools Page
+    $seo_title = 'Free Online Tools - Google Dorker, Proxy Scraper, Torrent Center | Legend House';
+    $seo_description = 'Access 20+ free online tools at Legend House (LegendBL.tech). Google Dorker with 100+ operators, Proxy Scraper with 100+ sources, Rotating Proxy Maker, Link Shortener, WebTorrent Player, AI Chat Assistant, and more.';
+    $seo_keywords = 'free online tools, google dorker, proxy scraper, rotating proxy, torrent tools, link shortener, ai chat, legendbl tools, download tools';
+    $seo_url = 'https://legendbl.tech/tools.php';
+    $seo_canonical = 'https://legendbl.tech/tools.php';
+    include 'seo-head.php';
+    ?>
+    
+    <title><?php echo htmlspecialchars($seo_title); ?></title>
     
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1940810089559549"
