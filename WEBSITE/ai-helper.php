@@ -22,12 +22,13 @@ if (!file_exists(CACHE_DIR)) {
  * Main AI chat function with provider fallback
  */
 function getAIResponse($message, $context = 'general', $conversationHistory = []) {
-    // Providers in order of preference (free APIs)
+    // Providers in order of preference
+    // Blackbox first if API key is configured, then free alternatives
     $providers = [
-        'duckduckgo' => 'callDuckDuckGoAI',
-        'blackbox' => 'callBlackbox',
-        'deepinfra' => 'callDeepInfra',
-        'huggingface' => 'callHuggingFace'
+        'blackbox' => 'callBlackbox',      // Primary - uses your API key with GPT-4o
+        'duckduckgo' => 'callDuckDuckGoAI', // Fallback - free
+        'deepinfra' => 'callDeepInfra',     // Fallback - free
+        'huggingface' => 'callHuggingFace'  // Fallback - free
     ];
     
     $systemPrompt = getSystemPrompt($context);
@@ -148,75 +149,52 @@ function callHuggingFace($message, $systemPrompt, $history = []) {
 }
 
 /**
- * Call Blackbox AI API (Updated for 2024+ API format)
- * Uses API key from config.php if provided
+ * Call Blackbox AI API (OpenAI-compatible format)
+ * Uses API key and endpoint from config.php
  */
 function callBlackbox($message, $systemPrompt, $history = []) {
     // Get API key and endpoint from config
-    $apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : 'free';
-    $endpoint = defined('BLACKBOX_API_ENDPOINT') ? BLACKBOX_API_ENDPOINT : 'https://www.blackbox.ai/api/chat';
+    $apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : '';
+    $endpoint = defined('BLACKBOX_API_ENDPOINT') ? BLACKBOX_API_ENDPOINT : 'https://api.blackbox.ai/v1/chat/completions';
+    $model = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'blackboxai/openai/gpt-4o';
     
+    // Skip if no API key
+    if (empty($apiKey) || $apiKey === 'free') {
+        error_log("Blackbox: No API key configured, skipping");
+        return null;
+    }
+    
+    // Build messages array in OpenAI format
     $messages = [];
     
-    // Add system message first
-    $messages[] = ['role' => 'user', 'content' => $systemPrompt];
-    $messages[] = ['role' => 'assistant', 'content' => 'I understand. I\'ll help you with that context in mind.'];
+    // Add system message
+    $messages[] = ['role' => 'system', 'content' => $systemPrompt];
     
     // Add conversation history
     foreach ($history as $msg) {
         $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
     }
     
-    // Add current message
+    // Add current user message
     $messages[] = ['role' => 'user', 'content' => $message];
     
+    // OpenAI-compatible request format
     $data = [
+        'model' => $model,
         'messages' => $messages,
-        'id' => uniqid('lh_'),
-        'previewToken' => null,
-        'userId' => null,
-        'codeModelMode' => false,
-        'agentMode' => [],
-        'trendingAgentMode' => [],
-        'isMicMode' => false,
-        'maxTokens' => 1024,
-        'playgroundTopP' => null,
-        'playgroundTemperature' => null,
-        'isChromeExt' => false,
-        'githubToken' => null,
-        'clickedAnswer2' => false,
-        'clickedAnswer3' => false,
-        'clickedForceWebSearch' => false,
-        'visitFromDelta' => false,
-        'mobileClient' => false,
-        'validated' => ($apiKey && $apiKey !== 'free') ? $apiKey : null
+        'max_tokens' => 1024,
+        'temperature' => 0.7
     ];
-    
-    // Build headers - include API key if provided
-    $headers = [
-        'Content-Type: application/json',
-        'Accept: */*',
-        'Accept-Language: en-US,en;q=0.9',
-        'Origin: https://www.blackbox.ai',
-        'Referer: https://www.blackbox.ai/',
-        'Sec-Fetch-Dest: empty',
-        'Sec-Fetch-Mode: cors',
-        'Sec-Fetch-Site: same-origin',
-        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    ];
-    
-    // Add API key to headers (Blackbox uses multiple auth methods)
-    if ($apiKey && $apiKey !== 'free') {
-        $headers[] = 'Authorization: Bearer ' . $apiKey;
-        $headers[] = 'x-api-key: ' . $apiKey;
-    }
     
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($data),
-        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey
+        ],
         CURLOPT_TIMEOUT => 60,
         CURLOPT_CONNECTTIMEOUT => 15,
         CURLOPT_SSL_VERIFYPEER => false,
@@ -234,22 +212,18 @@ function callBlackbox($message, $systemPrompt, $history = []) {
     }
     
     if ($httpCode === 200 && $response) {
-        $content = trim($response);
+        $data = json_decode($response, true);
         
-        // Remove common Blackbox prefixes
-        $content = preg_replace('/^\$@\$v=[a-zA-Z0-9_-]+-rv1\$@\$/i', '', $content);
-        $content = preg_replace('/^\$@\$.*?\$@\$/s', '', $content);
-        
-        // Clean up response
-        $content = trim($content);
-        
-        // Check if we got a valid response
-        if (strlen($content) > 5 && !preg_match('/^(error|failed|invalid)/i', $content)) {
-            return $content;
+        // Extract response from OpenAI format
+        if (isset($data['choices'][0]['message']['content'])) {
+            $content = trim($data['choices'][0]['message']['content']);
+            if (strlen($content) > 5) {
+                return $content;
+            }
         }
     }
     
-    error_log("Blackbox API failed with HTTP $httpCode - Key used: " . ($apiKey !== 'free' ? 'Custom' : 'Free'));
+    error_log("Blackbox API failed with HTTP $httpCode");
     return null;
 }
 

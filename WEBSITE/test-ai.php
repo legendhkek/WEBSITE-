@@ -32,19 +32,25 @@ echo "<h2>📋 Configuration Check</h2>";
 
 $apiKey = defined('BLACKBOX_API_KEY') ? BLACKBOX_API_KEY : 'not defined';
 $endpoint = defined('BLACKBOX_API_ENDPOINT') ? BLACKBOX_API_ENDPOINT : 'not defined';
+$model = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'not defined';
 $aiEnabled = defined('AI_FEATURES_ENABLED') ? (AI_FEATURES_ENABLED ? 'Yes' : 'No') : 'not defined';
 
 echo "<div class='info'>";
 echo "<strong>AI Features Enabled:</strong> " . $aiEnabled . "<br>";
-echo "<strong>Blackbox API Key:</strong> " . ($apiKey === 'free' ? '<code>free</code> (default - no custom key)' : '<code>Custom key set (' . strlen($apiKey) . ' chars)</code>') . "<br>";
+echo "<strong>Blackbox API Key:</strong> " . ($apiKey === 'free' || empty($apiKey) ? '<code>free</code> (no custom key)' : '<code>✅ Custom key set (' . strlen($apiKey) . ' chars)</code>') . "<br>";
 echo "<strong>Blackbox Endpoint:</strong> <code>" . htmlspecialchars($endpoint) . "</code><br>";
+echo "<strong>Blackbox Model:</strong> <code>" . htmlspecialchars($model) . "</code><br>";
 echo "</div>";
 
-if ($apiKey === 'free') {
+if ($apiKey === 'free' || empty($apiKey)) {
     echo "<div class='warning'>";
     echo "⚠️ <strong>No custom API key detected!</strong><br>";
     echo "You're using the free mode. To use your Blackbox API key, edit <code>config.php</code> and change:<br>";
     echo "<pre>define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'YOUR_API_KEY_HERE');</pre>";
+    echo "</div>";
+} else {
+    echo "<div class='success'>";
+    echo "✅ <strong>API Key configured!</strong> Using model: <code>" . htmlspecialchars($model) . "</code>";
     echo "</div>";
 }
 
