@@ -38,8 +38,8 @@ define('CACHE_TTL', 1800); // 30 minutes
 define('SEARCH_CACHE_TTL', 600); // 10 minutes
 
 // AI API Configuration (for advanced AI features)
-// Using Blackbox AI free API - no key required for basic usage
-define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'free');
+// Blackbox AI with API key for better performance
+define('BLACKBOX_API_KEY', getenv('BLACKBOX_API_KEY') ?: 'sk-B1gaLrVU9sV9bD3MhgF9GA');
 define('BLACKBOX_API_ENDPOINT', getenv('BLACKBOX_API_ENDPOINT') ?: 'https://www.blackbox.ai/api/chat');
 
 // AI is enabled - using free Blackbox API

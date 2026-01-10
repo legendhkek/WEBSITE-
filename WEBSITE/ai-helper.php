@@ -173,7 +173,7 @@ function callBlackbox($message, $systemPrompt, $history = []) {
     $data = [
         'messages' => $messages,
         'id' => uniqid('lh_'),
-        'previewToken' => ($apiKey !== 'free') ? $apiKey : null,
+        'previewToken' => null,
         'userId' => null,
         'codeModelMode' => false,
         'agentMode' => [],
@@ -188,7 +188,8 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         'clickedAnswer3' => false,
         'clickedForceWebSearch' => false,
         'visitFromDelta' => false,
-        'mobileClient' => false
+        'mobileClient' => false,
+        'validated' => ($apiKey && $apiKey !== 'free') ? $apiKey : null
     ];
     
     // Build headers - include API key if provided
@@ -204,9 +205,10 @@ function callBlackbox($message, $systemPrompt, $history = []) {
         'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     ];
     
-    // Add Authorization header if API key is provided
+    // Add API key to headers (Blackbox uses multiple auth methods)
     if ($apiKey && $apiKey !== 'free') {
         $headers[] = 'Authorization: Bearer ' . $apiKey;
+        $headers[] = 'x-api-key: ' . $apiKey;
     }
     
     $ch = curl_init($endpoint);
