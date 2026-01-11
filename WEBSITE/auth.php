@@ -71,11 +71,25 @@ function initDatabase() {
 
 initDatabase();
 
+ cursor/ai-functionality-check-c7f4
+// Helper function to get database connection (SQLite3 for auth)
+
 // Helper function to get database connection (SQLite3)
+ main
 function getDB() {
     return new SQLite3(DB_FILE);
 }
 
+ cursor/ai-functionality-check-c7f4
+// PDO connection for tools that need it (ai-chat, dorker-api, etc.)
+function getDatabase() {
+    static $pdo = null;
+    if ($pdo === null) {
+        $pdo = new PDO('sqlite:' . DB_FILE);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    }
+    return
 // Alias for compatibility with tools - returns PDO for AI chat
 function getDatabase() {
     try {
@@ -87,6 +101,7 @@ function getDatabase() {
         error_log("Database connection error: " . $e->getMessage());
         throw $e;
     }
+ main
 }
 
 // Validate email
