@@ -1,6 +1,7 @@
 /* ============================================ */
-/* LEGEND HOUSE - AUTH PAGES v1.0 */
+/* LEGEND HOUSE - AUTH PAGES v2.0 */
 /* Ultra Advanced Black & White Theme */
+/* Enhanced Animations & Better UI */
 /* ============================================ */
 
 * {
@@ -713,5 +714,477 @@ body {
     .form-options {
         flex-direction: column;
         align-items: flex-start;
+    }
+}
+
+/* ============================================ */
+/* ENHANCED ANIMATIONS v2.0 */
+/* ============================================ */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(255, 255, 255, 0.1);
+    }
+}
+
+@keyframes borderRotate {
+    0% {
+        border-image-source: linear-gradient(0deg, var(--white) 0%, transparent 50%, var(--white) 100%);
+    }
+    50% {
+        border-image-source: linear-gradient(180deg, var(--white) 0%, transparent 50%, var(--white) 100%);
+    }
+    100% {
+        border-image-source: linear-gradient(360deg, var(--white) 0%, transparent 50%, var(--white) 100%);
+    }
+}
+
+@keyframes inputFocus {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+    }
+}
+
+@keyframes successBounce {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Auth card enhanced glow effect */
+.auth-card {
+    animation: cardEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), glowPulse 4s ease-in-out infinite;
+}
+
+/* Form group stagger animation */
+.form-group {
+    animation: slideUp 0.4s ease backwards;
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.15s; }
+.form-group:nth-child(3) { animation-delay: 0.2s; }
+.form-group:nth-child(4) { animation-delay: 0.25s; }
+.form-group:nth-child(5) { animation-delay: 0.3s; }
+
+/* Input focus enhanced animation */
+.form-input:focus {
+    animation: inputFocus 0.3s ease forwards;
+}
+
+/* ============================================ */
+/* PASSWORD STRENGTH INDICATOR */
+/* ============================================ */
+.password-strength-bar {
+    height: 4px;
+    background: var(--gray-800);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.password-strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    width: 0%;
+}
+
+.password-strength-fill.weak {
+    width: 25%;
+    background: #ef4444;
+}
+
+.password-strength-fill.fair {
+    width: 50%;
+    background: #f59e0b;
+}
+
+.password-strength-fill.good {
+    width: 75%;
+    background: #3b82f6;
+}
+
+.password-strength-fill.strong {
+    width: 100%;
+    background: #10b981;
+}
+
+.password-strength-text {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.password-strength-text.weak { color: #ef4444; }
+.password-strength-text.fair { color: #f59e0b; }
+.password-strength-text.good { color: #3b82f6; }
+.password-strength-text.strong { color: #10b981; }
+
+/* ============================================ */
+/* LOADING STATE FOR BUTTONS */
+/* ============================================ */
+.btn-submit.loading {
+    pointer-events: none;
+    position: relative;
+}
+
+.btn-submit.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* ============================================ */
+/* SUCCESS STATE */
+/* ============================================ */
+.success-message {
+    padding: 14px 16px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 10px;
+    color: #10b981;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    animation: successBounce 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.success-icon {
+    width: 20px;
+    height: 20px;
+    background: #10b981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* ============================================ */
+/* SOCIAL LOGIN BUTTONS */
+/* ============================================ */
+.social-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-social {
+    width: 100%;
+    padding: 14px 24px;
+    border: 2px solid var(--gray-700);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: var(--transition);
+}
+
+.btn-social:hover {
+    border-color: var(--white);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+}
+
+.btn-social svg,
+.btn-social img {
+    width: 20px;
+    height: 20px;
+}
+
+/* ============================================ */
+/* TERMS & CONDITIONS LINK */
+/* ============================================ */
+.terms-text {
+    font-size: 12px;
+    color: var(--gray-500);
+    text-align: center;
+    margin-top: 16px;
+    line-height: 1.6;
+}
+
+.terms-text a {
+    color: var(--white);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: var(--transition);
+}
+
+.terms-text a:hover {
+    border-bottom-color: var(--white);
+}
+
+/* ============================================ */
+/* TWO-FACTOR AUTH INPUT */
+/* ============================================ */
+.otp-container {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 24px 0;
+}
+
+.otp-input {
+    width: 48px;
+    height: 56px;
+    background: var(--gray-900);
+    border: 2px solid var(--gray-800);
+    border-radius: 12px;
+    color: var(--white);
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    font-family: var(--font-mono, monospace);
+    transition: var(--transition);
+}
+
+.otp-input:focus {
+    outline: none;
+    border-color: var(--white);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================ */
+/* FLOATING LABELS */
+/* ============================================ */
+.floating-label-group {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.floating-input {
+    width: 100%;
+    padding: 20px 16px 8px 16px;
+    background: var(--gray-900);
+    border: 2px solid var(--gray-800);
+    border-radius: 12px;
+    color: var(--white);
+    font-size: 16px;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.floating-input:focus {
+    outline: none;
+    border-color: var(--white);
+}
+
+.floating-label {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-500);
+    font-size: 16px;
+    pointer-events: none;
+    transition: var(--transition);
+}
+
+.floating-input:focus + .floating-label,
+.floating-input:not(:placeholder-shown) + .floating-label {
+    top: 12px;
+    font-size: 11px;
+    color: var(--white);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================ */
+/* CAPTCHA STYLING */
+/* ============================================ */
+.captcha-container {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+.captcha-container > div {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* ============================================ */
+/* ENHANCED ACCESSIBILITY */
+/* ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .auth-card {
+        animation: none;
+    }
+    
+    .auth-logo {
+        animation: none;
+    }
+}
+
+@media (prefers-contrast: high) {
+    .form-input {
+        border-width: 3px;
+    }
+    
+    .btn-submit {
+        border: 2px solid var(--black);
+    }
+    
+    .auth-card {
+        border-width: 3px;
+    }
+}
+
+/* Focus visible for keyboard navigation */
+.form-input:focus-visible,
+.btn-submit:focus-visible,
+.btn-google:focus-visible,
+.auth-link:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: 2px;
+}
+
+/* ============================================ */
+/* ANIMATED BACKGROUND ELEMENTS */
+/* ============================================ */
+.auth-bg-orbs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.03;
+    animation: orbFloat 20s ease-in-out infinite;
+}
+
+.bg-orb:nth-child(1) {
+    width: 600px;
+    height: 600px;
+    background: var(--white);
+    top: -200px;
+    left: -200px;
+    animation-delay: 0s;
+}
+
+.bg-orb:nth-child(2) {
+    width: 400px;
+    height: 400px;
+    background: var(--white);
+    bottom: -100px;
+    right: -100px;
+    animation-delay: -5s;
+}
+
+.bg-orb:nth-child(3) {
+    width: 300px;
+    height: 300px;
+    background: var(--white);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -10s;
+}
+
+@keyframes orbFloat {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    25% {
+        transform: translate(30px, -30px) scale(1.1);
+    }
+    50% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+    75% {
+        transform: translate(20px, 10px) scale(1.05);
+    }
+}
+
+/* ============================================ */
+/* ENHANCED MOBILE EXPERIENCE */
+/* ============================================ */
+@media (max-width: 480px) {
+    .otp-container {
+        gap: 6px;
+    }
+    
+    .otp-input {
+        width: 40px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .social-buttons {
+        gap: 10px;
+    }
+    
+    .btn-social {
+        padding: 12px 16px;
+        font-size: 14px;
     }
 }

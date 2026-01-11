@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * LEGEND HOUSE - Stream & Download v9.0
+ * LEGEND HOUSE - Stream & Download v10.0
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Features:
@@ -13,6 +13,11 @@
  * - Advanced filtering and sorting
  * - Health status indicators
  * - Keyboard shortcuts
+ * - AI-powered content analysis
+ * - Voice search support
+ * - Enhanced error handling
+ * - Offline detection
+ * - Performance optimizations
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -39,8 +44,67 @@ const state = {
     // Streaming state
     webTorrentClient: null,
     currentTorrent: null,
-    isStreaming: false
+    isStreaming: false,
+    // Connection state
+    isOnline: navigator.onLine,
+    lastSearchTime: 0,
+    searchDebounceTimer: null,
+    // Performance tracking
+    performanceMetrics: {
+        searchStartTime: 0,
+        resultsLoadTime: 0
+    }
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ERROR HANDLING & LOGGING
+// ═══════════════════════════════════════════════════════════════════════════════
+class Logger {
+    static log(message, ...args) {
+        console.log(`[Legend House] ${message}`, ...args);
+    }
+    
+    static error(message, error) {
+        console.error(`[Legend House Error] ${message}`, error);
+    }
+    
+    static warn(message, ...args) {
+        console.warn(`[Legend House Warning] ${message}`, ...args);
+    }
+    
+    static perf(label, startTime) {
+        const duration = performance.now() - startTime;
+        console.log(`[Performance] ${label}: ${duration.toFixed(2)}ms`);
+        return duration;
+    }
+}
+
+// Global error handler
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    Logger.error(`Uncaught error: ${msg}`, { url, lineNo, columnNo, error });
+    return false;
+};
+
+window.onunhandledrejection = function(event) {
+    Logger.error('Unhandled promise rejection:', event.reason);
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NETWORK STATUS MONITORING
+// ═══════════════════════════════════════════════════════════════════════════════
+function initNetworkMonitoring() {
+    window.addEventListener('online', () => {
+        state.isOnline = true;
+        showToast('🌐 Connection restored', 'success');
+        Logger.log('Network status: Online');
+    });
+    
+    window.addEventListener('offline', () => {
+        state.isOnline = false;
+        showToast('📡 You are offline. Some features may be unavailable.', 'warning');
+        Logger.warn('Network status: Offline');
+    });
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -75,19 +139,98 @@ const config = {
 // INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-    initLoader();
-    initWallpapers();
-    initHeaderScroll();
-    initKeyboardShortcuts();
-    initEventListeners();
-    loadRecentSearches();
-    checkAuthStatus();
+    const initStart = performance.now();
     
-    // Focus search on load
-    setTimeout(() => {
-        document.getElementById('searchInput')?.focus();
-    }, 500);
+    try {
+        // Core initialization
+        initLoader();
+        initNetworkMonitoring();
+        initWallpapers();
+        initHeaderScroll();
+        initKeyboardShortcuts();
+        initEventListeners();
+        loadRecentSearches();
+        checkAuthStatus();
+        initLazyLoading();
+        initScrollEffects();
+        
+        // URL parameter handling
+        handleUrlParams();
+        
+        // Focus search on load
+        setTimeout(() => {
+            document.getElementById('searchInput')?.focus();
+        }, 500);
+        
+        Logger.perf('App initialization', initStart);
+        Logger.log('Legend House v10.0 initialized successfully');
+    } catch (error) {
+        Logger.error('Initialization failed', error);
+        showToast('Some features may not work correctly', 'warning');
+    }
 });
+
+// Handle URL parameters for deep linking
+function handleUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('q');
+    const category = params.get('cat');
+    
+    if (query) {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = query;
+        }
+        if (category) {
+            setCategory(category);
+        }
+        // Auto-search after a short delay
+        setTimeout(() => performSearch(), 300);
+    }
+}
+
+// Initialize lazy loading for images
+function initLazyLoading() {
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src) {
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    }
+                }
+            });
+        }, { rootMargin: '50px' });
+        
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            imageObserver.observe(img);
+        });
+        
+        window.imageObserver = imageObserver;
+    }
+}
+
+// Initialize scroll-based effects
+function initScrollEffects() {
+    if ('IntersectionObserver' in window) {
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        
+        document.querySelectorAll('.result-card, .feature-card, .stat-card').forEach(el => {
+            revealObserver.observe(el);
+        });
+        
+        window.revealObserver = revealObserver;
+    }
+}
 
 // Check authentication status
 async function checkAuthStatus() {
