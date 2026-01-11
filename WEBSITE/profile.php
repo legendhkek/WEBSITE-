@@ -1,3 +1,25 @@
+<?php
+// IMPORTANT: All PHP session/auth code must be at the TOP before any HTML output
+require_once __DIR__ . '/auth.php';
+
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$user = getCurrentUser();
+
+// Get download stats
+$db = getDB();
+$stmt = $db->prepare('SELECT COUNT(*) as total FROM download_history WHERE user_id = :user_id');
+$stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+$result = $stmt->execute();
+$stats = $result->fetchArray(SQLITE3_ASSOC);
+$totalDownloads = $stats['total'] ?? 0;
+$db->close();
+
+$daysActive = floor((time() - strtotime($user['created_at'])) / 86400);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,27 +30,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>">
 </head>
 <body data-theme="dark">
-    <?php
-    require_once __DIR__ . '/auth.php';
-    
-    if (!isLoggedIn()) {
-        header('Location: login.php');
-        exit;
-    }
-    
-    $user = getCurrentUser();
-    
-    // Get download stats
-    $db = getDB();
-    $stmt = $db->prepare('SELECT COUNT(*) as total FROM download_history WHERE user_id = :user_id');
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $stats = $result->fetchArray(SQLITE3_ASSOC);
-    $totalDownloads = $stats['total'] ?? 0;
-    $db->close();
-    
-    $daysActive = floor((time() - strtotime($user['created_at'])) / 86400);
-    ?>
     
     <div class="app-layout">
         <!-- Sidebar -->

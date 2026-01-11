@@ -1,18 +1,28 @@
+<?php
+// IMPORTANT: All PHP session/auth code must be at the TOP before any HTML output
+require_once __DIR__ . '/auth.php';
+
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$user = getCurrentUser();
+
+// SEO Configuration for Tools Page
+$seo_title = 'Free Online Tools - Google Dorker, Proxy Scraper, Torrent Center | Legend House';
+$seo_description = 'Access 20+ free online tools at Legend House (LegendBL.tech). Google Dorker with 100+ operators, Proxy Scraper with 100+ sources, Rotating Proxy Maker, Link Shortener, WebTorrent Player, AI Chat Assistant, and more.';
+$seo_keywords = 'free online tools, google dorker, proxy scraper, rotating proxy, torrent tools, link shortener, ai chat, legendbl tools, download tools';
+$seo_url = 'https://legendbl.tech/tools.php';
+$seo_canonical = 'https://legendbl.tech/tools.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <?php
-    // SEO Configuration for Tools Page
-    $seo_title = 'Free Online Tools - Google Dorker, Proxy Scraper, Torrent Center | Legend House';
-    $seo_description = 'Access 20+ free online tools at Legend House (LegendBL.tech). Google Dorker with 100+ operators, Proxy Scraper with 100+ sources, Rotating Proxy Maker, Link Shortener, WebTorrent Player, AI Chat Assistant, and more.';
-    $seo_keywords = 'free online tools, google dorker, proxy scraper, rotating proxy, torrent tools, link shortener, ai chat, legendbl tools, download tools';
-    $seo_url = 'https://legendbl.tech/tools.php';
-    $seo_canonical = 'https://legendbl.tech/tools.php';
-    include 'seo-head.php';
-    ?>
+    <?php include 'seo-head.php'; ?>
     
     <title><?php echo htmlspecialchars($seo_title); ?></title>
     
@@ -24,16 +34,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
 </head>
 <body data-theme="dark">
-    <?php
-    require_once __DIR__ . '/auth.php';
-    
-    if (!isLoggedIn()) {
-        header('Location: login.php');
-        exit;
-    }
-    
-    $user = getCurrentUser();
-    ?>
     
     <div class="app-layout">
         <!-- Left Sidebar -->
