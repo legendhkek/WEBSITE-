@@ -1,3 +1,73 @@
+<?php
+// IMPORTANT: All PHP session/auth code must be at the TOP before any HTML output
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/config.php';
+
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$user = getCurrentUser();
+
+// Initialize settings table
+$db = getDB();
+$db->exec('CREATE TABLE IF NOT EXISTS user_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE NOT NULL,
+    ai_model TEXT DEFAULT "blackboxai/openai/gpt-4o",
+    theme TEXT DEFAULT "dark",
+    settings_json TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+)');
+
+// Get user settings
+$stmt = $db->prepare('SELECT * FROM user_settings WHERE user_id = :user_id');
+$stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+$result = $stmt->execute();
+$userSettings = $result->fetchArray(SQLITE3_ASSOC);
+
+// Default settings if none exist
+if (!$userSettings) {
+    $defaultModel = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'blackboxai/openai/gpt-4o';
+    $stmt = $db->prepare('INSERT INTO user_settings (user_id, ai_model) VALUES (:user_id, :model)');
+    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
+    $stmt->bindValue(':model', $defaultModel, SQLITE3_TEXT);
+    $stmt->execute();
+    $userSettings = ['ai_model' => $defaultModel];
+}
+$db->close();
+
+// Available AI models (tested and working)
+$availableModels = [
+    'GPT Models (OpenAI)' => [
+        'blackboxai/openai/gpt-4o' => ['name' => 'GPT-4o', 'desc' => 'Fast & Smart - Recommended', 'icon' => '🟢'],
+        'blackboxai/openai/gpt-4-turbo' => ['name' => 'GPT-4 Turbo', 'desc' => 'Powerful with large context', 'icon' => '🟢'],
+        'blackboxai/openai/gpt-4' => ['name' => 'GPT-4', 'desc' => 'Original GPT-4', 'icon' => '🟢'],
+        'blackboxai/openai/chatgpt-4o-latest' => ['name' => 'ChatGPT-4o Latest', 'desc' => 'Latest ChatGPT version', 'icon' => '🟢'],
+    ],
+    'Claude Models (Anthropic)' => [
+        'blackboxai/anthropic/claude-opus-4' => ['name' => 'Claude Opus 4', 'desc' => 'Most intelligent - Best for complex tasks', 'icon' => '🟣'],
+        'blackboxai/anthropic/claude-sonnet-4' => ['name' => 'Claude Sonnet 4', 'desc' => 'Balanced performance', 'icon' => '🟣'],
+    ],
+    'Gemini Models (Google)' => [
+        'blackboxai/google/gemini-2.5-flash' => ['name' => 'Gemini 2.5 Flash', 'desc' => 'Very fast responses', 'icon' => '🔵'],
+        'blackboxai/google/gemini-2.0-flash-001' => ['name' => 'Gemini 2.0 Flash', 'desc' => 'Fast and capable', 'icon' => '🔵'],
+    ],
+    'DeepSeek Models' => [
+        'blackboxai/deepseek/deepseek-chat' => ['name' => 'DeepSeek Chat', 'desc' => 'Great for coding help', 'icon' => '🟠'],
+    ],
+    'Llama Models (Meta)' => [
+        'blackboxai/meta-llama/llama-4-maverick' => ['name' => 'Llama 4 Maverick', 'desc' => 'Latest open source model', 'icon' => '🔴'],
+    ],
+    'Qwen Models (Alibaba)' => [
+        'blackboxai/qwen/qwen-max' => ['name' => 'Qwen Max', 'desc' => 'Powerful multilingual model', 'icon' => '🟡'],
+    ],
+];
+
+$currentModel = $userSettings['ai_model'] ?? 'blackboxai/openai/gpt-4o';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,75 +78,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
 </head>
 <body data-theme="dark">
-    <?php
-    require_once __DIR__ . '/auth.php';
-    require_once __DIR__ . '/config.php';
-    
-    if (!isLoggedIn()) {
-        header('Location: login.php');
-        exit;
-    }
-    
-    $user = getCurrentUser();
-    
-    // Initialize settings table
-    $db = getDB();
-    $db->exec('CREATE TABLE IF NOT EXISTS user_settings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER UNIQUE NOT NULL,
-        ai_model TEXT DEFAULT "blackboxai/openai/gpt-4o",
-        theme TEXT DEFAULT "dark",
-        settings_json TEXT,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-    )');
-    
-    // Get user settings
-    $stmt = $db->prepare('SELECT * FROM user_settings WHERE user_id = :user_id');
-    $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $userSettings = $result->fetchArray(SQLITE3_ASSOC);
-    
-    // Default settings if none exist
-    if (!$userSettings) {
-        $defaultModel = defined('BLACKBOX_MODEL') ? BLACKBOX_MODEL : 'blackboxai/openai/gpt-4o';
-        $stmt = $db->prepare('INSERT INTO user_settings (user_id, ai_model) VALUES (:user_id, :model)');
-        $stmt->bindValue(':user_id', $user['id'], SQLITE3_INTEGER);
-        $stmt->bindValue(':model', $defaultModel, SQLITE3_TEXT);
-        $stmt->execute();
-        $userSettings = ['ai_model' => $defaultModel];
-    }
-    $db->close();
-    
-    // Available AI models (tested and working)
-    $availableModels = [
-        'GPT Models (OpenAI)' => [
-            'blackboxai/openai/gpt-4o' => ['name' => 'GPT-4o', 'desc' => 'Fast & Smart - Recommended', 'icon' => '🟢'],
-            'blackboxai/openai/gpt-4-turbo' => ['name' => 'GPT-4 Turbo', 'desc' => 'Powerful with large context', 'icon' => '🟢'],
-            'blackboxai/openai/gpt-4' => ['name' => 'GPT-4', 'desc' => 'Original GPT-4', 'icon' => '🟢'],
-            'blackboxai/openai/chatgpt-4o-latest' => ['name' => 'ChatGPT-4o Latest', 'desc' => 'Latest ChatGPT version', 'icon' => '🟢'],
-        ],
-        'Claude Models (Anthropic)' => [
-            'blackboxai/anthropic/claude-opus-4' => ['name' => 'Claude Opus 4', 'desc' => 'Most intelligent - Best for complex tasks', 'icon' => '🟣'],
-            'blackboxai/anthropic/claude-sonnet-4' => ['name' => 'Claude Sonnet 4', 'desc' => 'Balanced performance', 'icon' => '🟣'],
-        ],
-        'Gemini Models (Google)' => [
-            'blackboxai/google/gemini-2.5-flash' => ['name' => 'Gemini 2.5 Flash', 'desc' => 'Very fast responses', 'icon' => '🔵'],
-            'blackboxai/google/gemini-2.0-flash-001' => ['name' => 'Gemini 2.0 Flash', 'desc' => 'Fast and capable', 'icon' => '🔵'],
-        ],
-        'DeepSeek Models' => [
-            'blackboxai/deepseek/deepseek-chat' => ['name' => 'DeepSeek Chat', 'desc' => 'Great for coding help', 'icon' => '🟠'],
-        ],
-        'Llama Models (Meta)' => [
-            'blackboxai/meta-llama/llama-4-maverick' => ['name' => 'Llama 4 Maverick', 'desc' => 'Latest open source model', 'icon' => '🔴'],
-        ],
-        'Qwen Models (Alibaba)' => [
-            'blackboxai/qwen/qwen-max' => ['name' => 'Qwen Max', 'desc' => 'Powerful multilingual model', 'icon' => '🟡'],
-        ],
-    ];
-    
-    $currentModel = $userSettings['ai_model'] ?? 'blackboxai/openai/gpt-4o';
-    ?>
     
     <div class="app-layout">
         <!-- Sidebar -->
