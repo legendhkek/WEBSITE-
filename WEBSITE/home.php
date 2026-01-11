@@ -354,6 +354,69 @@
             <!-- Results Container -->
             <div id="resultsContainer" class="results-container"></div>
             
+            <!-- Skeleton Loading Template (hidden by default) -->
+            <template id="skeletonTemplate">
+                <div class="skeleton-results">
+                    <div class="skeleton-card">
+                        <div class="skeleton-header">
+                            <div class="skeleton skeleton-title"></div>
+                            <div class="skeleton skeleton-badge"></div>
+                        </div>
+                        <div class="skeleton-meta">
+                            <div class="skeleton skeleton-tag"></div>
+                            <div class="skeleton skeleton-tag"></div>
+                            <div class="skeleton skeleton-tag"></div>
+                        </div>
+                        <div class="skeleton-stats">
+                            <div class="skeleton skeleton-stat"></div>
+                            <div class="skeleton skeleton-stat"></div>
+                        </div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton skeleton-btn"></div>
+                            <div class="skeleton skeleton-btn"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-header">
+                            <div class="skeleton skeleton-title"></div>
+                            <div class="skeleton skeleton-badge"></div>
+                        </div>
+                        <div class="skeleton-meta">
+                            <div class="skeleton skeleton-tag"></div>
+                            <div class="skeleton skeleton-tag"></div>
+                            <div class="skeleton skeleton-tag"></div>
+                        </div>
+                        <div class="skeleton-stats">
+                            <div class="skeleton skeleton-stat"></div>
+                            <div class="skeleton skeleton-stat"></div>
+                        </div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton skeleton-btn"></div>
+                            <div class="skeleton skeleton-btn"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-header">
+                            <div class="skeleton skeleton-title"></div>
+                            <div class="skeleton skeleton-badge"></div>
+                        </div>
+                        <div class="skeleton-meta">
+                            <div class="skeleton skeleton-tag"></div>
+                            <div class="skeleton skeleton-tag"></div>
+                            <div class="skeleton skeleton-tag"></div>
+                        </div>
+                        <div class="skeleton-stats">
+                            <div class="skeleton skeleton-stat"></div>
+                            <div class="skeleton skeleton-stat"></div>
+                        </div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton skeleton-btn"></div>
+                            <div class="skeleton skeleton-btn"></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            
             <!-- Pagination -->
             <div id="paginationContainer" class="pagination-container"></div>
         </div>

@@ -1,7 +1,7 @@
 <?php
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * LEGEND HOUSE - Stream & Download API v9.0
+ * LEGEND HOUSE - Stream & Download API v10.0
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * FEATURES:
@@ -13,19 +13,24 @@
  * - Torrent file downloads
  * - Health status indicators
  * - WebTorrent streaming support
+ * - Improved error handling
+ * - Better caching system
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
+// Error handling configuration
 set_time_limit(180);
 ini_set('default_socket_timeout', 10);
 ini_set('memory_limit', '512M');
-error_reporting(0);
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CACHE CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
-define('CACHE_DIR', sys_get_temp_dir() . '/legendhouse_v9/');
+define('CACHE_DIR', sys_get_temp_dir() . '/legendhouse_v10/');
 define('CACHE_TTL', 1800);
 define('SEARCH_CACHE_TTL', 600);
 define('RESULTS_PER_PAGE', 25);
@@ -320,7 +325,7 @@ function extractInfoHash($magnet) {
 // SOURCE: YTS.mx (Movies)
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchYTS($query, $page = 1) {
-    $cacheKey = getCacheKey('yts8', [$query, $page]);
+    $cacheKey = getCacheKey('yts10', [$query, $page]);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -371,7 +376,7 @@ function searchYTS($query, $page = 1) {
 // SOURCE: EZTV (TV Shows)
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchEZTV($query, $page = 1) {
-    $cacheKey = getCacheKey('eztv8', [$query, $page]);
+    $cacheKey = getCacheKey('eztv10', [$query, $page]);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -420,7 +425,7 @@ function searchEZTV($query, $page = 1) {
 // SOURCE: ThePirateBay (All)
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchTPB($query) {
-    $cacheKey = getCacheKey('tpb8', $query);
+    $cacheKey = getCacheKey('tpb10', $query);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -469,7 +474,7 @@ function searchTPB($query) {
 // SOURCE: Nyaa.si (Anime)
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchNyaa($query, $page = 1) {
-    $cacheKey = getCacheKey('nyaa8', [$query, $page]);
+    $cacheKey = getCacheKey('nyaa10', [$query, $page]);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -529,7 +534,7 @@ function searchNyaa($query, $page = 1) {
 // SOURCE: 1337x (All)
 // ═══════════════════════════════════════════════════════════════════════════════
 function search1337x($query, $page = 1) {
-    $cacheKey = getCacheKey('1337x8', [$query, $page]);
+    $cacheKey = getCacheKey('1337x10', [$query, $page]);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -605,7 +610,7 @@ function search1337x($query, $page = 1) {
 // SOURCE: RARBG (via btdig)
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchBTDig($query) {
-    $cacheKey = getCacheKey('btdig8', $query);
+    $cacheKey = getCacheKey('btdig10', $query);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -654,7 +659,7 @@ function searchBTDig($query) {
 // SOURCE: TorrentGalaxy
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchTorrentGalaxy($query, $page = 1) {
-    $cacheKey = getCacheKey('tgx8', [$query, $page]);
+    $cacheKey = getCacheKey('tgx10', [$query, $page]);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -741,7 +746,7 @@ function searchTorrentGalaxy($query, $page = 1) {
 // SOURCE: LimeTorrents
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchLimeTorrents($query, $page = 1) {
-    $cacheKey = getCacheKey('lime8', [$query, $page]);
+    $cacheKey = getCacheKey('lime10', [$query, $page]);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -796,7 +801,7 @@ function searchLimeTorrents($query, $page = 1) {
 // SOURCE: Solid Torrents
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchSolidTorrents($query) {
-    $cacheKey = getCacheKey('solid8', $query);
+    $cacheKey = getCacheKey('solid10', $query);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -841,7 +846,7 @@ function searchSolidTorrents($query) {
 // SOURCE: Internet Archive (Direct Downloads)
 // ═══════════════════════════════════════════════════════════════════════════════
 function searchArchiveOrg($query) {
-    $cacheKey = getCacheKey('archive8', $query);
+    $cacheKey = getCacheKey('archive10', $query);
     $cached = getFromCache($cacheKey, SEARCH_CACHE_TTL);
     if ($cached) return $cached;
     
@@ -998,7 +1003,7 @@ function performSearchCached($query, $category, $page, $perPage) {
     $startTime = microtime(true);
     
     // Check full results cache
-    $fullCacheKey = getCacheKey('fullsearch8', ['q' => $query, 'c' => $category]);
+    $fullCacheKey = getCacheKey('fullsearch10', ['q' => $query, 'c' => $category]);
     $cached = getFromCache($fullCacheKey, SEARCH_CACHE_TTL);
     
     if ($cached) {
@@ -1143,7 +1148,7 @@ switch ($action) {
             $data = performSearchWithProgress($query, $category, $page, $perPage);
             
             // Cache full results
-            $fullCacheKey = getCacheKey('fullsearch8', ['q' => $query, 'c' => $category]);
+            $fullCacheKey = getCacheKey('fullsearch10', ['q' => $query, 'c' => $category]);
             saveToCache($fullCacheKey, $data['allResults']);
             
             // Track search (for stats)
@@ -1184,7 +1189,7 @@ switch ($action) {
             // Full search without progress
             $data = performSearchWithProgress($query, $category, $page, $perPage);
             
-            $fullCacheKey = getCacheKey('fullsearch8', ['q' => $query, 'c' => $category]);
+            $fullCacheKey = getCacheKey('fullsearch10', ['q' => $query, 'c' => $category]);
             saveToCache($fullCacheKey, $data['allResults']);
             
             // Track search (for stats)
@@ -1269,8 +1274,8 @@ switch ($action) {
         header('Content-Type: application/json');
         echo json_encode([
             'success' => true,
-            'version' => '8.0.0',
-            'engine' => 'Ultra Advanced Universal Search v8',
+            'version' => '10.0.0',
+            'engine' => 'Ultra Advanced Universal Search v10',
             'sources' => [
                 'YTS', 'EZTV', 'ThePirateBay', 'Nyaa', '1337x', 
                 'TorrentGalaxy', 'BTDig', 'LimeTorrents', 'SolidTorrents', 'Archive.org'
@@ -1296,6 +1301,6 @@ switch ($action) {
             'success' => false,
             'error' => 'Invalid action',
             'available' => ['search', 'page', 'torrent', 'verify', 'categories', 'stats'],
-            'version' => '8.0.0'
+            'version' => '10.0.0'
         ]);
 }
